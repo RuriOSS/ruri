@@ -34,7 +34,7 @@
  * For unshare container without pid ns,
  * we can not recognize the pids in container.
  * And for that with pid ns, just kill pid 1 of the ns,
- * and all processes will be destoryed.
+ * and all processes will be destroyed.
  */
 static char *getpid_name(pid_t pid)
 {

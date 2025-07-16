@@ -642,7 +642,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	sigaddset(&sigs, SIGTTOU);
 	sigprocmask(SIG_BLOCK, &sigs, 0);
 	// Check if system runtime files are already created.
-	// container_dir shoud bind-mount before chroot(2),
+	// container_dir should bind-mount before chroot(2),
 	// mount_host_runtime() and ruri_store_info() will be called here.
 	char buf[PATH_MAX] = { '\0' };
 	// I used to check /sys/class/input, but in WSL1, /sys/class/input is not exist.

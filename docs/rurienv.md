@@ -4,7 +4,7 @@
 
 It will record the following config:
 
-- The capabilty to drop.
+- The capability to drop.
 - Set NO_NEW_PRIVS bit.
 - Enable built-in seccomp profile.
 - PID owning unshare namespace.

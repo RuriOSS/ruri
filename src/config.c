@@ -346,7 +346,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 			break;
 		}
 	}
-	ret = k2v_add_comment(ret, "Default comand to run.");
+	ret = k2v_add_comment(ret, "Default command to run.");
 	ret = k2v_add_comment(ret, "For example, [\"/bin/sh\",\"-c\",\"echo hello\"] is valid.");
 	ret = k2v_add_comment(ret, "Set it to empty to use default (/bin/su - or /bin/sh).");
 	ret = k2v_add_config(char_array, ret, "command", container->command, len);

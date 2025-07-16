@@ -75,7 +75,7 @@ static void parse_cgroup_settings(const char *_Nonnull str, struct RURI_CONTAINE
 	/*
 	 * Parse and set cgroup limit.
 	 * The format should be like `cpuset=1` or `memory=1M`.
-	 * We will not check if the config is vaild.
+	 * We will not check if the config is valid.
 	 */
 	char buf[16] = { '\0' };
 	char *limit = NULL;

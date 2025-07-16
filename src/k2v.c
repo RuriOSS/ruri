@@ -376,7 +376,7 @@ char *k2v_add_newline(char *_Nonnull buf)
 	ret = tmp;
 	return ret;
 }
-static bool is_coment_line(const char *_Nonnull buf)
+static bool is_comment_line(const char *_Nonnull buf)
 {
 	// NULL check.
 	if (buf == NULL) {
@@ -422,7 +422,7 @@ static char *remove_comment(const char *_Nonnull buf)
 			p = goto_next_line(p);
 			continue;
 		}
-		if (is_coment_line(line)) {
+		if (is_comment_line(line)) {
 			free(line);
 			p = goto_next_line(p);
 			continue;

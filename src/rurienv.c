@@ -135,7 +135,7 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 			cap_tmp = NULL;
 		}
 	}
-	ret = k2v_add_comment(ret, "The capabilty to drop.");
+	ret = k2v_add_comment(ret, "The capability to drop.");
 	ret = k2v_add_config(char_array, ret, "drop_caplist", drop_caplist, len);
 	// Make ASAN happy.
 	for (int i = 0; i < len; i++) {
