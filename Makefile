@@ -29,7 +29,7 @@
 # Premature optimization is the root of evil.
 #
 ifeq ($(wildcard config.mk),)
-$(error config.mk is missing. Please run configure step before building.)
+$(error config.mk is missing. Please run 'make configure' before building)
 endif
 
 CCCOLOR     = \033[1;38;2;254;228;208m
@@ -57,7 +57,7 @@ O = out
 BIN_TARGET = ruri
 .NOTPARALLEL:
 .ONESHELL:
-.PHONY :all dev static static-bionic build_dir check format clean upk2v upcprintf help test config dbg_config dev_config static_config
+.PHONY :all dev static static-bionic build_dir check format clean upk2v upcprintf help test config dbg_config dev_config static_config configure
 all :build_dir $(objects)
 	@cd $(O)
 	@$(CC) $(CFLAGS) -o $(BIN_TARGET) $(objects) $(LD_FLAGS)
@@ -88,6 +88,8 @@ check :
 	@printf ' \033[1;38;2;254;228;208mCHECK\033[0m \033[34;1m%b\033[0m\n' $(SRC)
 	@$(CHECKER) $(CHECKER_FLAGS) $(SRC) -- $(COMMIT_ID)
 	@printf ' \033[1;38;2;254;228;208mDONE.\n'
+configure:
+	@bash autogen.sh && bash configure
 format :
 	$(FORMATER) $(SRC) $(HEADER)
 	shfmt -i 4 -w test/*.sh
