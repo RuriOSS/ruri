@@ -131,7 +131,7 @@ set(CFLAGS_LIST
 foreach(flag IN LISTS CFLAGS_LIST)
     try_compile(result ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/test/check_flag.c COMPILE_DEFINITIONS ${flag})
     if(result)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}")
+        set(CMAKE_C_FLAGS "${flag} ${CMAKE_C_FLAGS}")
         message(STATUS "Compiler supports flag: ${flag}")
     else()
         message(WARNING "Compiler does not support flag: ${flag}")
