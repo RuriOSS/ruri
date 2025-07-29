@@ -116,7 +116,6 @@ set(CFLAGS_LIST
     "-mshstk"
     "-ffunction-sections"
     "-Wl,--gc-sections"
-    "-Wl,--strip-all"
     "-Wl,--disable-new-dtags"
     "-Wl,--build-id=sha1"
     "-Wl,-z,norelro"
@@ -146,13 +145,14 @@ option(DISABLE_LIBCAP "Disable cap library linking" OFF)
 option(DISABLE_LIBSECCOMP "Disable seccomp library linking" OFF)
 option(DISABLE_RURIENV "Disable env in ruri" OFF)
 option(BUILD_LIB "Build with lib" OFF)
+option(STRIP_DEBUGINFO "Strip debuginfo from ruri binary" ON)
 
 # For Debug build
 if(ENABLE_DEBUG)
     message(WARNING "Warning: DEBUG mode is enabled")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g3 -O0 -DDEBUG_BUILD -DRURI_DEBUG -DRURI_DEV")
+    set(CMAKE_C_FLAGS "-g3 -O0 -DDEBUG_BUILD -DRURI_DEBUG -DRURI_DEV ${CMAKE_C_FLAGS}")
 else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -DNDEBUG")
+    set(CMAKE_C_FLAGS "-O2 -DNDEBUG ${CMAKE_C_FLAGS}")
 endif()
 
 # For static build
@@ -171,6 +171,17 @@ endif()
 
 # Add LDFLAGS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LDFLAGS}")
+
+# Check strip-all
+if(STRIP_DEBUGINFO)
+    try_compile(result ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/test/check_flag.c COMPILE_DEFINITIONS -Wl,--strip-all)
+    if(result)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,--strip-all")
+        message(STATUS "Compiler supports flag: -Wl,--strip-all")
+    else()
+        message(WARNING "Compiler does not support flag: -Wl,--strip-all")
+    endif()
+endif()
 
 execute_process(
     COMMAND git rev-parse --short HEAD
@@ -196,13 +207,15 @@ else ()
     set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIE")
     add_executable(ruri ${SOURCES})
-    add_custom_command(
-        TARGET ruri
-        POST_BUILD
-        COMMAND strip ruri
-        VERBATIM
+    if(STRIP_DEBUGINFO)
+        add_custom_command(
+            TARGET ruri
+            POST_BUILD
+            COMMAND strip ruri
+            VERBATIM
         )
-        install (TARGETS ruri DESTINATION /usr/bin/)
+    endif()
+    install (TARGETS ruri DESTINATION /usr/bin/)
 endif()
 
 add_custom_target(

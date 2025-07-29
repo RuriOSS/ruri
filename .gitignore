@@ -29,6 +29,8 @@ build/.cmake
 build/compile_commands.json
 build/Makefile
 build/build.ninja
+build/.ninja_deps
+build/.ninja_log
 autom4te.cache
 aclocal.m4
 config.log
