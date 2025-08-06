@@ -1243,13 +1243,21 @@ int ruri(int argc, char **argv)
 	prctl(PR_SET_NAME, "ruri");
 	// Catch coredump signal.
 	ruri_register_signal();
+// Warning for dev/debug build.
+#if defined(RURI_DEBUG) || defined(RURI_DEV)
+	ruri_warning("{red}Warning: this is a dev/debug build, do not use it in production{clear}\n");
+#endif
+	// Info of container to run.
+	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)malloc(sizeof(struct RURI_CONTAINER));
+	// Parse arguments.
+	parse_args(argc, argv, container);
 	// Clear environment variables.
 	extern char **environ;
 	if (environ != NULL && environ[0] != NULL) {
 		environ = NULL;
 		// Use memfd to store ruri binary.
 		// This is to prevent ruri binary from being modified by the container.
-		int fd = memfd_create("ruri_bin", MFD_CLOEXEC);
+		int fd = memfd_create("ruri_bin", MFD_CLOEXEC | MFD_ALLOW_SEALING);
 		if (fd < 0) {
 			ruri_error("{red}Error: failed to create memfd for ruri binary QwQ\n");
 			execve("/proc/self/exe", argv, NULL);
@@ -1269,6 +1277,8 @@ int ruri(int argc, char **argv)
 			}
 		}
 		close(orig_fd);
+		// Seal the memfd to prevent it from being modified.
+		fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE | F_SEAL_SEAL);
 		// Replace the current process with the ruri binary in memfd.
 		char path[PATH_MAX];
 		sprintf(path, "/proc/%d/fd/%d", getpid(), fd);
@@ -1277,14 +1287,6 @@ int ruri(int argc, char **argv)
 			execve("/proc/self/exe", argv, NULL);
 		}
 	}
-// Warning for dev/debug build.
-#if defined(RURI_DEBUG) || defined(RURI_DEV)
-	ruri_warning("{red}Warning: this is a dev/debug build, do not use it in production{clear}\n");
-#endif
-	// Info of container to run.
-	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)malloc(sizeof(struct RURI_CONTAINER));
-	// Parse arguments.
-	parse_args(argc, argv, container);
 	// Detect rootless mode.
 	if (geteuid() != 0) {
 		container->rootless = true;
