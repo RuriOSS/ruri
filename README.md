@@ -6,9 +6,6 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14021121.svg)](https://doi.org/10.5281/zenodo.14021121)
 
-# Contact via Telegram:
-- [channel](https://t.me/rurioss_dev)
-- [group](https://t.me/rurioss)
 
 # Important Notice:
 It's fully recommended to drop CAP_SYS_CHROOT or enable unshare, chroot container without these options is not secure at all!
