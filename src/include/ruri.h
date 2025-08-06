@@ -74,6 +74,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grp.h>
+#include <sys/mman.h>
 #ifndef DISABLE_LIBSECCOMP
 // This program need to be linked with `-lseccomp`.
 #include <seccomp.h>
