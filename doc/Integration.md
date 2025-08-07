@@ -52,4 +52,4 @@ So next time, just use `ruri -c /path/to/test.conf` to run the container.
 main() has been replaced to ruri, and every funcion in ruri have ruri_ or nekofeng_ prefix now, so you need not worry about conflicts of symbols now.      
 If your project supports, you can remove `main()` function and use ruri as a lib. But make sure that you know how ruri.c works, especially how RURI_CONTAINER struct works.       
 An example is [rurima](https://github.com/Moe-hacker/rurima), I made ruri to be its subcommand. So `rurima r` have the same effect with `ruri`.            
-NOTE: Unset all environment variables before calling ruri(), or ruri will re-exec itself, and it will actually re-exec your program!    
+NOTE: ruri will re-exec itself from memfd to clear environment variables and avoid security issues. So you need to call ruri_clear_env() in your program with your argv so that the re-exec can work properly.
