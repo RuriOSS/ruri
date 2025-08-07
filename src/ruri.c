@@ -1252,28 +1252,23 @@ int ruri(int argc, char **argv)
 	// Parse arguments.
 	parse_args(argc, argv, container);
 	// Clear environment variables.
-	extern char **environ;
-	if (environ != NULL && environ[0] != NULL) {
-		environ = NULL;
+	char *envp[] = { "ruri_rexec=1", NULL };
+	if (getenv("ruri_rexec") == NULL) {
 		// Use memfd to store ruri binary.
 		// This is to prevent ruri binary from being modified by the container.
 		int fd = memfd_create("ruri_bin", MFD_CLOEXEC | MFD_ALLOW_SEALING);
 		if (fd < 0) {
-			ruri_error("{red}Error: failed to create memfd for ruri binary QwQ\n");
-			execve("/proc/self/exe", argv, NULL);
+			execve("/proc/self/exe", argv, envp);
 		}
 		// Set the file as executable.
-		if (fchmod(fd, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH) < 0) {
-			ruri_error("{red}Error: failed to set ruri binary as executable QwQ\n");
-			execve("/proc/self/exe", argv, NULL);
-		}
+		fchmod(fd, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
 		// Read the ruri binary from /proc/self/exe and write it to the memfd.
 		int orig_fd = open("/proc/self/exe", O_RDONLY | O_CLOEXEC);
 		char buf[4096];
 		ssize_t bytes_read;
 		while ((bytes_read = read(orig_fd, buf, sizeof(buf))) > 0) {
 			if (write(fd, buf, bytes_read) < 0) {
-				execve("/proc/self/exe", argv, NULL);
+				execve("/proc/self/exe", argv, envp);
 			}
 		}
 		close(orig_fd);
@@ -1282,11 +1277,11 @@ int ruri(int argc, char **argv)
 		// Replace the current process with the ruri binary in memfd.
 		char path[PATH_MAX];
 		sprintf(path, "/proc/%d/fd/%d", getpid(), fd);
-		if (execve(path, argv, NULL) < 0) {
-			ruri_error("{red}Error: failed to exec ruri binary QwQ\n");
-			execve("/proc/self/exe", argv, NULL);
+		if (execve(path, argv, envp) < 0) {
+			execve("/proc/self/exe", argv, envp);
 		}
 	}
+	unsetenv("ruri_rexec");
 	// Detect rootless mode.
 	if (geteuid() != 0) {
 		container->rootless = true;
