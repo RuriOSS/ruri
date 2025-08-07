@@ -291,6 +291,7 @@ int ruri_get_groups(uid_t uid, gid_t groups[]);
 #ifndef DISABLE_LIBCAP
 int ruri_cap_from_name(const char *str, cap_value_t *cap);
 #endif
+void ruri_clear_env(char *const *_Nonnull argv);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

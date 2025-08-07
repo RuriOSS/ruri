@@ -34,6 +34,46 @@
  * I know code here is too shit, but it works,
  * maybe I will rewrite it one day, I hope.
  */
+// Clear environment variables.
+void ruri_clear_env(char *const *_Nonnull argv)
+{
+	/*
+	 * This function will:
+	 * - Clear the environment variables.
+	 * - Re-exec the ruri binary from the memfd.
+	 */
+	char *envp[] = { "ruri_rexec=1", NULL };
+	if (getenv("ruri_rexec") == NULL) {
+		// Use memfd to store ruri binary.
+		// This is to prevent ruri binary from being modified by the container.
+		int fd = memfd_create("ruri_bin", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+		if (fd < 0) {
+			execve("/proc/self/exe", argv, envp);
+		}
+		// Set the file as executable.
+		fchmod(fd, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
+		// Read the ruri binary from /proc/self/exe and write it to the memfd.
+		int orig_fd = open("/proc/self/exe", O_RDONLY | O_CLOEXEC);
+		char buf[4096];
+		ssize_t bytes_read;
+		while ((bytes_read = read(orig_fd, buf, sizeof(buf))) > 0) {
+			if (write(fd, buf, bytes_read) < 0) {
+				execve("/proc/self/exe", argv, envp);
+			}
+		}
+		close(orig_fd);
+		// Seal the memfd to prevent it from being modified.
+		fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE | F_SEAL_SEAL);
+		// Replace the current process with the ruri binary in memfd.
+		char path[PATH_MAX];
+		sprintf(path, "/proc/%d/fd/%d", getpid(), fd);
+		if (execve(path, argv, envp) < 0) {
+			execve("/proc/self/exe", argv, envp);
+		}
+	} else {
+		return;
+	}
+}
 // Do some checks before chroot(2),called by main().
 static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 {
@@ -1130,6 +1170,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			ruri_error("{red}Error: unknown option `%s`\nNote that only existing directory can be detected as CONTAINER_DIR\n", argv[index]);
 		}
 	}
+	// Clear envs.
+	ruri_clear_env(argv);
 	// Fork to background if -b is set.
 	if (background) {
 		pid_t fpid = fork();
@@ -1251,36 +1293,9 @@ int ruri(int argc, char **argv)
 	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)malloc(sizeof(struct RURI_CONTAINER));
 	// Parse arguments.
 	parse_args(argc, argv, container);
-	// Clear environment variables.
-	char *envp[] = { "ruri_rexec=1", NULL };
-	if (getenv("ruri_rexec") == NULL) {
-		// Use memfd to store ruri binary.
-		// This is to prevent ruri binary from being modified by the container.
-		int fd = memfd_create("ruri_bin", MFD_CLOEXEC | MFD_ALLOW_SEALING);
-		if (fd < 0) {
-			execve("/proc/self/exe", argv, envp);
-		}
-		// Set the file as executable.
-		fchmod(fd, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
-		// Read the ruri binary from /proc/self/exe and write it to the memfd.
-		int orig_fd = open("/proc/self/exe", O_RDONLY | O_CLOEXEC);
-		char buf[4096];
-		ssize_t bytes_read;
-		while ((bytes_read = read(orig_fd, buf, sizeof(buf))) > 0) {
-			if (write(fd, buf, bytes_read) < 0) {
-				execve("/proc/self/exe", argv, envp);
-			}
-		}
-		close(orig_fd);
-		// Seal the memfd to prevent it from being modified.
-		fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE | F_SEAL_SEAL);
-		// Replace the current process with the ruri binary in memfd.
-		char path[PATH_MAX];
-		sprintf(path, "/proc/%d/fd/%d", getpid(), fd);
-		if (execve(path, argv, envp) < 0) {
-			execve("/proc/self/exe", argv, envp);
-		}
-	}
+	// Clear env, and re-exec ruri from memfd.
+	ruri_clear_env(argv);
+	// Unset ruri_rexec env.
 	unsetenv("ruri_rexec");
 	// Detect rootless mode.
 	if (geteuid() != 0) {
