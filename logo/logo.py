@@ -55,6 +55,6 @@ pyplot.ylim(-8, 8)
 # Draw the title.
 pyplot.title("r u r i", color='#fee4d0', y=-0.05, x=0.478, fontsize=39, fontweight="normal")
 pyplot.text(-0.45, -0.12, "Lightweight, User-friendly Linux-container Implementation", fontsize=13,fontweight="black", transform=axes.transAxes, color='#fee4d0')
-pyplot.text(-0.45, -0.21, "                         Revamp, Until Reach Ideal", fontsize=13,fontweight="black", transform=axes.transAxes, color='#fee4d0')
+pyplot.text(-0.445, -0.21, "                      Revamp, Until Reach the Ideal", fontsize=13,fontweight="black", transform=axes.transAxes, color='#fee4d0')
 # Save as logo.png.
 pyplot.savefig('logo.png', transparent=True)
