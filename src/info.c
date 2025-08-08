@@ -47,7 +47,7 @@ void ruri_show_version_info(void)
 	cprintf("{base}               ●  ●  ●   ● ●  ●    ●\n");
 	cprintf("{base}               ●   ●  ●●●  ●   ●  ●●●\n");
 	cprintf("{base}Lightweight, User-friendly Linux-container Implementation\n");
-	cprintf("{base}              Revamp, Until Reach Ideal\n");
+	cprintf("{base}             Revamp, Until Reach the Ideal\n");
 	cprintf("{base}            Licensed under the MIT License\n");
 	cprintf("{base}              <https://mit-license.org>\n");
 	cprintf("{base}         Copyright (C) 2022-2024 Moe-hacker\n\n");
