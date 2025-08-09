@@ -633,7 +633,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			container->enable_unshare = true;
 		}
 		// Extra capabilities to keep.
-		else if (strcmp(argv[index], "-k") == 0 || strcmp(argv[index], "--keep") == 0) {
+		else if (strcmp(argv[index], "-k") == 0 || strcmp(argv[index], "--keep") == 0 || strcmp(argv[index], "--cap-add") == 0) {
 #ifndef DISABLE_LIBCAP
 			index++;
 			if (argv[index] != NULL) {
@@ -656,7 +656,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 #endif
 		}
 		// Extra capabilities to drop.
-		else if (strcmp(argv[index], "-d") == 0 || strcmp(argv[index], "--drop") == 0) {
+		else if (strcmp(argv[index], "-d") == 0 || strcmp(argv[index], "--drop") == 0 || strcmp(argv[index], "--cap-drop") == 0) {
 #ifndef DISABLE_LIBCAP
 			index++;
 			if (argv[index] != NULL) {

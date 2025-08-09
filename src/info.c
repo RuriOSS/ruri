@@ -118,8 +118,8 @@ void ruri_show_helps(void)
 	cprintf("{base}  -N, --no-rurienv ............................: Do not use .rurienv file\n");
 	cprintf("{base}  -s, --enable-seccomp ........................: Enable built-in Seccomp profile\n");
 	cprintf("{base}  -p, --privileged ............................: Run privileged container\n");
-	cprintf("{base}  -k, --keep [cap] ............................: Keep the specified capability (*3)\n");
-	cprintf("{base}  -d, --drop [cap] ............................: Drop the specified capability\n");
+	cprintf("{base}  -k, --cap-add [cap] .........................: Add the specified capability (*3)\n");
+	cprintf("{base}  -d, --cap-drop [cap] ........................: Drop the specified capability\n");
 	cprintf("{base}  -e, --env [env] [value] .....................: Set environment variable to its value (*4)\n");
 	cprintf("{base}  -m, --mount [dir/dev/img/file] [target] .....: Mount dir/block-device/image/file to target (*5)\n");
 	cprintf("{base}  -M, --ro-mount [dir/dev/img/file] [target] ..: Mount dir/block-device/image/file as read-only\n");
