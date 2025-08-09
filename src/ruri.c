@@ -57,7 +57,7 @@ void ruri_clear_env(char *const *_Nonnull argv)
 		char buf[4096];
 		ssize_t bytes_read;
 		while ((bytes_read = read(orig_fd, buf, sizeof(buf))) > 0) {
-			if (write(fd, buf, bytes_read) < 0) {
+			if (write(fd, buf, (size_t)bytes_read) < 0) {
 				execve("/proc/self/exe", argv, envp);
 			}
 		}
