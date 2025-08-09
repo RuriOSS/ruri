@@ -1,6 +1,7 @@
 # v3.9.1:
   * Support prefix for errno action in `--deny-syscall` option.
   * Add `-Q` option: `--mask-path`.
+  * Load ruri from memfd to avoid leak of ruri binary.
 # v3.9.0:
   * Support part of bsd-style command-line usage.
   * Fix built-in seccomp profile.

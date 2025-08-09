@@ -219,8 +219,8 @@ For more info, refer to the man page of `user_namespaces(7)` and `unshare(2)`.
 
 | Option | Description |
 |--------|-------------|
-| `-k`, `--keep [cap]` | Keep the specified capability |
-| `-d`, `--drop [cap]` | Drop the specified capability |
+| `-k`, `--cap-add [cap]` | Add the specified capability |
+| `-d`, `--cap-drop [cap]` | Drop the specified capability |
 
 These two options can control the capabilities in the container. Cap can be either a value or a name.  
 For example, `-k cap_chown` has the same effect as `-k 0`.  
