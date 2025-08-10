@@ -81,7 +81,7 @@ char32_t *nekofeng_strdup(const char32_t *_Nonnull str)
 // init() function for getting window size.
 static void init(void)
 {
-	printf("\033c");
+	printf("\033[H\033[2J");
 	// Use ioctl(2) to get the window size.
 	struct winsize size;
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
@@ -140,6 +140,9 @@ static void *test4(void *arg)
 }
 void ruri_AwA(void)
 {
+	printf("\033[?25l");
+	printf("\033[?1049h");
+	fflush(stdout);
 	// Maybe this is more secure?
 	if (geteuid() == 0) {
 		setgid(65534);
@@ -147,7 +150,6 @@ void ruri_AwA(void)
 	}
 	// If we didn't set this, c32rtomb() will not work.
 	setlocale(LC_ALL, "");
-	printf("\033[?25l");
 	init();
 	struct NEKOFENG_LAYER layer;
 	layer.layer = U"\033[1;38;2;254;228;208m\n"
@@ -174,7 +176,7 @@ void ruri_AwA(void)
 		pthread_create(&t2, NULL, test2, NULL);
 		pthread_create(&t4, NULL, test4, NULL);
 		sleep(7);
-		printf("\033c");
+		printf("\033[H\033[2J");
 		for (int i = 0; i < 6; i++) {
 			if (nekofeng_tids[i] > 0) {
 				syscall(SYS_tgkill, getpid(), nekofeng_tids[i], SIGKILL);
@@ -183,7 +185,7 @@ void ruri_AwA(void)
 			}
 		}
 	}
-	printf("\033c");
+	printf("\033[H\033[2J");
 	layer.layer = U"\033[1;38;2;254;228;208m\n\n"
 			"●   ●  ●●●  ●●●●●       ●   ●   ●    ●●●  ●●●●● ●●●●  \n"
 			"●● ●● ●   ● ●           ●   ●  ● ●  ●   ● ●     ●   ● \n"
@@ -194,8 +196,11 @@ void ruri_AwA(void)
 	layer.y_offset = -2;
 	nekofeng_typewrite_layer(&layer, 5000, false);
 	sleep(4);
-	printf("\033c");
-	printf("\n\033[?25h");
+	printf("\033[H\033[2J");
+	printf("\033[?1049l");
+	printf("\033[?25h");
+	fflush(stdout);
+	exit(EXIT_SUCCESS);
 }
 #else
 #include "../include/ruri.h"
