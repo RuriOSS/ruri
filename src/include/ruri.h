@@ -232,7 +232,7 @@ struct RURI_ID_MAP {
 		cfprintf(stderr, "{base}%s{clear}\n", "  /⋀\\_ﾉ_/⋀\\");                                      \
 		cfprintf(stderr, "{base}%s{clear}\n", " /ﾉｿﾉ\\ﾉｿ丶)|");                                      \
 		cfprintf(stderr, "{base}%s{clear}\n", " ﾙﾘﾘ >  x )ﾘ");                                       \
-		cfprintf(stderr, "{base}%s{clear}\n", "ﾉノ㇏  ^ ﾉ|ﾉ");                                       \
+		cfprintf(stderr, "{base}%s{clear}\n", "ﾉノ㇏  ^  ﾉ|ﾉ");                                      \
 		cfprintf(stderr, "{base}%s{clear}\n", "      ⠁⠁");                                           \
 		cfprintf(stderr, "{base}%s{clear}\n", "RURI ERROR MESSAGE");                                 \
 		cfprintf(stderr, "{base}%s{clear}\n", "If you think something is wrong, please report at:"); \
