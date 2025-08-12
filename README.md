@@ -8,6 +8,9 @@
 ![](https://img.shields.io/badge/backward-compatible-00d000?style=flat&labelColor=gray)
 [![Build release](https://github.com/RuriOSS/ruri/actions/workflows/build.yml/badge.svg)](https://github.com/RuriOSS/ruri/actions/workflows/build.yml) [![Run autotest](https://github.com/RuriOSS/ruri/actions/workflows/test.yml/badge.svg)](https://github.com/RuriOSS/ruri/actions/workflows/test.yml)
 
+# Backward compatibility:
+We promise that ruri has backward compatibility of cli usage and config file since v3.9.0, you can keep updated to the newest version. Any breaking changes will not be introduced to v3.9.x
+
 # Important Notice:
 It's fully recommended to drop CAP_SYS_CHROOT or enable unshare, chroot container without these options is not secure at all!
 
