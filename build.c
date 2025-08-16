@@ -1,33 +1,25 @@
 #ifndef __linux__
 #error "This code is only for Linux"
 #endif
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <limits.h>
 #include <dirent.h>
 #include <sys/time.h>
 #include <float.h>
-#include <dirent.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <linux/limits.h>
 #include <sys/prctl.h>
-#include <sys/stat.h>
 #include <signal.h>
-#include <unistd.h>
 #include <sched.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
 #if __STDC_VERSION__ < 202000L
 #ifndef bool
 #define bool _Bool
@@ -37,15 +29,17 @@
 #endif
 #define error(...)                            \
 	{                                     \
-		on_exit__(SIGINT);            \
 		fprintf(stderr, __VA_ARGS__); \
+		on_exit__(SIGINT);            \
 		exit(EXIT_FAILURE);           \
 	}
+void remove_test_dot_c(void);
 void on_exit__(int sig)
 {
 	printf("Exiting %d......\n", getpid());
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
+	remove_test_dot_c();
 	exit(1);
 }
 int fork_exec(char **argv)
@@ -167,12 +161,15 @@ void free_args(char **arg)
 	}
 	free(arg);
 }
-void create_test_dot_c(void)
+void remove_test_dot_c(void)
 {
-	// Create test.c
 	remove("test.c");
 	unlink("test.c");
 	rmdir("test.c");
+}
+void create_test_dot_c(void)
+{
+	remove_test_dot_c();
 	FILE *fp = fopen("test.c", "w");
 	if (!fp) {
 		error("Failed to create test.c");
@@ -297,7 +294,7 @@ void switch_to_build_dir(char *dir)
 	if (chdir(dir) != 0) {
 		error("Error: failed to change directory to %s\n", dir);
 	}
-	fork_exec((char *[]){ "rm", "./*.o", NULL });
+	fork_exec((char *[]){ "sh", "-c", "rm ./*.o", NULL });
 	BUILD_DIR = realpath(".", NULL);
 }
 char *basename_of(const char *path)
@@ -537,5 +534,6 @@ int main()
 	check_and_add_lib("-lseccomp", true);
 	check_and_add_lib("-lpthread", false);
 	build();
+	remove_test_dot_c();
 	return 0;
 }
