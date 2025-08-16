@@ -37,9 +37,17 @@
 #endif
 #define error(...)                            \
 	{                                     \
+		on_exit__(SIGINT);            \
 		fprintf(stderr, __VA_ARGS__); \
 		exit(EXIT_FAILURE);           \
 	}
+void on_exit__(int sig)
+{
+	printf("Exiting %d......\n", getpid());
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
+	exit(1);
+}
 int fork_exec(char **argv)
 {
 	int pid = fork();
@@ -490,13 +498,6 @@ void check_and_add_lib(char *lib, bool panic)
 	} else if (panic) {
 		error("Error: Library %s is not supported\n", lib);
 	}
-}
-void on_exit__(int sig)
-{
-	printf("Exiting %d......\n", getpid());
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		;
-	exit(1);
 }
 int main()
 {
