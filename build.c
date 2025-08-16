@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <glob.h>
 #if __STDC_VERSION__ < 202000L
 #ifndef bool
 #define bool _Bool
@@ -35,7 +34,7 @@
 #define error(...)                            \
 	{                                     \
 		fprintf(stderr, __VA_ARGS__); \
-		exit(114);                    \
+		exit(EXIT_FAILURE);           \
 	}
 int fork_exec(char **argv)
 {
@@ -51,7 +50,7 @@ int fork_exec(char **argv)
 		close(fd);
 		execvp(argv[0], argv);
 		perror("exec failed");
-		return -1;
+		exit(EXIT_FAILURE);
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
@@ -62,6 +61,68 @@ int fork_exec(char **argv)
 		}
 	}
 }
+char *fork_execvp_get_stdout(const char *argv[])
+{
+	/*
+	 * Warning: free() after use.
+	 * We will fork(2) and then execvp(3).
+	 * And then we will get the stdout of the child process.
+	 * Return the stdout of the child process.
+	 * If failed, return NULL.
+	 */
+	// Create a pipe.
+	int pipefd[2];
+	if (pipe(pipefd) == -1) {
+		return NULL;
+	}
+	// fork(2) and then execvp(3).
+	int pid = fork();
+	if (pid == -1) {
+		return NULL;
+	}
+	if (pid == 0) {
+		// Close the read end of the pipe.
+		close(pipefd[0]);
+		// Redirect stdout and stderr to the write end of the pipe.
+		dup2(pipefd[1], STDOUT_FILENO);
+		int nullfd = open("/dev/null", O_WRONLY);
+		dup2(nullfd, STDERR_FILENO);
+		close(pipefd[1]);
+		execvp(argv[0], (char **)argv);
+		exit(114);
+	} else {
+		// Close the write end of the pipe.
+		close(pipefd[1]);
+		// Get the output from the read end of the pipe.
+		size_t buffer_size = 1024;
+		size_t total_read = 0;
+		char *output = malloc(buffer_size);
+		ssize_t bytes_read;
+		while ((bytes_read = read(pipefd[0], output + total_read, buffer_size - total_read - 1)) > 0) {
+			total_read += (size_t)bytes_read;
+			if (total_read >= buffer_size - 1) {
+				buffer_size *= 2;
+				char *new_output = realloc(output, buffer_size);
+				output = new_output;
+			}
+		}
+		if (bytes_read == -1) {
+			free(output);
+			close(pipefd[0]);
+			return NULL;
+		}
+		output[total_read] = '\0';
+		close(pipefd[0]);
+		int status = 0;
+		waitpid(pid, &status, 0);
+		if (WEXITSTATUS(status) != 0) {
+			free(output);
+			return NULL;
+		}
+		return output;
+	}
+	return NULL;
+}
 char **CFLAGS = NULL;
 char **LIBS = NULL;
 char *CC = "cc";
@@ -70,6 +131,7 @@ char *BUILD_DIR = "out";
 char *SRC_DIR = NULL;
 char **OBJS = NULL;
 char *OUTPUT = NULL;
+char *COMMIT_ID = NULL;
 void add_args(char ***argv, const char *arg)
 {
 	if (*argv == NULL) {
@@ -112,7 +174,6 @@ bool check_c_flag(const char *flag)
 		return false;
 	}
 	free_args(args);
-	add_args(&CFLAGS, flag);
 	printf("Check for flag %s :success\n", flag);
 	return true;
 }
@@ -137,10 +198,9 @@ bool check_lib(const char *lib)
 	}
 	free_args(args);
 	printf("Check for lib %s :success\n", lib);
-	add_args(&LIBS, lib);
 	return true;
 }
-void update_cc(void)
+void init_env(void)
 {
 	if (getenv("CC")) {
 		CC = getenv("CC");
@@ -168,6 +228,16 @@ void update_cc(void)
 	}
 	printf("CC: %s\n", CC);
 	free_args(arg);
+	char *commit_id = fork_execvp_get_stdout((const char *[]){ "git", "rev-parse", "--short", "HEAD", NULL });
+	if (commit_id) {
+		if (commit_id[strlen(commit_id) - 1] == '\n') {
+			commit_id[strlen(commit_id) - 1] = '\0';
+		}
+		printf("Commit ID: %s\n", commit_id);
+	} else {
+		printf("Warning: failed to get commit ID\n");
+	}
+	COMMIT_ID = commit_id;
 }
 void switch_to_build_dir(char *dir)
 {
@@ -191,15 +261,16 @@ void switch_to_build_dir(char *dir)
 		}
 		// Change to the build directory
 		mkdir(dir, 0755);
-		chdir(dir);
-		// TODO: ?
-		fork_exec((char *[]){ "rm", "*", NULL });
+		if (chdir(dir) != 0) {
+			error("Error: failed to change directory to %s\n", dir);
+		}
+		fork_exec((char *[]){ "rm", "./*", NULL });
 		BUILD_DIR = realpath(".", NULL);
 	} else {
 		error("Error: failed to get source file %s\n", SELF);
 	}
 }
-char *basename(const char *path)
+char *basename_of(const char *path)
 {
 	const char *name = strrchr(path, '/');
 	return name ? (char *)(name + 1) : (char *)path;
@@ -214,7 +285,7 @@ void compile(char *file)
 	add_args(&args, "-c");
 	add_args(&args, "-o");
 	char output_file[PATH_MAX];
-	char *name = basename(file);
+	char *name = basename_of(file);
 	sprintf(output_file, "%s.o", name);
 	add_args(&args, output_file);
 	add_args(&args, file);
@@ -225,23 +296,77 @@ void compile(char *file)
 	add_args(&OBJS, output_file);
 	printf("Compile %s :success\n", file);
 }
+int pmcrts(const char *s1, const char *s2)
+{
+	/*
+	 *
+	 * Compare two strings, but s2 is in the end of s1.
+	 * For example,
+	 * s1 = "./ruri", s2 = "ruri", it will return 0.
+	 * s1 = "./rurima", s2 = "ruri", it will return... 'a' - 'i',
+	 * anyway, it's not 0 :)
+	 * If s1 is shorter than s2, it will return -1.
+	 *
+	 */
+	size_t len1 = strlen(s1);
+	size_t len2 = strlen(s2);
+	if (len1 < len2) {
+		return -1; // s1 is shorter than s2
+	}
+	for (size_t i = len1; i > len1 - len2; i--) {
+		if (s1[i] != s2[i - (len1 - len2)]) {
+			return s1[i] - s2[i - (len1 - len2)];
+		}
+	}
+	return 0; // s1 ends with s2
+}
+char **find_file(char *dir, const char *end_match, char **blacklist)
+{
+	DIR *d = opendir(dir);
+	if (!d) {
+		return NULL;
+	}
+	struct dirent *entry;
+	char **files = NULL;
+	while ((entry = readdir(d)) != NULL) {
+		if (entry->d_type == DT_REG && pmcrts(entry->d_name, end_match) == 0) {
+			bool skip = false;
+			for (int i = 0; blacklist && blacklist[i] != NULL; i++) {
+				if (pmcrts(entry->d_name, blacklist[i]) == 0) {
+					skip = true;
+					break;
+				}
+			}
+			if (!skip) {
+				char relative_path[PATH_MAX];
+				sprintf(relative_path, "%s/%s", dir, entry->d_name);
+				char *absolute_path = realpath(relative_path, NULL);
+				if (!absolute_path) {
+					perror("Error resolving absolute path");
+					continue;
+				}
+				add_args(&files, absolute_path);
+			}
+		}
+	}
+	closedir(d);
+	return files;
+}
 void build()
 {
 	// compile src/*.c and src/easteregg/*.c
-	glob_t glob_result;
-	char src[PATH_MAX];
-	sprintf(src, "%s/*.c", SRC_DIR);
-	glob(src, 0, NULL, &glob_result);
-	for (size_t i = 0; i < glob_result.gl_pathc; i++) {
-		compile(glob_result.gl_pathv[i]);
+	char **files = find_file(SRC_DIR, ".c", NULL);
+	for (int i = 0; files && files[i] != NULL; i++) {
+		compile(files[i]);
 	}
-	globfree(&glob_result);
-	sprintf(src, "%s/easteregg/*.c", SRC_DIR);
-	glob(src, 0, NULL, &glob_result);
-	for (size_t i = 0; i < glob_result.gl_pathc; i++) {
-		compile(glob_result.gl_pathv[i]);
+	free_args(files);
+	char easteregg_src[PATH_MAX];
+	sprintf(easteregg_src, "%s/easteregg", SRC_DIR);
+	char **easteregg_files = find_file(easteregg_src, ".c", NULL);
+	for (int i = 0; easteregg_files && easteregg_files[i] != NULL; i++) {
+		compile(easteregg_files[i]);
 	}
-	globfree(&glob_result);
+	free_args(easteregg_files);
 	// Link
 	char **args = NULL;
 	add_args(&args, CC);
@@ -262,16 +387,57 @@ void build()
 	printf("Build successful: %s\n", OUTPUT);
 	free_args(args);
 }
+void check_and_add_cflag(char *flag, bool panic)
+{
+	if (check_c_flag(flag)) {
+		add_args(&CFLAGS, flag);
+	} else if (panic) {
+		error("Error: C flag %s is not supported\n", flag);
+	}
+}
+void check_and_add_lib(char *lib, bool panic)
+{
+	if (check_lib(lib)) {
+		add_args(&LIBS, lib);
+	} else if (panic) {
+		error("Error: Library %s is not supported\n", lib);
+	}
+}
 int main()
 {
 	switch_to_build_dir("out");
-	update_cc();
-	if (!check_c_flag("-static")) {
-		error("Error: -static flag is not supported\n");
+	init_env();
+	check_and_add_cflag("-static", true);
+	check_and_add_cflag("-ftrivial-auto-var-init=pattern", false);
+	check_and_add_cflag("-fcf-protection=full", false);
+	check_and_add_cflag("-flto=auto", false);
+	check_and_add_cflag("-fPIE", false);
+	check_and_add_cflag("-pie", false);
+	check_and_add_cflag("-Wl,-z,relro", false);
+	check_and_add_cflag("-Wl,-z,noexecstack", false);
+	check_and_add_cflag("-Wl,-z,now", false);
+	check_and_add_cflag("-fstack-protector-all", false);
+	check_and_add_cflag("-fstack-clash-protection", false);
+	check_and_add_cflag("-mshstk", false);
+	check_and_add_cflag("-Wno-unused-result", false);
+	check_and_add_cflag("-O2", false);
+	check_and_add_cflag("-Wl,--build-id=sha1", false);
+	check_and_add_cflag("-ffunction-sections", false);
+	check_and_add_cflag("-fdata-sections", false);
+	check_and_add_cflag("-Wl,--gc-sections", false);
+	check_and_add_cflag("-Wl,--strip-all", false);
+	check_and_add_cflag("-Wl,--disable-new-dtags", false);
+	check_and_add_cflag("-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3", false);
+	if (COMMIT_ID) {
+		char define_commit[PATH_MAX];
+		sprintf(define_commit, "-DRURI_COMMIT_ID=\"%s\"", COMMIT_ID);
+		check_and_add_cflag(define_commit, false);
+	} else {
+		check_and_add_cflag("-DRURI_COMMIT_ID=unknown", false);
 	}
-	check_lib("-lcap");
-	check_lib("-lseccomp");
-	check_lib("-lpthread");
+	check_and_add_lib("-lcap", true);
+	check_and_add_lib("-lseccomp", true);
+	check_and_add_lib("-lpthread", false);
 	build();
 	return 0;
 }
