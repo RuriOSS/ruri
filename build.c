@@ -1,3 +1,35 @@
+// SPDX-License-Identifier: MIT
+/*
+ *
+ * This file is part of cprintf, with ABSOLUTELY NO WARRANTY.
+ *
+ * MIT License
+ *
+ * Copyright (c) 2024 Moe-hacker
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+//
+// This program has Super Neko Powers
+//
+// Damn bro, it's only for Linux
 #ifndef __linux__
 #error "This code is only for Linux"
 #endif
@@ -30,12 +62,14 @@
 #define error(...)                            \
 	{                                     \
 		fprintf(stderr, __VA_ARGS__); \
+		fprintf(stderr, "\n");        \
 		on_exit__(SIGINT);            \
 		exit(EXIT_FAILURE);           \
 	}
 void remove_test_dot_c(void);
 void on_exit__(int sig)
 {
+	// TODO: child process should not call this.
 	printf("Exiting %d......\n", getpid());
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
@@ -44,6 +78,8 @@ void on_exit__(int sig)
 }
 int fork_exec(char **argv)
 {
+	// Return -1 if failed to exec()
+	// Or return same as exec()ed program.
 	int pid = fork();
 	if (pid < 0) {
 		perror("fork failed");
@@ -129,6 +165,7 @@ char *fork_execvp_get_stdout(const char *argv[])
 	}
 	return NULL;
 }
+// Never mind, this is safe broooo
 char **CFLAGS = NULL;
 char **LIBS = NULL;
 char *CC = "cc";
@@ -139,6 +176,7 @@ char **OBJS = NULL;
 char *OUTPUT = NULL;
 char *COMMIT_ID = NULL;
 int JOBS = 8;
+// Not only args, but (char **) in fact.
 void add_args(char ***argv, const char *arg)
 {
 	if (*argv == NULL) {
@@ -154,6 +192,7 @@ void add_args(char ***argv, const char *arg)
 		(*argv)[len + 1] = NULL;
 	}
 }
+// Not only args, but (char **) in fact.
 void free_args(char **arg)
 {
 	for (int i = 0; arg && arg[i] != NULL; i++) {
@@ -161,6 +200,7 @@ void free_args(char **arg)
 	}
 	free(arg);
 }
+// For testing compile environment
 void remove_test_dot_c(void)
 {
 	remove("test.c");
@@ -181,6 +221,7 @@ void create_test_dot_c(void)
 	fprintf(fp, "}\n");
 	fclose(fp);
 }
+// Check if CC supports a specific C flag
 bool check_c_flag(const char *flag)
 {
 	create_test_dot_c();
@@ -205,6 +246,7 @@ bool check_c_flag(const char *flag)
 	printf("Check for flag %s :success\n", flag);
 	return true;
 }
+// Check if we can use a specific library
 bool check_lib(const char *lib)
 {
 	create_test_dot_c();
@@ -229,6 +271,7 @@ bool check_lib(const char *lib)
 	printf("Check for lib %s :success\n", lib);
 	return true;
 }
+// init
 void init_env(void)
 {
 	create_test_dot_c();
@@ -277,6 +320,7 @@ void init_env(void)
 		printf("STRIP: %s\n", STRIP);
 	}
 }
+// Switch to the build directory
 void switch_to_build_dir(char *dir)
 {
 	// Check for src dir
@@ -297,11 +341,13 @@ void switch_to_build_dir(char *dir)
 	fork_exec((char *[]){ "sh", "-c", "rm ./*.o", NULL });
 	BUILD_DIR = realpath(".", NULL);
 }
+// Get file name without path
 char *basename_of(const char *path)
 {
 	const char *name = strrchr(path, '/');
 	return name ? (char *)(name + 1) : (char *)path;
 }
+// Compile the specified source file to file.o
 void compile(char *file)
 {
 	char **args = NULL;
@@ -346,6 +392,7 @@ int pmcrts(const char *s1, const char *s2)
 	}
 	return 0; // s1 ends with s2
 }
+// Find files in a directory
 char **find_file(char *dir, const char *end_match, char **blacklist)
 {
 	DIR *d = opendir(dir);
@@ -379,6 +426,7 @@ char **find_file(char *dir, const char *end_match, char **blacklist)
 	closedir(d);
 	return files;
 }
+// Compile source files in parallel
 void compile_files_parallel(char **files, int max_processes)
 {
 	if (!files)
@@ -436,6 +484,7 @@ void compile_files_parallel(char **files, int max_processes)
 		add_args(&OBJS, obj_file);
 	}
 }
+// Build
 void build()
 {
 	// compile src/*.c and src/easteregg/*.c
@@ -480,6 +529,7 @@ void build()
 	}
 	printf("Output: %s\n", OUTPUT);
 }
+// As the name said
 void check_and_add_cflag(char *flag, bool panic)
 {
 	if (check_c_flag(flag)) {
@@ -488,6 +538,7 @@ void check_and_add_cflag(char *flag, bool panic)
 		error("Error: C flag %s is not supported\n", flag);
 	}
 }
+// As the name said
 void check_and_add_lib(char *lib, bool panic)
 {
 	if (check_lib(lib)) {
@@ -496,6 +547,7 @@ void check_and_add_lib(char *lib, bool panic)
 		error("Error: Library %s is not supported\n", lib);
 	}
 }
+// So good brooooo, the program works with magic here.
 int main()
 {
 	signal(SIGINT, on_exit__);
