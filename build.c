@@ -126,12 +126,13 @@ char *fork_execvp_get_stdout(const char *argv[])
 char **CFLAGS = NULL;
 char **LIBS = NULL;
 char *CC = "cc";
-char *SELF = __FILE__;
+char *STRIP = "strip";
 char *BUILD_DIR = "out";
 char *SRC_DIR = NULL;
 char **OBJS = NULL;
 char *OUTPUT = NULL;
 char *COMMIT_ID = NULL;
+int JOBS = 8;
 void add_args(char ***argv, const char *arg)
 {
 	if (*argv == NULL) {
@@ -154,8 +155,26 @@ void free_args(char **arg)
 	}
 	free(arg);
 }
+void create_test_dot_c(void)
+{
+	// Create test.c
+	remove("test.c");
+	unlink("test.c");
+	rmdir("test.c");
+	FILE *fp = fopen("test.c", "w");
+	if (!fp) {
+		error("Failed to create test.c");
+	}
+	fprintf(fp, "#include <stdio.h>\n");
+	fprintf(fp, "int main(void) {\n");
+	fprintf(fp, "    printf(\"Hello, World!\\n\");\n");
+	fprintf(fp, "    return 0;\n");
+	fprintf(fp, "}\n");
+	fclose(fp);
+}
 bool check_c_flag(const char *flag)
 {
+	create_test_dot_c();
 	char **args = NULL;
 	add_args(&args, CC);
 	for (int i = 0; CFLAGS && CFLAGS[i] != NULL; i++) {
@@ -164,7 +183,7 @@ bool check_c_flag(const char *flag)
 	add_args(&args, flag);
 	add_args(&args, "-o");
 	add_args(&args, "/dev/null");
-	add_args(&args, SELF);
+	add_args(&args, "test.c");
 	for (int i = 0; LIBS && LIBS[i] != NULL; i++) {
 		add_args(&args, LIBS[i]);
 	}
@@ -179,6 +198,7 @@ bool check_c_flag(const char *flag)
 }
 bool check_lib(const char *lib)
 {
+	create_test_dot_c();
 	char **args = NULL;
 	add_args(&args, CC);
 	for (int i = 0; CFLAGS && CFLAGS[i] != NULL; i++) {
@@ -186,7 +206,7 @@ bool check_lib(const char *lib)
 	}
 	add_args(&args, "-o");
 	add_args(&args, "/dev/null");
-	add_args(&args, SELF);
+	add_args(&args, "test.c");
 	for (int i = 0; LIBS && LIBS[i] != NULL; i++) {
 		add_args(&args, LIBS[i]);
 	}
@@ -202,8 +222,12 @@ bool check_lib(const char *lib)
 }
 void init_env(void)
 {
+	create_test_dot_c();
 	if (getenv("CC")) {
 		CC = getenv("CC");
+	}
+	if (getenv("STRIP")) {
+		STRIP = getenv("STRIP");
 	}
 	if (getenv("CFLAGS")) {
 		char *flags = strdup(getenv("CFLAGS"));
@@ -221,9 +245,9 @@ void init_env(void)
 	}
 	add_args(&arg, "-o");
 	add_args(&arg, "/dev/null");
-	add_args(&arg, SELF);
+	add_args(&arg, "test.c");
 	if (fork_exec(arg) != 0) {
-		error("Error: Compiler %s failed to compile %s\n", CC, SELF);
+		error("Error: Compiler %s failed to compile %s\n", CC, "test.c");
 		exit(EXIT_FAILURE);
 	}
 	printf("CC: %s\n", CC);
@@ -238,6 +262,11 @@ void init_env(void)
 		printf("Warning: failed to get commit ID\n");
 	}
 	COMMIT_ID = commit_id;
+	if (fork_exec((char *[]){ STRIP, "--version", NULL }) != 0) {
+		STRIP = NULL;
+	} else {
+		printf("STRIP: %s\n", STRIP);
+	}
 }
 void switch_to_build_dir(char *dir)
 {
@@ -251,24 +280,13 @@ void switch_to_build_dir(char *dir)
 	sprintf(out, "%s/%s", basedir, "ruri");
 	OUTPUT = out;
 	free(basedir);
-	// Check if SELF exists
-	if (access(SELF, F_OK) != -1) {
-		char *resolved_path = realpath(SELF, NULL);
-		if (resolved_path) {
-			SELF = resolved_path;
-		} else {
-			error("Error: failed to resolve path for %s\n", SELF);
-		}
-		// Change to the build directory
-		mkdir(dir, 0755);
-		if (chdir(dir) != 0) {
-			error("Error: failed to change directory to %s\n", dir);
-		}
-		fork_exec((char *[]){ "rm", "./*", NULL });
-		BUILD_DIR = realpath(".", NULL);
-	} else {
-		error("Error: failed to get source file %s\n", SELF);
+	// Change to the build directory
+	mkdir(dir, 0755);
+	if (chdir(dir) != 0) {
+		error("Error: failed to change directory to %s\n", dir);
 	}
+	fork_exec((char *[]){ "rm", "./*.o", NULL });
+	BUILD_DIR = realpath(".", NULL);
 }
 char *basename_of(const char *path)
 {
@@ -293,7 +311,6 @@ void compile(char *file)
 		error("Error: Compiler %s failed to compile %s\n", CC, file);
 	}
 	free_args(args);
-	add_args(&OBJS, output_file);
 	printf("Compile %s :success\n", file);
 }
 int pmcrts(const char *s1, const char *s2)
@@ -346,27 +363,83 @@ char **find_file(char *dir, const char *end_match, char **blacklist)
 					continue;
 				}
 				add_args(&files, absolute_path);
+				free(absolute_path);
 			}
 		}
 	}
 	closedir(d);
 	return files;
 }
+void compile_files_parallel(char **files, int max_processes)
+{
+	if (!files)
+		return;
+	int file_count = 0;
+	while (files[file_count] != NULL)
+		file_count++;
+	if (file_count == 0)
+		return;
+	int active_processes = 0;
+	int completed = 0;
+	int current_file = 0;
+	while (completed < file_count) {
+		// Start new processes up to the limit
+		while (active_processes < max_processes && current_file < file_count) {
+			pid_t pid = fork();
+			if (pid == 0) {
+				// Child process - compile one file
+				compile(files[current_file]);
+				exit(0);
+			} else if (pid > 0) {
+				// Parent process
+				active_processes++;
+				current_file++;
+			} else {
+				error("Error: failed to fork process for %s\n", files[current_file]);
+			}
+		}
+		// Wait for at least one child to complete
+		if (active_processes > 0) {
+			int status;
+			pid_t finished_pid = wait(&status);
+			if (finished_pid > 0) {
+				active_processes--;
+				completed++;
+				if (WEXITSTATUS(status) != 0) {
+					error("Error: compilation failed in child process\n");
+				}
+			}
+		}
+	}
+	// Wait for any remaining processes
+	while (active_processes > 0) {
+		int status;
+		wait(&status);
+		active_processes--;
+		if (WEXITSTATUS(status) != 0) {
+			error("Error: compilation failed in child process\n");
+		}
+	}
+	// Add compiled object files to OBJS
+	for (int i = 0; i < file_count; i++) {
+		char obj_file[PATH_MAX];
+		sprintf(obj_file, "%s.o", basename_of(files[i]));
+		add_args(&OBJS, obj_file);
+	}
+}
 void build()
 {
 	// compile src/*.c and src/easteregg/*.c
 	char **files = find_file(SRC_DIR, ".c", NULL);
-	for (int i = 0; files && files[i] != NULL; i++) {
-		compile(files[i]);
-	}
-	free_args(files);
 	char easteregg_src[PATH_MAX];
 	sprintf(easteregg_src, "%s/easteregg", SRC_DIR);
 	char **easteregg_files = find_file(easteregg_src, ".c", NULL);
 	for (int i = 0; easteregg_files && easteregg_files[i] != NULL; i++) {
-		compile(easteregg_files[i]);
+		add_args(&files, easteregg_files[i]);
 	}
+	compile_files_parallel(files, JOBS);
 	free_args(easteregg_files);
+	free_args(files);
 	// Link
 	char **args = NULL;
 	add_args(&args, CC);
@@ -384,8 +457,19 @@ void build()
 	if (fork_exec(args) != 0) {
 		error("Error: failed to link object files\n");
 	}
-	printf("Build successful: %s\n", OUTPUT);
+	printf("Link %s :success\n", OUTPUT);
 	free_args(args);
+	// Strip
+	if (STRIP) {
+		if (fork_exec((char *[]){ STRIP, OUTPUT, NULL }) != 0) {
+			error("Error: failed to strip object files\n");
+		} else {
+			printf("Strip %s :success\n", OUTPUT);
+		}
+	} else {
+		printf("Skipping strip: STRIP not set\n");
+	}
+	printf("Output: %s\n", OUTPUT);
 }
 void check_and_add_cflag(char *flag, bool panic)
 {
@@ -427,7 +511,8 @@ int main()
 	check_and_add_cflag("-Wl,--gc-sections", false);
 	check_and_add_cflag("-Wl,--strip-all", false);
 	check_and_add_cflag("-Wl,--disable-new-dtags", false);
-	check_and_add_cflag("-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3", false);
+	check_and_add_cflag("-U_FORTIFY_SOURCE", false);
+	check_and_add_cflag("-D_FORTIFY_SOURCE=3", false);
 	if (COMMIT_ID) {
 		char define_commit[PATH_MAX];
 		sprintf(define_commit, "-DRURI_COMMIT_ID=\"%s\"", COMMIT_ID);
