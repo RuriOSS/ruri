@@ -1,3 +1,6 @@
+#ifndef __linux__
+#error "This code is only for Linux"
+#endif
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #if __STDC_VERSION__ < 202000L
 #ifndef bool
 #define bool _Bool
@@ -487,8 +491,16 @@ void check_and_add_lib(char *lib, bool panic)
 		error("Error: Library %s is not supported\n", lib);
 	}
 }
+void on_exit__(int sig)
+{
+	printf("Exiting %d......\n", getpid());
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
+	exit(1);
+}
 int main()
 {
+	signal(SIGINT, on_exit__);
 	switch_to_build_dir("out");
 	init_env();
 	check_and_add_cflag("-static", true);
