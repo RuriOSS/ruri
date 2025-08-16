@@ -292,6 +292,10 @@ int ruri_get_groups(uid_t uid, gid_t groups[]);
 int ruri_cap_from_name(const char *str, cap_value_t *cap);
 #endif
 void ruri_clear_env(char *const *_Nonnull argv);
+// Bionic does not have memfd_create()
+#ifdef __ANDROID__
+#define memfd_create(...) syscall(SYS_memfd_create, __VA_ARGS__)
+#endif
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗
