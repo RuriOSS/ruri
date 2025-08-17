@@ -711,6 +711,16 @@ void dev_cflags(void)
 	check_and_add_cflag("-DRURI_DEV", false);
 	STRIP = "true";
 }
+void show_help(void)
+{
+	char *self_path = realpath("/proc/self/exe", NULL);
+	printf("Usage: ./%s [OPTION]...\n", basename_of(self_path));
+	printf("    -h, --help             show help\n");
+	printf("    -s, --static           compile static binary\n");
+	printf("    -d, --dev              compile dev version\n");
+	printf("    -f, --force            force rebuild\n");
+	printf("    -j, --jobs <num>       number of jobs to run simultaneously\n");
+}
 // So good brooooo, the program works with magic here.
 int main(int argc, char **argv)
 {
@@ -718,7 +728,7 @@ int main(int argc, char **argv)
 	switch_to_build_dir("out");
 	init_env();
 	bool cflags_configured = false;
-	for (int i = 0; i < argc; i++) {
+	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--dev") == 0 || strcmp(argv[i], "-d") == 0) {
 			dev_cflags();
 			cflags_configured = true;
@@ -731,6 +741,12 @@ int main(int argc, char **argv)
 			}
 		} else if (strcmp(argv[i], "--static") == 0 || strcmp(argv[i], "-s") == 0) {
 			check_and_add_cflag("-static", true);
+		} else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+			show_help();
+			exit(0);
+		} else {
+			show_help();
+			error("Error: Unknown option: %s", argv[i]);
 		}
 	}
 	if (!cflags_configured) {
