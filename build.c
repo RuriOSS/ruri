@@ -61,12 +61,13 @@
 #endif
 #endif
 #define ERROR_NUM 114
-#define error(...)                            \
-	{                                     \
-		fprintf(stderr, __VA_ARGS__); \
-		fprintf(stderr, "\n");        \
-		on_exit__(SIGINT);            \
-		exit(ERROR_NUM);              \
+#define error(...)                                                                       \
+	{                                                                                \
+		fprintf(stderr, "Error in %s:%s%d: ", __FILE__, __FUNCTION__, __LINE__); \
+		fprintf(stderr, __VA_ARGS__);                                            \
+		fprintf(stderr, "\n");                                                   \
+		on_exit__(SIGINT);                                                       \
+		exit(ERROR_NUM);                                                         \
 	}
 void remove_test_dot_c(void);
 void on_exit__(int sig)
@@ -393,6 +394,7 @@ int copy_file(const char *src, const char *dest)
 	int dest_fd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (dest_fd < 0) {
 		perror("Error opening destination file");
+		printf("%s\n", dest);
 		close(src_fd);
 		return -1;
 	}
@@ -456,6 +458,28 @@ bool file_diff(char *file1, char *file2)
 	close(fd2);
 	return false; // Files are the same
 }
+char *gen_obj_name(const char *file)
+{
+	/*
+	 * Generate object file name from source file name.
+	 * For example, if file is "src/main.c", it will return "main.o".
+	 */
+	char *base = strstr(file, SRC_DIR);
+	if (!base) {
+		error("Error: Failed to find source directory in file path");
+	}
+	base += strlen(SRC_DIR) + 1;
+	base = strdup(base);
+	for (int i = 0; i < strlen(base); i++) {
+		if (base[i] == '/') {
+			base[i] = '_';
+		}
+	}
+	static char obj_name[PATH_MAX];
+	sprintf(obj_name, "%s.o", base);
+	free(base);
+	return obj_name;
+}
 // Compile the specified source file to file.o
 void compile(char *file)
 {
@@ -466,13 +490,11 @@ void compile(char *file)
 	}
 	add_args(&args, "-c");
 	add_args(&args, "-o");
-	char output_file[PATH_MAX];
-	char *name = basename_of(file);
-	sprintf(output_file, "%s.o", name);
+	char *output_file = gen_obj_name(file);
 	add_args(&args, output_file);
 	// Check if already compiled
 	char saved_source_file[PATH_MAX];
-	sprintf(saved_source_file, ".%s", name);
+	sprintf(saved_source_file, ".%s.c", output_file);
 	if (access(saved_source_file, F_OK) == 0 && access(output_file, F_OK) == 0) {
 		if (!file_diff(file, saved_source_file) && !FORCE) {
 			printf("Compile %s :skipped\n", file);
@@ -595,8 +617,7 @@ void compile_files_parallel(char **files, int max_processes)
 	}
 	// Add compiled object files to OBJS
 	for (int i = 0; i < file_count; i++) {
-		char obj_file[PATH_MAX];
-		sprintf(obj_file, "%s.o", basename_of(files[i]));
+		char *obj_file = gen_obj_name(files[i]);
 		add_args(&OBJS, obj_file);
 	}
 }
