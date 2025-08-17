@@ -60,12 +60,13 @@
 #define false ((_Bool) + 0u)
 #endif
 #endif
+#define ERROR_NUM 114
 #define error(...)                            \
 	{                                     \
 		fprintf(stderr, __VA_ARGS__); \
 		fprintf(stderr, "\n");        \
 		on_exit__(SIGINT);            \
-		exit(EXIT_FAILURE);           \
+		exit(ERROR_NUM);              \
 	}
 void remove_test_dot_c(void);
 void on_exit__(int sig)
@@ -74,7 +75,7 @@ void on_exit__(int sig)
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
 	remove_test_dot_c();
-	exit(1);
+	exit(ERROR_NUM);
 }
 int fork_exec(char **argv)
 {
@@ -92,7 +93,7 @@ int fork_exec(char **argv)
 		close(fd);
 		execvp(argv[0], argv);
 		perror("exec failed");
-		exit(EXIT_FAILURE);
+		exit(ERROR_NUM);
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
@@ -120,6 +121,8 @@ char *fork_execvp_get_stdout(const char *argv[])
 	// fork(2) and then execvp(3).
 	int pid = fork();
 	if (pid == -1) {
+		close(pipefd[0]);
+		close(pipefd[1]);
 		return NULL;
 	}
 	if (pid == 0) {
@@ -131,7 +134,7 @@ char *fork_execvp_get_stdout(const char *argv[])
 		dup2(nullfd, STDERR_FILENO);
 		close(pipefd[1]);
 		execvp(argv[0], (char **)argv);
-		exit(114);
+		exit(ERROR_NUM);
 	} else {
 		// Close the write end of the pipe.
 		close(pipefd[1]);
@@ -139,12 +142,21 @@ char *fork_execvp_get_stdout(const char *argv[])
 		size_t buffer_size = 1024;
 		size_t total_read = 0;
 		char *output = malloc(buffer_size);
+		if (!output) {
+			close(pipefd[0]);
+			return NULL;
+		}
 		ssize_t bytes_read;
 		while ((bytes_read = read(pipefd[0], output + total_read, buffer_size - total_read - 1)) > 0) {
 			total_read += (size_t)bytes_read;
 			if (total_read >= buffer_size - 1) {
 				buffer_size *= 2;
 				char *new_output = realloc(output, buffer_size);
+				if (!new_output) {
+					free(output);
+					close(pipefd[0]);
+					return NULL;
+				}
 				output = new_output;
 			}
 		}
@@ -182,14 +194,29 @@ void add_args(char ***argv, const char *arg)
 {
 	if (*argv == NULL) {
 		*argv = malloc(2 * sizeof(char *));
+		if (!*argv) {
+			error("Error: Failed to allocate memory for args");
+		}
 		(*argv)[0] = strdup(arg);
+		if (!(*argv)[0]) {
+			free(*argv);
+			*argv = NULL;
+			error("Error: Failed to duplicate string for args");
+		}
 		(*argv)[1] = NULL;
 	} else {
 		size_t len = 0;
 		while ((*argv)[len] != NULL)
 			len++;
-		*argv = realloc(*argv, (len + 2) * sizeof(char *));
+		char **new_argv = realloc(*argv, (len + 2) * sizeof(char *));
+		if (!new_argv) {
+			error("Error: Failed to reallocate memory for args");
+		}
+		*argv = new_argv;
 		(*argv)[len] = strdup(arg);
+		if (!(*argv)[len]) {
+			error("Error: Failed to duplicate string for args");
+		}
 		(*argv)[len + 1] = NULL;
 	}
 }
@@ -284,6 +311,9 @@ void init_env(void)
 	}
 	if (getenv("CFLAGS")) {
 		char *flags = strdup(getenv("CFLAGS"));
+		if (!flags) {
+			error("Error: Failed to duplicate CFLAGS string");
+		}
 		char *token = strtok(flags, " ");
 		while (token) {
 			add_args(&CFLAGS, token);
@@ -301,7 +331,7 @@ void init_env(void)
 	add_args(&arg, "test.c");
 	if (fork_exec(arg) != 0) {
 		error("Error: Compiler %s failed to compile %s\n", CC, "test.c");
-		exit(EXIT_FAILURE);
+		exit(ERROR_NUM);
 	}
 	printf("CC: %s\n", CC);
 	free_args(arg);
@@ -330,6 +360,9 @@ void switch_to_build_dir(char *dir)
 		error("Error: failed to resolve path for ./src\n");
 	}
 	char *basedir = realpath(".", NULL);
+	if (!basedir) {
+		error("Error: failed to resolve current directory path\n");
+	}
 	static char out[PATH_MAX];
 	sprintf(out, "%s/%s", basedir, "ruri");
 	OUTPUT = out;
@@ -340,6 +373,9 @@ void switch_to_build_dir(char *dir)
 		error("Error: failed to change directory to %s\n", dir);
 	}
 	BUILD_DIR = realpath(".", NULL);
+	if (!BUILD_DIR) {
+		error("Error: failed to resolve build directory path\n");
+	}
 }
 // Get file name without path
 char *basename_of(const char *path)
@@ -367,7 +403,13 @@ int copy_file(const char *src, const char *dest)
 		close(dest_fd);
 		return -1;
 	}
-	syscall(SYS_sendfile, dest_fd, src_fd, NULL, st.st_size);
+	ssize_t result = syscall(SYS_sendfile, dest_fd, src_fd, NULL, st.st_size);
+	if (result < 0) {
+		perror("Error copying file with sendfile");
+		close(src_fd);
+		close(dest_fd);
+		return -1;
+	}
 	close(src_fd);
 	close(dest_fd);
 	return 0;
@@ -520,7 +562,7 @@ void compile_files_parallel(char **files, int max_processes)
 			if (pid == 0) {
 				// Child process - compile one file
 				compile(files[current_file]);
-				exit(0);
+				exit(EXIT_SUCCESS);
 			} else if (pid > 0) {
 				// Parent process
 				active_processes++;
