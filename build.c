@@ -70,7 +70,6 @@
 void remove_test_dot_c(void);
 void on_exit__(int sig)
 {
-	// TODO: child process should not call this.
 	printf("Exiting %d......\n", getpid());
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
@@ -177,6 +176,7 @@ char **OBJS = NULL;
 char *OUTPUT = NULL;
 char *COMMIT_ID = NULL;
 int JOBS = 8;
+bool FORCE = false; // Force rebuild all files
 // Not only args, but (char **) in fact.
 void add_args(char ***argv, const char *arg)
 {
@@ -367,7 +367,7 @@ int copy_file(const char *src, const char *dest)
 		close(dest_fd);
 		return -1;
 	}
-	syscall(SYS_sendfile, dest_fd, src_fd, 0, st.st_size);
+	syscall(SYS_sendfile, dest_fd, src_fd, NULL, st.st_size);
 	close(src_fd);
 	close(dest_fd);
 	return 0;
@@ -432,7 +432,7 @@ void compile(char *file)
 	char saved_source_file[PATH_MAX];
 	sprintf(saved_source_file, ".%s", name);
 	if (access(saved_source_file, F_OK) == 0 && access(output_file, F_OK) == 0) {
-		if (!file_diff(file, saved_source_file)) {
+		if (!file_diff(file, saved_source_file) && !FORCE) {
 			printf("Compile %s :skipped\n", file);
 			free_args(args);
 			return;
@@ -621,13 +621,9 @@ void check_and_add_lib(char *lib, bool panic)
 		error("Error: Library %s is not supported\n", lib);
 	}
 }
-// So good brooooo, the program works with magic here.
-int main()
+// Default cflags
+void default_cflags(void)
 {
-	signal(SIGINT, on_exit__);
-	switch_to_build_dir("out");
-	init_env();
-	check_and_add_cflag("-static", true);
 	check_and_add_cflag("-ftrivial-auto-var-init=pattern", false);
 	check_and_add_cflag("-fcf-protection=full", false);
 	check_and_add_cflag("-flto=auto", false);
@@ -649,6 +645,57 @@ int main()
 	check_and_add_cflag("-Wl,--disable-new-dtags", false);
 	check_and_add_cflag("-U_FORTIFY_SOURCE", false);
 	check_and_add_cflag("-D_FORTIFY_SOURCE=3", false);
+}
+// Dev cflags
+void dev_cflags(void)
+{
+	check_and_add_cflag("-g", true);
+	check_and_add_cflag("-O0", false);
+	check_and_add_cflag("-fno-omit-frame-pointer", false);
+	check_and_add_cflag("-Wl,-z,norelro", false);
+	check_and_add_cflag("-Wl,-z,execstack", false);
+	check_and_add_cflag("-fno-stack-protector", false);
+	check_and_add_cflag("-Wall", false);
+	check_and_add_cflag("-Wextra", false);
+	check_and_add_cflag("-pedantic", false);
+	check_and_add_cflag("-Wconversion", false);
+	check_and_add_cflag("-Wno-newline-eof", false);
+	check_and_add_cflag("-Wno-gnu-zero-variadic-macro-arguments", false);
+	check_and_add_cflag("-fsanitize=address", false);
+	check_and_add_cflag("-Wl,--build-id=sha1", false);
+	check_and_add_cflag("-ffunction-sections", false);
+	check_and_add_cflag("-fdata-sections", false);
+	check_and_add_cflag("-Wl,--gc-sections", false);
+	check_and_add_cflag("-DRURI_DEBUG", false);
+	check_and_add_cflag("-DRURI_DEV", false);
+	STRIP = "true";
+}
+// So good brooooo, the program works with magic here.
+int main(int argc, char **argv)
+{
+	signal(SIGINT, on_exit__);
+	switch_to_build_dir("out");
+	init_env();
+	bool cflags_configured = false;
+	for (int i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "--dev") == 0 || strcmp(argv[i], "-d") == 0) {
+			dev_cflags();
+			cflags_configured = true;
+		} else if (strcmp(argv[i], "--force") == 0 || strcmp(argv[i], "-f") == 0) {
+			FORCE = true;
+		} else if ((strcmp(argv[i], "--jobs") == 0 || strcmp(argv[i], "-j") == 0) && i + 1 < argc) {
+			JOBS = atoi(argv[++i]);
+			if (JOBS <= 0) {
+				error("Error: Invalid number of jobs: %s", argv[i]);
+			}
+		} else if (strcmp(argv[i], "--static") == 0 || strcmp(argv[i], "-s") == 0) {
+			check_and_add_cflag("-static", true);
+		}
+	}
+	if (!cflags_configured) {
+		default_cflags();
+	}
+	check_and_add_cflag("-std=gnu11", true);
 	if (COMMIT_ID) {
 		char define_commit[PATH_MAX];
 		sprintf(define_commit, "-DRURI_COMMIT_ID=\"%s\"", COMMIT_ID);
