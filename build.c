@@ -684,7 +684,6 @@ void default_cflags(void)
 	check_and_add_cflag("-fdata-sections", false);
 	check_and_add_cflag("-Wl,--gc-sections", false);
 	check_and_add_cflag("-Wl,--strip-all", false);
-	check_and_add_cflag("-Wl,--disable-new-dtags", false);
 	check_and_add_cflag("-U_FORTIFY_SOURCE", false);
 	check_and_add_cflag("-D_FORTIFY_SOURCE=3", false);
 }

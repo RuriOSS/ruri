@@ -105,7 +105,6 @@ default_cflag() {
     test_and_add_cflag "-Wl,--strip-all"
     if [ $STATIC_COMPILE ]; then
         test_and_add_cflag "-static"
-        test_and_add_cflag "-Wl,--disable-new-dtags"
     fi
     test_and_add_cflag "-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 -D_FILE_OFFSET_BITS=64"
     if [ $DISABLE_LIBSECCOMP ]; then
