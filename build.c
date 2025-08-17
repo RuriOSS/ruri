@@ -52,6 +52,7 @@
 #include <sys/prctl.h>
 #include <signal.h>
 #include <sched.h>
+#include <syscall.h>
 #if __STDC_VERSION__ < 202000L
 #ifndef bool
 #define bool _Bool
@@ -338,7 +339,6 @@ void switch_to_build_dir(char *dir)
 	if (chdir(dir) != 0) {
 		error("Error: failed to change directory to %s\n", dir);
 	}
-	fork_exec((char *[]){ "sh", "-c", "rm ./*.o", NULL });
 	BUILD_DIR = realpath(".", NULL);
 }
 // Get file name without path
@@ -346,6 +346,73 @@ char *basename_of(const char *path)
 {
 	const char *name = strrchr(path, '/');
 	return name ? (char *)(name + 1) : (char *)path;
+}
+int copy_file(const char *src, const char *dest)
+{
+	int src_fd = open(src, O_RDONLY);
+	if (src_fd < 0) {
+		perror("Error opening source file");
+		return -1;
+	}
+	int dest_fd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (dest_fd < 0) {
+		perror("Error opening destination file");
+		close(src_fd);
+		return -1;
+	}
+	struct stat st;
+	if (fstat(src_fd, &st) < 0) {
+		perror("Error getting source file size");
+		close(src_fd);
+		close(dest_fd);
+		return -1;
+	}
+	syscall(SYS_sendfile, dest_fd, src_fd, 0, st.st_size);
+	close(src_fd);
+	close(dest_fd);
+	return 0;
+}
+bool file_diff(char *file1, char *file2)
+{
+	/*
+	 * Check if two files are different.
+	 * Return true if they are different, false if they are the same.
+	 */
+	int fd1 = open(file1, O_RDONLY);
+	if (fd1 < 0) {
+		perror("Error opening file1");
+		return true;
+	}
+	int fd2 = open(file2, O_RDONLY);
+	if (fd2 < 0) {
+		perror("Error opening file2");
+		close(fd1);
+		return true;
+	}
+	// Check file size.
+	struct stat st1, st2;
+	if (fstat(fd1, &st1) < 0 || fstat(fd2, &st2) < 0) {
+		close(fd1);
+		close(fd2);
+		return true;
+	}
+	if (st1.st_size != st2.st_size) {
+		close(fd1);
+		close(fd2);
+		return true;
+	}
+	char buf1[4096], buf2[4096];
+	ssize_t read1, read2;
+	while ((read1 = read(fd1, buf1, sizeof(buf1))) > 0 && (read2 = read(fd2, buf2, sizeof(buf2))) > 0) {
+		if (read1 != read2 || memcmp(buf1, buf2, read1) != 0) {
+			close(fd1);
+			close(fd2);
+			return true; // Files are different
+		}
+	}
+	close(fd1);
+	close(fd2);
+	return false; // Files are the same
 }
 // Compile the specified source file to file.o
 void compile(char *file)
@@ -361,6 +428,21 @@ void compile(char *file)
 	char *name = basename_of(file);
 	sprintf(output_file, "%s.o", name);
 	add_args(&args, output_file);
+	// Check if already compiled
+	char saved_source_file[PATH_MAX];
+	sprintf(saved_source_file, ".%s", name);
+	if (access(saved_source_file, F_OK) == 0 && access(output_file, F_OK) == 0) {
+		if (!file_diff(file, saved_source_file)) {
+			printf("Compile %s :skipped\n", file);
+			free_args(args);
+			return;
+		}
+	}
+	copy_file(file, saved_source_file);
+	// Compile
+	remove(output_file);
+	unlink(output_file);
+	rmdir(output_file);
 	add_args(&args, file);
 	if (fork_exec(args) != 0) {
 		error("Error: Compiler %s failed to compile %s\n", CC, file);
