@@ -208,7 +208,7 @@ if(STRIP_DEBUGINFO)
         VERBATIM
     )
 endif()
-install (TARGETS ruri DESTINATION /usr/bin/)
+install (TARGETS ruri)
 
 add_custom_target(
     tidy
