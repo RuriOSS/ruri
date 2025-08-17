@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 /*
  *
- * This file is part of cprintf, with ABSOLUTELY NO WARRANTY.
+ * This file is part of ruri, with ABSOLUTELY NO WARRANTY.
  *
  * MIT License
  *
- * Copyright (c) 2024 Moe-hacker
+ * Copyright (c) 2025 Moe-hacker
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,13 @@
  * SOFTWARE.
  *
  */
+//
+// This program is a new build system for ruri
+// It does not depend on any external build system.
+// And it's independent of existing configure.ac and CMakeLists.txt
+// I just want to show you that, we can do it, and it works fine.
+//
+// ANYWAY, IT IS A BIG STEP BACKWARDS THE HISTORY OF COMPUTER SCIENCE!!!
 //
 // This program has Super Neko Powers
 //
