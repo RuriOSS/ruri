@@ -33,6 +33,7 @@
  * Thanks docker for denied syscall list.
  */
 // Reslove prefix for errno.
+#ifndef DISABLE_LIBSECCOMP
 static int ruri_resolve_seccomp_errno(const char *_Nonnull syscall, scmp_filter_ctx *_Nonnull ctx)
 {
 	const char *syscall_name = syscall;
@@ -55,6 +56,7 @@ static int ruri_resolve_seccomp_errno(const char *_Nonnull syscall, scmp_filter_
 	}
 	return -1;
 }
+#endif
 // Setup seccomp filter rule, with libseccomp.
 void ruri_setup_seccomp(const struct RURI_CONTAINER *_Nonnull container)
 {

@@ -741,6 +741,7 @@ void show_help(void)
 	printf("    -d, --dev              compile dev version\n");
 	printf("    -f, --force            force rebuild\n");
 	printf("    -j, --jobs <num>       number of jobs to run simultaneously\n");
+	printf("    -c, --core-only        build core only\n");
 }
 // So good brooooo, the program works with magic here.
 int main(int argc, char **argv)
@@ -749,6 +750,7 @@ int main(int argc, char **argv)
 	switch_to_build_dir("out");
 	init_env();
 	bool cflags_configured = false;
+	bool core_only = false;
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "--dev") == 0 || strcmp(argv[i], "-d") == 0) {
 			dev_cflags();
@@ -762,6 +764,8 @@ int main(int argc, char **argv)
 			}
 		} else if (strcmp(argv[i], "--static") == 0 || strcmp(argv[i], "-s") == 0) {
 			check_and_add_cflag("-static", true);
+		} else if (strcmp(argv[i], "--core-only") == 0 || strcmp(argv[i], "-c") == 0) {
+			core_only = true;
 		} else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
 			show_help();
 			exit(0);
@@ -781,9 +785,16 @@ int main(int argc, char **argv)
 	} else {
 		check_and_add_cflag("-DRURI_COMMIT_ID=unknown", false);
 	}
-	check_and_add_lib("-lcap", true);
-	check_and_add_lib("-lseccomp", true);
-	check_and_add_lib("-lpthread", false);
+	if (!core_only) {
+		check_and_add_lib("-lcap", true);
+		check_and_add_lib("-lseccomp", true);
+		check_and_add_lib("-lpthread", false);
+	} else {
+		check_and_add_cflag("-DRURI_CORE_ONLY", true);
+		check_and_add_cflag("-DDISABLE_LIBCAP", true);
+		check_and_add_cflag("-DDISABLE_SECCOMP", true);
+		check_and_add_cflag("-DDISABLE_RURIENV", true);
+	}
 	build();
 	remove_test_dot_c();
 	return 0;

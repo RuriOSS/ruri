@@ -17,10 +17,8 @@ mkdir output output2 output3
 
 git clone --depth 1 https://github.com/moe-hacker/ruri.git
 cd ruri
-./autogen.sh
-./configure --enable-static
-make
-strip ruri
+cc build.c -o build-ruri
+./build-ruri -s -f
 
 cp ruri ../output/ruri
 cp LICENSE ../output/LICENSE
@@ -28,9 +26,7 @@ cp LICENSE ../output/LICENSE
 cp ruri ../output2/ruri
 cp LICENSE ../output2/LICENSE
 
-./configure --enable-coreonly --enable-static
-make
-strip ruri
+./build-ruri -s -c -f
 cp ruri ../output3/ruri
 cp LICENSE ../output3/LICENSE
 
