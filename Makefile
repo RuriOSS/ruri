@@ -100,6 +100,7 @@ format :
 	clang-format -i test/*.c
 	sed -i "s/U '/U'/g" src/easteregg/*.c
 	sed -i "s/U \"/U\"/g" src/easteregg/*.c
+	clang-format -i build.c
 clean :
 	$(CLEAN_LOG) $(BIN_TARGET)
 	@rm -f $(BIN_TARGET)||true
