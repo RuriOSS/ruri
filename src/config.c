@@ -86,6 +86,7 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	// (86400 is the seconds of a day).
 	container->container_id = (int)(tm % 86400);
 	container->masked_path[0] = NULL;
+	container->enable_tty_signals = false;
 }
 static int pmcrts(const char *s1, const char *s2)
 {
@@ -382,6 +383,9 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v_add_comment(ret, "Set it to empty to disable.");
 	ret = k2v_add_config(char_array, ret, "masked_path", container->masked_path, len);
 	ret = k2v_add_newline(ret);
+	// enable_tty_signals.
+	ret = k2v_add_comment(ret, "Enable TTY signals in the container.");
+	ret = k2v_add_config(bool, ret, "enable_tty_signals", container->enable_tty_signals);
 	return ret;
 }
 void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull path)
@@ -516,6 +520,8 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get masked_path.
 	int maskedlen = k2v_get_key(char_array, "masked_path", buf, container->masked_path, RURI_MAX_MOUNTPOINTS);
 	container->masked_path[maskedlen] = NULL;
+	// Get enable_tty_signals.
+	container->enable_tty_signals = k2v_get_key(bool, "enable_tty_signals", buf);
 	// Get command.
 	int comlen = k2v_get_key(char_array, "command", buf, container->command, RURI_MAX_COMMANDS);
 	container->command[comlen] = NULL;

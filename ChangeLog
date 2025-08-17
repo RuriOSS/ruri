@@ -1,3 +1,5 @@
+# v3.9.2:
+  * Add `-z` option: `--enable-tty-signals`.
 # v3.9.1:
   * Support prefix for errno action in `--deny-syscall` option.
   * Add `-Q` option: `--mask-path`.

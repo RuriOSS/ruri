@@ -680,6 +680,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			} else {
 				ruri_error("{red}Error: --umount should only be used without other arguments QwQ\n");
 			}
+		} else if (strcmp(argv[index], "-z") == 0 || strcmp(argv[index], "--enable-tty-signals") == 0) {
+			container->enable_tty_signals = true;
 		}
 		// If use_config_file is true.
 		// The first unrecognized argument will be treated as command to exec in container.
@@ -1086,6 +1088,9 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 						ruri_error("Invalid argument %s\n", argv[index]);
 					}
 					break;
+				case 'z':
+					container->enable_tty_signals = true;
+					break;
 				case 'O':
 					if (i == (strlen(argv[index]) - 1)) {
 						index++;
@@ -1189,7 +1194,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			usleep(1000);
 			exit(EXIT_SUCCESS);
 		}
-		// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
+		// Ignore SIGTTIN, we are now running in the background, SIGTTIN may kill this process.
 		sigset_t sigs;
 		sigemptyset(&sigs);
 		sigaddset(&sigs, SIGTTIN);

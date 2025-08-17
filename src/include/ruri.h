@@ -204,6 +204,8 @@ struct RURI_CONTAINER {
 	int oom_score_adj;
 	// Masked path.
 	char *_Nonnull masked_path[RURI_MAX_MOUNTPOINTS + 2];
+	// Enable tty signals
+	bool enable_tty_signals;
 };
 // For ruri_get_magic().
 #define ruri_magicof(x) (x##_magic)
