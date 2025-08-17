@@ -2,7 +2,7 @@
 The design of ruri is very simple, just init the environment and then call exec() to run the command in the container. For unshare container, ruri will fork() into namwspace, so there will be a process called `ruri` on host, but chroot container will not have this behavior.  
 
 ## Signal:
-ruri will ignore SIGTTIN and SIGTTOU signals, so that the container can run in the background without being killed by these signals. This behavior cannot be overridden (#TODO: Maybe we can use environment variable to control this behavior in the future).
+ruri will ignore SIGTTIN and SIGTTOU signals, so that the container can run in the background without being killed by these signals. This behavior can be disabled by `--enable-tty-signals`.
 
 ## The runtime files:
 ### Mounts:

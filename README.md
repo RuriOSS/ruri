@@ -199,7 +199,7 @@ Max memory: 860 KB
 
 | Alphabet | ruri used | %   |
 | -------- | --------- | --- |
-| 52       | 45        | 87% |
+| 52       | 46        | 88% |
 
 # License
 
