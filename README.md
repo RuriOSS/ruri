@@ -14,6 +14,8 @@
 # Terms of Use:
 See [TERMS_OF_USE.md](TERMS_OF_USE.md)
 
+# For Android user:
+You need to root your phone first, ruri supports to run with root on Android devices.      
 # Backward compatibility:
 We promise that ruri has backward compatibility of cli usage and config file since v3.9.0, you can keep updated to the newest version. Any breaking changes will not be introduced to v3.9.x
 
