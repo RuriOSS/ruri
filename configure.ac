@@ -90,7 +90,7 @@ if test "$enable_dev" != "no";then
     CHECK_AND_ADD_CFLAGS([-Wno-newline-eof])
     CHECK_AND_ADD_CFLAGS([-Wno-unused-command-line-argument])
     CHECK_AND_ADD_CFLAGS([-Wno-gnu-zero-variadic-macro-arguments])
-    CHECK_AND_ADD_CFLAGS([-fsanitize=address])
+    CHECK_AND_ADD_CFLAGS([-fsanitize=address,undefined])
     CHECK_AND_ADD_CFLAGS([-Wl,--build-id=sha1])
     CHECK_AND_ADD_CFLAGS([-ffunction-sections])
     CHECK_AND_ADD_CFLAGS([-fdata-sections])
