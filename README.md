@@ -27,7 +27,6 @@ If you got any issues with this, please report.
 
 # WARNING
 
-For production, I fully recommand you to use tools like [crun](https://github.com/containers/crun), [youki](https://github.com/youki-dev/youki), [containerd](https://containerd.io/), [docker](https://www.docker.com/), [podman](https://podman.io/), [LXC](https://linuxcontainers.org/), [bubblewrap](https://github.com/containers/bubblewrap), they are more secure and stable. This is a non-OCI tool and, you take your own risk using it when you really need. The whole project is experimental!
 ```
 * Your warranty is void.
 * I am not responsible for anything that may happen to your device by using this program.
@@ -40,16 +39,12 @@ For production, I fully recommand you to use tools like [crun](https://github.co
 
 If you think something does not work as expected, please [open a new isssue](https://github.com/rurioss/ruri/issues)
 
-# WIP wiki
-
-https://wiki.crack.moe/ruri
 
 # Asking LLM:
 See [Asking LLM](doc/askllm.md) for how to ask LLM about ruri.
 
 # About:
-
-&emsp;Was a toy, to be a tool.    
+&emsp;Not "Why not docker", but "When cannot docker".    
 &emsp;ruri is pronounced as `luli`, or you can call it `[瑠璃/琉璃]` ~~(るり)~~ in Chinese or Japanese as well.    
 &emsp;ruri is acronym to Lightweight, User-friendly Linux-container Implementation.    
 &emsp;ruri is a powerful container implementation that runs on almost any Linux device, even with incomplete kernel configurations or minimal storage space.    
