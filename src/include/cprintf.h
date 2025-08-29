@@ -40,6 +40,10 @@
 #include <sys/stat.h>
 #include <threads.h>
 #include <stdint.h>
+#include <termios.h>
+#include <poll.h>
+#include <signal.h>
+#include <setjmp.h>
 #ifndef _Nullable
 #define _Nullable
 #endif
@@ -52,7 +56,8 @@
 #define false ((_Bool) + 0u)
 #endif
 #define CPRINTF_MAJOR 2
-#define CPRINTF_MINOR 0
+#define CPRINTF_MINOR 1
+bool cp_xterm_is_dark_mode(void);
 int cprintf__(const char *_Nonnull buf);
 int cfprintf__(FILE *_Nonnull stream, const char *_Nonnull buf);
 // Color support.
@@ -103,21 +108,18 @@ extern bool cprintf_print_color_only_tty;
 
 #define F(cp_f_data__, cp_f_format__) cprintf_to_char__(cp_f_data__, cprintf_get_fmt__(cp_f_data__, cp_f_format__))
 #define T(cp_t_data__) F(cp_t_data__, NULL)
-#define cprintf_len__(cpl_format__, ...) (snprintf(NULL, 0, cprintf_regen_format__(cpl_format__, CPRINTF_COUNT_ARGS(cpl_format__, ##__VA_ARGS__)), ##__VA_ARGS__) + 8)
-// Count the number of arguments passed to the csprintf().
-#define CPRINTF_COUNT_ARGS_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, COUNT, ...) _Generic((COUNT), int: COUNT, default: 0)
-#define CPRINTF_COUNT_ARGS(...) CPRINTF_COUNT_ARGS_IMPL(__VA_ARGS__, ((int)15), ((int)14), ((int)13), ((int)12), ((int)11), ((int)10), ((int)9), ((int)8), ((int)7), ((int)6), ((int)5), ((int)4), ((int)3), ((int)2), ((int)1), ((int)0))
-#define csprintf(string, format, ...)                                                                                \
-	({                                                                                                           \
-		int csp_ret__ = 0;                                                                                   \
-		if (format == NULL) {                                                                                \
-			csp_ret__ = sprintf(string, "%s", "(null)");                                                 \
-		} else {                                                                                             \
-			char *csp_fmt__ = cprintf_regen_format__(format, CPRINTF_COUNT_ARGS(format, ##__VA_ARGS__)); \
-			csp_ret__ = sprintf(string, csp_fmt__, ##__VA_ARGS__);                                       \
-			cprintf_free_buf__();                                                                        \
-		}                                                                                                    \
-		csp_ret__;                                                                                           \
+#define cprintf_len__(cpl_format__, ...) (snprintf(NULL, 0, cprintf_regen_format__(cpl_format__), ##__VA_ARGS__) + 8)
+#define csprintf(string, format, ...)                                          \
+	({                                                                     \
+		int csp_ret__ = 0;                                             \
+		if (format == NULL) {                                          \
+			csp_ret__ = sprintf(string, "%s", "(null)");           \
+		} else {                                                       \
+			char *csp_fmt__ = cprintf_regen_format__(format);      \
+			csp_ret__ = sprintf(string, csp_fmt__, ##__VA_ARGS__); \
+			cprintf_free_buf__();                                  \
+		}                                                              \
+		csp_ret__;                                                     \
 	})
 #define cprintf(format, ...)                                                   \
 	({                                                                     \
@@ -152,7 +154,7 @@ extern bool cprintf_print_color_only_tty;
 		free(cfp_buf__);                                                                \
 	}
 // For generic support.
-char *cprintf_regen_format__(const char *f, int limit);
+char *cprintf_regen_format__(const char *f);
 void cprintf_free_buf__(void);
 void cprintf_mark_buf__(char *b);
 // NOLINTEND
