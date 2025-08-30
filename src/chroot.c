@@ -741,7 +741,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Umount binfmt_misc apifs.
 	umount2("/proc/sys/fs/binfmt_misc", MNT_DETACH | MNT_FORCE);
 	// Set up cgroup limit.
-	if (!container->just_chroot && !container->enable_unshare) {
+	if (!container->just_chroot) {
 		ruri_set_limit(container);
 	}
 	// Create character devices.

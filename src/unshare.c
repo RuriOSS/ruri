@@ -252,7 +252,6 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	if (container->use_rurienv) {
 		container = ruri_read_info(container, container->container_dir);
 	}
-	ruri_set_limit(container);
 	if (container->ns_pid < 0) {
 		unshare_pid = init_unshare_container(container);
 	} else {
