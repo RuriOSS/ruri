@@ -163,7 +163,7 @@ void ruri_AwA(void)
 	layer.y_offset = -2;
 	nekofeng_typewrite_layer(&layer, 50000, true);
 	sleep(2);
-	nekofeng_clear_typewrite_layer(&layer, 50000);
+	nekofeng_clear_typewrite_layer(&layer, 20000);
 	// It works with bug, don't care about it.
 	pid_t pid = fork();
 	if (pid > 0) {
@@ -187,12 +187,12 @@ void ruri_AwA(void)
 	}
 	printf("\033[H\033[2J");
 	layer.layer = U"\033[1;38;2;254;228;208m\n\n"
-			"●   ●  ●●●  ●●●●●       ●   ●   ●    ●●●  ●●●●● ●●●●  \n"
-			"●● ●● ●   ● ●           ●   ●  ● ●  ●   ● ●     ●   ● \n"
-			"● ● ● ●   ● ●●●●  ●●●●● ●●●●● ●●●●● ●     ●●●●  ●●●●● \n"
-			"●   ● ●   ● ●           ●   ● ●   ● ●   ● ●     ●  ●  \n"
-			"●   ●  ●●●  ●●●●●       ●   ● ●   ●  ●●●  ●●●●● ●   ● \n";
-	layer.x_offset = -10;
+			"●●●●  ●   ● ●●●●   ●●●\n"
+			"●   ● ●   ● ●   ●   ●\n"
+			"●●●●  ●   ● ●●●●    ●\n"
+			"●  ●  ●   ● ●  ●    ●\n"
+			"●   ●  ●●●  ●   ●  ●●●\n";
+	layer.x_offset = 7;
 	layer.y_offset = -2;
 	nekofeng_typewrite_layer(&layer, 5000, false);
 	sleep(4);
