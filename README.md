@@ -11,38 +11,6 @@
 
 [![Build release](https://github.com/RuriOSS/ruri/actions/workflows/build.yml/badge.svg)](https://github.com/RuriOSS/ruri/actions/workflows/build.yml) [![Run autotest](https://github.com/RuriOSS/ruri/actions/workflows/test.yml/badge.svg)](https://github.com/RuriOSS/ruri/actions/workflows/test.yml)
 
-# Terms of Use:
-See [TERMS_OF_USE.md](TERMS_OF_USE.md)
-
-# For Android user:
-You need to root your phone first, ruri supports to run with root on Android devices.      
-# Backward compatibility:
-We promise that ruri has backward compatibility of cli usage and config file since v3.9.0, you can keep updated to the newest version. Any breaking changes will not be introduced to v3.9.x
-
-# Important Notice:
-It's fully recommended to drop CAP_SYS_CHROOT or enable unshare, chroot container without these options is not secure at all!
-
-*Update: Considering the security issues of chroot, ruri will drop CAP_SYS_CHROOT by default now  
-If you got any issues with this, please report.
-
-# WARNING
-
-```
-* Your warranty is void.
-* I am not responsible for anything that may happen to your device by using this program.
-* You do it at your own risk and take the responsibility upon yourself.
-* This project is open source, you can make your own fork/rewrite but not to blame the author.
-* This program has no Super Cow Powers.
-```
-
-# Bug reporting
-
-If you think something does not work as expected, please [open a new isssue](https://github.com/rurioss/ruri/issues)
-
-
-# Asking LLM:
-See [Asking LLM](doc/askllm.md) for how to ask LLM about ruri.
-
 # About:
 &emsp;Not "Why not docker", but "When cannot docker".    
 &emsp;ruri is pronounced as `luli`, or you can call it `[瑠璃/琉璃]` ~~(るり)~~ in Chinese or Japanese as well.    
@@ -81,6 +49,37 @@ Note that rurima is still WIP.
   <img src="https://github.com/Moe-hacker/ruri/raw/main/logo/rurifetch.png" alt="" style="width:75%;align: center;">
   </p>
 
+# Terms of Use:
+See [TERMS_OF_USE.md](TERMS_OF_USE.md)
+
+# For Android user:
+You need to root your phone first, ruri supports to run with root on Android devices.      
+# Backward compatibility:
+We promise that ruri has backward compatibility of cli usage and config file since v3.9.0, you can keep updated to the newest version. Any breaking changes will not be introduced to v3.9.x
+
+# Important Notice:
+It's fully recommended to drop CAP_SYS_CHROOT or enable unshare, chroot container without these options is not secure at all!
+
+*Update: Considering the security issues of chroot, ruri will drop CAP_SYS_CHROOT by default now  
+If you got any issues with this, please report.
+
+# WARNING
+
+```
+* Your warranty is void.
+* I am not responsible for anything that may happen to your device by using this program.
+* You do it at your own risk and take the responsibility upon yourself.
+* This project is open source, you can make your own fork/rewrite but not to blame the author.
+* This program has no Super Cow Powers.
+```
+
+# Bug reporting
+
+If you think something does not work as expected, please [open a new isssue](https://github.com/rurioss/ruri/issues)
+
+
+# Asking LLM:
+See [Asking LLM](doc/askllm.md) for how to ask LLM about ruri.
 
 # Get ruri
 
