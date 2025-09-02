@@ -259,7 +259,8 @@ ruri -m /sdcard /sdcard ./test
 ```
 
 It can also bind-mount files/FIFOs/sockets.  
-Note: For the full specification of mount options, please refer to [mount.md](mount.md).
+Note: For the full specification of mount options, please refer to [mount.md](mount.md).      
+# See also [mount.md](mount.md)
 
 ---
 

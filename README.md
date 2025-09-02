@@ -92,7 +92,7 @@ Or you can run the following command to download ruri automatically
 
 This will automatically download ruri binary to `./ruri`.
 
-# Usage
+# Full usage:
 
 See [USAGE](doc/USAGE.md) to explore all features of ruri.
 

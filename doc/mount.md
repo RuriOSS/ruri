@@ -1,5 +1,3 @@
-> **Note:** Some features described here are only available in the upcoming version. They are implemented in the latest development code but have not yet been tagged as a release.
-
 # Mount Option
 
 `ruri` supports mounting various types of resources into the container, with advanced mount types and flags.
