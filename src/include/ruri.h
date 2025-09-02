@@ -224,7 +224,11 @@ struct RURI_ID_MAP {
 	gid_t gid_count;
 };
 // Warnings.
-#define ruri_warning(format, ...) cfprintf(stderr, format, ##__VA_ARGS__)
+#define ruri_warning(format, ...)                                                                \
+	{                                                                                        \
+		cfprintf(stderr, "{yellow}at %s() at %d at %s: ", __func__, __LINE__, __FILE__); \
+		cfprintf(stderr, format, ##__VA_ARGS__);                                         \
+	}
 // Show error msg and exit.
 #define ruri_error(format, ...)                                                                              \
 	{                                                                                                    \
