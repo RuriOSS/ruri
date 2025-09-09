@@ -138,7 +138,7 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	symlink("/proc/self/fd/2", "./dev/stderr");
 	symlink("/dev/null", "./dev/tty0");
 	mkdir("./dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-	mount("devpts", "./dev/pts", "devpts", MS_NODEV | MS_NOSUID | MS_NOEXEC, "gid=5,mode=620,ptmxmode=666,max=1024");
+	mount("devpts", "./dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "gid=5,mode=620,ptmxmode=666,max=1024");
 	// Mount other char devices.
 	if (container->char_devs[0] != NULL) {
 		for (int i = 0; true; i += 3) {
