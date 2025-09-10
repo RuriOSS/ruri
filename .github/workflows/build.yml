@@ -150,6 +150,13 @@ jobs:
       - name: Move all .tar files
         run: |
           find ./all -type f -name "*.tar" -exec mv {} ./ \;
+          # Upload only when file > 50kb
+          for file in ./*.tar; do
+            if [ ! -s "$file" ] || [ $(stat -c%s "$file") -lt 51200 ]; then
+              echo "Removing $file as it is smaller than 50kb"
+              rm "$file"
+            fi
+          done
 
       - name: Release
         uses: softprops/action-gh-release@v2.2.2
