@@ -19,8 +19,7 @@
 
 # The enhanced version
 
-[rurima](https://github.com/Moe-hacker/rurima) was planned to be the ruri manager, but since it now has a full integration of ruri, you can use it as an enhanced version of ruri.
-Note that rurima is still WIP.
+[rurima](https://github.com/Moe-hacker/rurima) was planned to be the ruri manager, but since it now has a full integration of ruri, you can use it as an enhanced version of ruri.      
 
 # Highlights
 
