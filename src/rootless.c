@@ -210,6 +210,7 @@ static void set_id_map(uid_t uid, gid_t gid)
 	sprintf(uid_map, "0 %d 1\n", uid);
 	int uidmap_fd = open("/proc/self/uid_map", O_RDWR | O_CLOEXEC);
 	if (uidmap_fd < 0) {
+		ruri_warning("{red}Failed to open /proc/self/uid_map, maybe you need to install uidmap package and configure /etc/subuid and /etc/subgid?\n");
 		ruri_error("{red}Failed to open /proc/self/uid_map\n");
 	}
 	write(uidmap_fd, uid_map, strlen(uid_map));
@@ -217,6 +218,7 @@ static void set_id_map(uid_t uid, gid_t gid)
 	// Set gid map.
 	int setgroups_fd = open("/proc/self/setgroups", O_RDWR | O_CLOEXEC);
 	if (setgroups_fd < 0) {
+		ruri_warning("{red}Failed to open /proc/self/setgroups, maybe you need to install uidmap package and configure /etc/subuid and /etc/subgid?\n");
 		ruri_error("{red}Failed to open /proc/self/setgroups\n");
 	}
 	write(setgroups_fd, "deny", 5);
@@ -225,6 +227,7 @@ static void set_id_map(uid_t uid, gid_t gid)
 	sprintf(gid_map, "0 %d 1\n", gid);
 	int gidmap_fd = open("/proc/self/gid_map", O_RDWR | O_CLOEXEC);
 	if (gidmap_fd < 0) {
+		ruri_warning("{red}Failed to open /proc/self/gid_map, maybe you need to install uidmap package and configure /etc/subuid and /etc/subgid?\n");
 		ruri_error("{red}Failed to open /proc/self/gid_map\n");
 	}
 	write(gidmap_fd, gid_map, strlen(gid_map));
@@ -415,7 +418,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	pid_t pid = fork();
 	if (pid > 0) {
 		if (!set_id_map_succeed && !container->no_warnings) {
-			ruri_warning("{yellow}Check if uidmap is installed on your host, command like su will run failed without uidmap.\n");
+			ruri_warning("{yellow}Check if uidmap is installed and /etc/subuid and /etc/subgid are configured on your host, command like su will run failed without uidmap.\n");
 			set_id_map(uid, gid);
 		}
 		usleep(1000);
