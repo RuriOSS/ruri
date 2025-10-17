@@ -544,40 +544,55 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 	 * Change uid and gid.
 	 * It will be called before exec(3).
 	 */
+	char *user = NULL;
 	if (container->user != NULL) {
-		if (atoi(container->user) > 0) {
+		user = container->user;
+	} else {
+		user = "root";
+	}
+	if (atoi(user) > 0) {
+		int groups_count = 0;
+		gid_t *groups = malloc(NGROUPS_MAX * sizeof(gid_t));
+		groups_count = ruri_get_groups((uid_t)atoi(user), groups);
+		if (groups_count > 0) {
+			setgroups((size_t)groups_count, groups);
+		} else {
+			groups[0] = (gid_t)atoi(user);
+			setgroups(1, groups);
+		}
+		usleep(1000);
+		free(groups);
+		setgid((gid_t)atoi(user));
+		setuid((uid_t)atoi(user));
+	} else {
+		if (!ruri_user_exist(user)) {
+			ruri_error("{red}Error: user `%s` does not exist QwQ\n", user);
+		} else {
 			int groups_count = 0;
 			gid_t *groups = malloc(NGROUPS_MAX * sizeof(gid_t));
-			groups_count = ruri_get_groups((uid_t)atoi(container->user), groups);
+			groups_count = ruri_get_groups(ruri_get_user_uid(user), groups);
 			if (groups_count > 0) {
 				setgroups((size_t)groups_count, groups);
 			} else {
-				groups[0] = (gid_t)atoi(container->user);
+				groups[0] = ruri_get_user_uid(user);
 				setgroups(1, groups);
 			}
 			usleep(1000);
 			free(groups);
-			setgid((gid_t)atoi(container->user));
-			setuid((uid_t)atoi(container->user));
-		} else {
-			if (!ruri_user_exist(container->user)) {
-				ruri_error("{red}Error: user `%s` does not exist QwQ\n", container->user);
-			} else {
-				int groups_count = 0;
-				gid_t *groups = malloc(NGROUPS_MAX * sizeof(gid_t));
-				groups_count = ruri_get_groups(ruri_get_user_uid(container->user), groups);
-				if (groups_count > 0) {
-					setgroups((size_t)groups_count, groups);
-				} else {
-					groups[0] = ruri_get_user_uid(container->user);
-					setgroups(1, groups);
-				}
-				usleep(1000);
-				free(groups);
-				setgid(ruri_get_user_gid(container->user));
-				setuid(ruri_get_user_uid(container->user));
-			}
+			setgid(ruri_get_user_gid(user));
+			setuid(ruri_get_user_uid(user));
 		}
+	}
+	ruri_log("{base}Changed to user: %s (uid: %d, gid: %d)\n", user, getuid(), getgid());
+	ruri_log("{base}Supplementary groups: \n");
+	int ngroups = getgroups(0, NULL);
+	if (ngroups > 0) {
+		gid_t *groups = malloc(ngroups * sizeof(gid_t));
+		getgroups(ngroups, groups);
+		for (int i = 0; i < ngroups; i++) {
+			ruri_log("{base}%d \n", groups[i]);
+		}
+		free(groups);
 	}
 }
 static void set_hostname(struct RURI_CONTAINER *_Nonnull container)

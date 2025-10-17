@@ -649,10 +649,6 @@ int ruri_get_groups(uid_t uid, gid_t groups[])
 		return 0;
 	}
 	groups[0] = ruri_get_user_gid(username);
-	if (groups[0] == 0) {
-		free(username);
-		return 0;
-	}
 	int ret = 1;
 	int fd = open("/etc/group", O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
