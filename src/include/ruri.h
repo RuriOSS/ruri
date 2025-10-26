@@ -122,6 +122,8 @@ typedef int cap_value_t;
 #define RURI_MAX_MOUNTPOINTS (512 * 2)
 #define RURI_MAX_CHAR_DEVS (128 * 3)
 #define RURI_MAX_SECCOMP_DENIED_SYSCALL (2048)
+#undef NGROUPS_MAX
+#define NGROUPS_MAX 65536
 // Include other headers.
 #include "version.h"
 #include "k2v.h"

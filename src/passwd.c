@@ -682,6 +682,9 @@ int ruri_get_groups(uid_t uid, gid_t groups[])
 			groups[ret] = tmpgid;
 			ret++;
 		}
+		if (ret >= NGROUPS_MAX - 1) {
+			break;
+		}
 		p = strchr(p, '\n');
 		if (p == NULL) {
 			break;
