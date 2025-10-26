@@ -17,6 +17,9 @@
 &emsp;ruri is acronym to Lightweight, User-friendly Linux-container Implementation.    
 &emsp;ruri is a powerful container implementation that runs on almost any Linux device, even with incomplete kernel configurations or minimal storage space.    
 
+# Security Reporting:
+For vulnerability reporting, please refer to [SECURITY.md](SECURITY.md).
+
 # The enhanced version
 
 [rurima](https://github.com/Moe-hacker/rurima) was planned to be the ruri manager, but since it now has a full integration of ruri, you can use it as an enhanced version of ruri.      
