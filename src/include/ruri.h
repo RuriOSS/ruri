@@ -259,6 +259,7 @@ struct RURI_ID_MAP {
 #else
 #define ruri_log(format, ...)
 #endif
+extern int RURI_PWD_ERRNO;
 // Shared functions.
 void ruri_register_signal(void);
 void ruri_setup_seccomp(const struct RURI_CONTAINER *_Nonnull container);

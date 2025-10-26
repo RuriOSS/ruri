@@ -570,17 +570,27 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 		} else {
 			int groups_count = 0;
 			gid_t *groups = malloc(NGROUPS_MAX * sizeof(gid_t));
-			groups_count = ruri_get_groups(ruri_get_user_uid(user), groups);
+			uid_t user_uid = ruri_get_user_uid(user);
+			if (RURI_PWD_ERRNO != 0) {
+				ruri_warning("{yellow}Warning: failed to get user info for `%s`: %s{clear}\n", user, strerror(RURI_PWD_ERRNO));
+				return;
+			}
+			groups_count = ruri_get_groups(user_uid, groups);
 			if (groups_count > 0) {
 				setgroups((size_t)groups_count, groups);
 			} else {
-				groups[0] = ruri_get_user_uid(user);
+				groups[0] = user_uid;
 				setgroups(1, groups);
 			}
 			usleep(1000);
 			free(groups);
-			setgid(ruri_get_user_gid(user));
-			setuid(ruri_get_user_uid(user));
+			gid_t user_gid = ruri_get_user_gid(user);
+			if (RURI_PWD_ERRNO != 0) {
+				ruri_warning("{yellow}Warning: failed to get user info for `%s`: %s{clear}\n", user, strerror(RURI_PWD_ERRNO));
+				return;
+			}
+			setgid(user_gid);
+			setuid(user_uid);
 		}
 	}
 	ruri_log("{base}Changed to user: %s (uid: %d, gid: %d)\n", user, getuid(), getgid());

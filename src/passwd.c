@@ -39,6 +39,8 @@
  * I will rewrite them in the future.
  *
  */
+int RURI_PWD_ERRNO = 0;
+static int RURI_PWD_ERRNO_INTERNAL = 0;
 static char *line_get_username(const char *_Nonnull p)
 {
 	/*
@@ -484,9 +486,11 @@ uid_t ruri_get_user_uid(const char *_Nonnull username)
 	/*
 	 * Get uid by username.
 	 */
+	RURI_PWD_ERRNO = 0;
 	int fd = open("/etc/passwd", O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
-		return 0;
+		RURI_PWD_ERRNO = 1;
+		return 1145;
 	}
 	struct stat filestat;
 	fstat(fd, &filestat);
@@ -502,7 +506,8 @@ uid_t ruri_get_user_uid(const char *_Nonnull username)
 	close(fd);
 	if (strlen(buf) != (size_t)size) {
 		free(buf);
-		return 0;
+		RURI_PWD_ERRNO = 1;
+		return 1145;
 	}
 	char *p = buf;
 	const char *bound = p + strlen(p);
@@ -514,6 +519,7 @@ uid_t ruri_get_user_uid(const char *_Nonnull username)
 		if (strcmp(tmpusername, username) == 0) {
 			free(buf);
 			free(tmpusername);
+			RURI_PWD_ERRNO = 0;
 			return tmpuid;
 		}
 		free(tmpusername);
@@ -527,16 +533,19 @@ uid_t ruri_get_user_uid(const char *_Nonnull username)
 		}
 	}
 	free(buf);
-	return 0;
+	RURI_PWD_ERRNO = 1;
+	return 1145;
 }
 gid_t ruri_get_user_gid(const char *_Nonnull username)
 {
 	/*
 	 * Get gid by username.
 	 */
+	RURI_PWD_ERRNO = 0;
 	int fd = open("/etc/passwd", O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
-		return 0;
+		RURI_PWD_ERRNO = 1;
+		return 1145;
 	}
 	struct stat filestat;
 	fstat(fd, &filestat);
@@ -552,7 +561,8 @@ gid_t ruri_get_user_gid(const char *_Nonnull username)
 	close(fd);
 	if (strlen(buf) != (size_t)size) {
 		free(buf);
-		return 0;
+		RURI_PWD_ERRNO = 1;
+		return 1145;
 	}
 	char *p = buf;
 	const char *bound = p + strlen(p);
@@ -564,6 +574,7 @@ gid_t ruri_get_user_gid(const char *_Nonnull username)
 		if (strcmp(tmpusername, username) == 0) {
 			free(buf);
 			free(tmpusername);
+			RURI_PWD_ERRNO = 0;
 			return tmpgid;
 		}
 		free(tmpusername);
@@ -577,7 +588,8 @@ gid_t ruri_get_user_gid(const char *_Nonnull username)
 		}
 	}
 	free(buf);
-	return 0;
+	RURI_PWD_ERRNO = 1;
+	return 1145;
 }
 static gid_t line_get_group_gid(const char *p)
 {
@@ -586,22 +598,37 @@ static gid_t line_get_group_gid(const char *p)
 	 * groupname:password:gid:user1,user2,user3
 	 * So we need to skip 2 colons.
 	 */
-	gid_t ret = 0;
+	// Bounds
+	const char *bound = p + strlen(p);
+	RURI_PWD_ERRNO_INTERNAL = 0;
+	gid_t ret = 1145;
 	for (int i = 0; i < 2; i++) {
 		if ((strchr(p, ':') == NULL) || (strchr(p, ':') > (strchr(p, '\n') == NULL ? 0 : strchr(p, '\n')))) {
-			return 0;
+			RURI_PWD_ERRNO_INTERNAL = 1;
+			return 1145;
 		}
 		p = strchr(p, ':') + 1;
+		if (p >= bound) {
+			RURI_PWD_ERRNO_INTERNAL = 1;
+			return 1145;
+		}
 	}
 	// Now, after we skip 2 colons, we can get the gid.
 	// Read the gid until we meet the next colon.
+	ret = 0;
 	for (int i = 0; p[i] != '\0'; i++) {
 		if (p[i] == ':') {
+			RURI_PWD_ERRNO_INTERNAL = 0;
 			return ret;
+		}
+		if (p[i] < '0' || p[i] > '9') {
+			RURI_PWD_ERRNO_INTERNAL = 1;
+			return 1145;
 		}
 		ret = ret * 10 + (gid_t)(p[i] - '0');
 	}
-	return ret;
+	RURI_PWD_ERRNO_INTERNAL = 1;
+	return 1145;
 }
 static bool groups_line_have_user(const char *p, const char *username)
 {
@@ -611,11 +638,16 @@ static bool groups_line_have_user(const char *p, const char *username)
 	// /etc/groups format:
 	// groupname:password:gid:user1,user2,user3
 	// So we need to skip 3 colons.
+	// Bounds
+	const char *bound = p + strlen(p);
 	for (int i = 0; i < 3; i++) {
 		if ((strchr(p, ':') == NULL) || (strchr(p, ':') > (strchr(p, '\n') == NULL ? 0 : strchr(p, '\n')))) {
 			return false;
 		}
 		p = strchr(p, ':') + 1;
+		if (p >= bound) {
+			return false;
+		}
 	}
 	// Now, after we skip 3 colons, we can get the users.
 	// If we reached the end of the line, we return false.
@@ -648,7 +680,13 @@ int ruri_get_groups(uid_t uid, gid_t groups[])
 	if (username == NULL) {
 		return 0;
 	}
-	groups[0] = ruri_get_user_gid(username);
+	gid_t user_gid = ruri_get_user_gid(username);
+	if (RURI_PWD_ERRNO != 0) {
+		ruri_warning("{yellow}Warning: failed to parse user gid for `%s`\n", username);
+		free(username);
+		return 0;
+	}
+	groups[0] = user_gid;
 	int ret = 1;
 	int fd = open("/etc/group", O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
@@ -678,6 +716,12 @@ int ruri_get_groups(uid_t uid, gid_t groups[])
 	gid_t tmpgid = 114514;
 	while (p != NULL) {
 		tmpgid = line_get_group_gid(p);
+		if (RURI_PWD_ERRNO_INTERNAL != 0) {
+			ruri_warning("{yellow}Warning: failed to parse /etc/group line: %s{clear}\n", p);
+			free(username);
+			free(buf);
+			return 0;
+		}
 		if (groups_line_have_user(p, username)) {
 			groups[ret] = tmpgid;
 			ret++;
