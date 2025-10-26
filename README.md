@@ -57,10 +57,9 @@ You need to root your phone first, ruri supports to run with root on Android dev
 We promise that ruri has backward compatibility of cli usage and config file since v3.9.0, you can keep updated to the newest version. Any breaking changes will not be introduced to v3.9.x
 
 # Important Notice:
-It's fully recommended to drop CAP_SYS_CHROOT or enable unshare, chroot container without these options is not secure at all!
-
-*Update: Considering the security issues of chroot, ruri will drop CAP_SYS_CHROOT by default now  
-If you got any issues with this, please report.
+Considering the security issues of chroot, ruri will drop CAP_SYS_CHROOT by default now  
+If you got any issues with this, please report.      
+In newest code, ruri will also do setgroups() for root user in container to avoid permission issues on some devices, If you'd like to disable it, please use `--no-setgroups` option.      
 
 # WARNING
 
