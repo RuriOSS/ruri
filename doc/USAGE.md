@@ -451,3 +451,13 @@ This option allows you to mask a path in the container with a read-only tmpfs or
 | `-z`, `--enable-tty-signals` | Enable TTY signals in the container |
 
 This option allows you to enable SIGTTIN and SIGTTOU signals in the container.
+
+---
+
+| Option | Description |
+|--------|-------------|
+| `-g`, `--skip-setgroups` | Skip setgroups() call |
+
+
+This option allows you to skip the setgroups() call when changing the user in the container. This is for the cases that you don't trust the /etc/group file in the container.       
+**Behavior note:** When this option is enabled, ruri will only allow using UID for `-E/--user` option, and /etc/passwd & /etc/group will be ignored.       

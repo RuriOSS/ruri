@@ -544,6 +544,21 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 	 * Change uid and gid.
 	 * It will be called before exec(3).
 	 */
+	setgroups(0, NULL);
+	if (container->skip_setgroups) {
+		if (container->user != NULL) {
+			if (atoi(container->user) > 0) {
+				setgid((gid_t)atoi(container->user));
+				setuid((uid_t)atoi(container->user));
+				gid_t groups[1];
+				groups[0] = (gid_t)atoi(container->user);
+				setgroups(1, groups);
+			} else {
+				ruri_error("{red}Skip-setgroups is set, but user is not a uid number QwQ{clear}\n");
+			}
+		}
+		return;
+	}
 	char *user = NULL;
 	if (container->user != NULL) {
 		user = container->user;

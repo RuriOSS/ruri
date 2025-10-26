@@ -146,6 +146,7 @@ void ruri_show_helps(void)
 	cprintf("{base}  -O, --oom-score-adj [score] .................: Set oom_score_adj for container (*14)\n");
 	cprintf("{base}  -Q, --mask-path [path] ......................: Mask a path in the container\n");
 	cprintf("{base}  -z, --enable-tty-signals ....................: Enable TTY signals in the container (*15)\n");
+	cprintf("{base}  -g, --skip-setgroups ........................: Skip setgroups() call\n");
 	cprintf("\n");
 	cprintf("{base}Note:\n");
 	cprintf("{base}(*1)  : Will not work for unshare containers without PID ns support\n");

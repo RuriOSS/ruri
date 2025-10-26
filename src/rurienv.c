@@ -210,6 +210,10 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 	ret = k2v_add_comment(ret, "Environment variable.");
 	ret = k2v_add_config(char_array, ret, "env", container->env, len);
 	ruri_log("{base}Container config in /.rurienv:{cyan}\n%s", ret);
+	ret = k2v_add_newline(ret);
+	// skip_setgroups.
+	ret = k2v_add_comment(ret, "Skip setgroups() call.");
+	ret = k2v_add_config(bool, ret, "skip_setgroups", container->skip_setgroups);
 	return ret;
 }
 // Store container info.
@@ -409,6 +413,14 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	if (backup->enable_default_seccomp != container->enable_default_seccomp) {
 		if (!container->no_warnings) {
 			ruri_warning("{yellow}.rurienv detected, enable_seccomp changed{clear}\n");
+		}
+	}
+	// Get skip_setgroups.
+	container->skip_setgroups = k2v_get_key(bool, "skip_setgroups", buf);
+	// Check if skip_setgroups changed.
+	if (backup->skip_setgroups != container->skip_setgroups) {
+		if (!container->no_warnings) {
+			ruri_warning("{yellow}.rurienv detected, skip_setgroups changed{clear}\n");
 		}
 	}
 	// Get seccomp_denied_syscall.

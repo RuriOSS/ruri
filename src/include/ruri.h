@@ -208,6 +208,8 @@ struct RURI_CONTAINER {
 	char *_Nonnull masked_path[RURI_MAX_MOUNTPOINTS + 2];
 	// Enable tty signals
 	bool enable_tty_signals;
+	// Skip setting groups for user
+	bool skip_setgroups;
 };
 // For ruri_get_magic().
 #define ruri_magicof(x) (x##_magic)
@@ -232,20 +234,21 @@ struct RURI_ID_MAP {
 		cfprintf(stderr, format, ##__VA_ARGS__);                                         \
 	}
 // Show error msg and exit.
-#define ruri_error(format, ...)                                                                              \
-	{                                                                                                    \
-		cfprintf(stderr, "{red}In %s() in %s line %d:\n", __func__, __FILE__, __LINE__);             \
-		cfprintf(stderr, format, ##__VA_ARGS__);                                                     \
-		cfprintf(stderr, "{base}%s{clear}\n", "\n  .^.   .^.");                                      \
-		cfprintf(stderr, "{base}%s{clear}\n", "  /⋀\\_ﾉ_/⋀\\");                                      \
-		cfprintf(stderr, "{base}%s{clear}\n", " /ﾉｿﾉ\\ﾉｿ丶)|");                                      \
-		cfprintf(stderr, "{base}%s{clear}\n", " ﾙﾘﾘ >  x )ﾘ");                                       \
-		cfprintf(stderr, "{base}%s{clear}\n", "ﾉノ㇏  ^  ﾉ|ﾉ");                                      \
-		cfprintf(stderr, "{base}%s{clear}\n", "      ⠁⠁");                                           \
-		cfprintf(stderr, "{base}%s{clear}\n", "RURI ERROR MESSAGE");                                 \
-		cfprintf(stderr, "{base}%s{clear}\n", "If you think something is wrong, please report at:"); \
-		cfprintf(stderr, "\033[4m{base}%s{clear}\n", "https://github.com/Moe-hacker/ruri/issues");   \
-		exit(114);                                                                                   \
+#define ruri_error(format, ...)                                                                                                                      \
+	{                                                                                                                                            \
+		cfprintf(stderr, "{red}In %s() in %s line %d:\n", __func__, __FILE__, __LINE__);                                                     \
+		cfprintf(stderr, format, ##__VA_ARGS__);                                                                                             \
+		cfprintf(stderr, "{base}%s{clear}\n", "\n  .^.   .^.");                                                                              \
+		cfprintf(stderr, "{base}%s{clear}\n", "  /⋀\\_ﾉ_/⋀\\");                                                                              \
+		cfprintf(stderr, "{base}%s{clear}\n", " /ﾉｿﾉ\\ﾉｿ丶)|");                                                                              \
+		cfprintf(stderr, "{base}%s{clear}\n", " ﾙﾘﾘ >  x )ﾘ");                                                                               \
+		cfprintf(stderr, "{base}%s{clear}\n", "ﾉノ㇏  ^  ﾉ|ﾉ");                                                                              \
+		cfprintf(stderr, "{base}%s{clear}\n", "      ⠁⠁");                                                                                   \
+		cfprintf(stderr, "{base}%s{clear}\n", "RURI ERROR MESSAGE");                                                                         \
+		cfprintf(stderr, "{base}%s{clear}\n", "Note: for some configs, you might need to run `-U` to umount container before changing it."); \
+		cfprintf(stderr, "{base}%s{clear}\n", "If you think something is wrong, please report at:");                                         \
+		cfprintf(stderr, "\033[4m{base}%s{clear}\n", "https://github.com/Moe-hacker/ruri/issues");                                           \
+		exit(114);                                                                                                                           \
 	}
 // Log system.
 #if defined(RURI_DEBUG)
