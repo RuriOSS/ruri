@@ -1,7 +1,8 @@
-# v3.9.2:
-  * Add `-z` option: `--enable-tty-signals`.
+# v3.9.3:
   * Add `-g` option: `--skip-setgroups`.
   * Make setgroups() enabled for root user by default.
+# v3.9.2:
+  * Add `-z` option: `--enable-tty-signals`.
   * Fix devpts mount.
 # v3.9.1:
   * Support prefix for errno action in `--deny-syscall` option.
