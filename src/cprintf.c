@@ -132,7 +132,8 @@ static void fprint_rgb_fg_color(FILE *_Nonnull stream, const char *_Nonnull colo
 	 * print \033[1;38;2;R;G;Bm format color.
 	 */
 	char buf[17];
-	for (size_t i = 1; i < strlen(color) - 1; i++) {
+	size_t color_len = strlen(color);
+	for (size_t i = 1; i < color_len - 1; i++) {
 		buf[i - 1] = color[i];
 		buf[i] = 0;
 	}
@@ -144,7 +145,8 @@ static void fprint_rgb_bg_color(FILE *_Nonnull stream, const char *_Nonnull colo
 	 * print \033[1;38;2;R;G;Bm format color.
 	 */
 	char buf[17];
-	for (size_t i = 1; i < strlen(color) - 1; i++) {
+	size_t color_len = strlen(color);
+	for (size_t i = 1; i < color_len - 1; i++) {
 		buf[i - 1] = color[i];
 		buf[i] = 0;
 	}
@@ -160,7 +162,8 @@ static bool is_rgb_color(const char *_Nonnull color)
 	if (atoi(color) > 255) {
 		return false;
 	}
-	for (size_t i = 1; i < strlen(color) - 1; i++) {
+	size_t color_len = strlen(color);
+	for (size_t i = 1; i < color_len - 1; i++) {
 		if (color[i] == ';') {
 			sem++;
 			// If G or B > 255, it's not a color.
@@ -299,7 +302,8 @@ int cprintf__(const char *_Nonnull buf)
 {
 	const char *p = NULL;
 	p = buf;
-	for (size_t i = 0; i < strlen(buf); i++) {
+	size_t buf_len = strlen(buf);
+	for (size_t i = 0; i < buf_len; i++) {
 		// Search for '{'.
 		if (*p == '{') {
 			// *p will be moved because we need to skip the {color} string.
@@ -324,7 +328,8 @@ int cfprintf__(FILE *_Nonnull stream, const char *_Nonnull buf)
 {
 	const char *p = NULL;
 	p = buf;
-	for (size_t i = 0; i < strlen(buf); i++) {
+	size_t buf_len = strlen(buf);
+	for (size_t i = 0; i < buf_len; i++) {
 		// Search for '{' or '['.
 		if (*p == '{') {
 			// *p will be moved because we need to skip the {color} string.
@@ -412,7 +417,8 @@ static char *get_bg_color__(void)
 		}
 		p += strlen("rgb:");
 		char *ret = malloc(32);
-		for (int i = 0; i < strlen(p); i++) {
+		size_t p_len = strlen(p);
+		for (int i = 0; i < p_len; i++) {
 			if (p[i] >= 32 && p[i] <= 126) {
 				ret[j++] = p[i];
 				ret[j] = '\0';

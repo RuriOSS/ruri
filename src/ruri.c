@@ -737,7 +737,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			// Very shit. I know.
 			// At least it works.
 			int index_bk = index;
-			for (size_t i = 1; i < strlen(argv[index]); i++) {
+			size_t argv_index_len = strlen(argv[index]);
+			for (size_t i = 1; i < argv_index_len; i++) {
 				if (index_bk != index) {
 					break;
 				}
