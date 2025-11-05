@@ -581,6 +581,9 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 		setuid((uid_t)atoi(user));
 	} else {
 		if (!ruri_user_exist(user)) {
+			if (strcmp(user, "root") == 0) {
+				return;
+			}
 			ruri_error("{red}Error: user `%s` does not exist QwQ\n", user);
 		} else {
 			int groups_count = 0;
