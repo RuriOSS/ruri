@@ -144,7 +144,7 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 	struct RURI_CONTAINER *container = ruri_read_info(NULL, container_dir);
 	ruri_log("{base}Umounting container...\n");
 	char infofile[PATH_MAX] = { '\0' };
-	sprintf(infofile, "%s/.rurienv", container_dir);
+	snprintf(infofile, sizeof(infofile), "%s/.rurienv", container_dir);
 	// Umount .rurienv file.
 	umount2(infofile, MNT_DETACH | MNT_FORCE);
 	int fd = open(infofile, O_RDONLY | O_CLOEXEC);

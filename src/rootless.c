@@ -69,13 +69,13 @@ static int try_setup_idmap(pid_t ppid, uid_t uid, gid_t gid)
 	char gid_text[128] = { '\0' };
 	char gid_lower[128] = { '\0' };
 	char gid_count[128] = { '\0' };
-	sprintf(ppid_text, "%d", ppid);
-	sprintf(uid_text, "%d", id_map.uid);
-	sprintf(uid_lower, "%d", id_map.uid_lower);
-	sprintf(uid_count, "%d", id_map.uid_count);
-	sprintf(gid_text, "%d", id_map.gid);
-	sprintf(gid_lower, "%d", id_map.gid_lower);
-	sprintf(gid_count, "%d", id_map.gid_count);
+	snprintf(ppid_text, sizeof(ppid_text), "%d", ppid);
+	snprintf(uid_text, sizeof(uid_text), "%d", id_map.uid);
+	snprintf(uid_lower, sizeof(uid_lower), "%d", id_map.uid_lower);
+	snprintf(uid_count, sizeof(uid_count), "%d", id_map.uid_count);
+	snprintf(gid_text, sizeof(gid_text), "%d", id_map.gid);
+	snprintf(gid_lower, sizeof(gid_lower), "%d", id_map.gid_lower);
+	snprintf(gid_count, sizeof(gid_count), "%d", id_map.gid_count);
 	// In fact I don't know how it works, but it works.
 	// newuidmap pid 0 uid 1 1 uid_lower uid_count
 	char *newuidmap[] = { "newuidmap", ppid_text, "0", uid_text, "1", "1", uid_lower, uid_count, NULL };

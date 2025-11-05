@@ -153,13 +153,13 @@ static char *losetup(const char *_Nonnull img)
 	int devnr = ioctl(loopctlfd, LOOP_CTL_GET_FREE);
 	close(loopctlfd);
 	static char loopfile[PATH_MAX] = { '\0' };
-	sprintf(loopfile, "/dev/loop%d", devnr);
+	snprintf(loopfile, sizeof(loopfile), "/dev/loop%d", devnr);
 	usleep(200);
 	int loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 	if (loopfd < 0) {
 		// On Android, loopfile is in /dev/block.
 		memset(loopfile, 0, sizeof(loopfile));
-		sprintf(loopfile, "/dev/block/loop%d", devnr);
+		snprintf(loopfile, sizeof(loopfile), "/dev/block/loop%d", devnr);
 		loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 		if (loopfd < 0) {
 			// Never mind, it works.
