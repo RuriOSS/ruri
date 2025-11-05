@@ -164,7 +164,7 @@ static char *memory_to_bytes(const char *_Nonnull memory)
 	if (strstr(memory_dup, "K") != NULL) {
 		bytes = strtok(memory_dup, "K");
 		long kilobytes = atol(bytes);
-		if (kilobytes < 0 || kilobytes > INT_MAX / 1024) {
+		if (kilobytes < 0 || kilobytes > LONG_MAX / 1024) {
 			free(memory_dup);
 			free(ret);
 			ruri_error("Memory value out of range\n");
@@ -173,7 +173,7 @@ static char *memory_to_bytes(const char *_Nonnull memory)
 	} else if (strstr(memory_dup, "M") != NULL) {
 		bytes = strtok(memory_dup, "M");
 		long megabytes = atol(bytes);
-		if (megabytes < 0 || megabytes > INT_MAX / (1024 * 1024)) {
+		if (megabytes < 0 || megabytes > LONG_MAX / (1024 * 1024)) {
 			free(memory_dup);
 			free(ret);
 			ruri_error("Memory value out of range\n");
@@ -182,7 +182,7 @@ static char *memory_to_bytes(const char *_Nonnull memory)
 	} else if (strstr(memory_dup, "G") != NULL) {
 		bytes = strtok(memory_dup, "G");
 		long gigabytes = atol(bytes);
-		if (gigabytes < 0 || gigabytes > INT_MAX / (1024L * 1024 * 1024)) {
+		if (gigabytes < 0 || gigabytes > LONG_MAX / (1024L * 1024 * 1024)) {
 			free(memory_dup);
 			free(ret);
 			ruri_error("Memory value out of range\n");
