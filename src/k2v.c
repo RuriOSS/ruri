@@ -63,9 +63,10 @@ static char *correct_backslash(char *buf)
 	 */
 	char *ret = strdup(buf);
 	int j = 0;
-	for (size_t i = 0; i < strlen(buf); i++) {
+	size_t buf_len = strlen(buf);
+	for (size_t i = 0; i < buf_len; i++) {
 		if (buf[i] == '\\') {
-			if (i < strlen(buf) - 1) {
+			if (i < buf_len - 1) {
 				i++;
 				if (buf[i] == 'n') {
 					ret[j] = '\\';
@@ -391,10 +392,11 @@ static bool is_comment_line(const char *_Nonnull buf)
 		return true;
 	}
 	// It is an empty line.
-	if (strlen(buf) == 0) {
+	size_t buf_len = strlen(buf);
+	if (buf_len == 0) {
 		return true;
 	}
-	for (size_t i = 0; i < strlen(buf); i++) {
+	for (size_t i = 0; i < buf_len; i++) {
 		if (buf[i] == ' ') {
 			continue;
 		}
@@ -452,17 +454,19 @@ static char *remove_comment(const char *_Nonnull buf)
 static char *line_get_left(const char *_Nonnull line)
 {
 	// Skip space.
-	for (size_t i = 0; i < strlen(line); i++) {
+	size_t line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		if (line[i] == ' ') {
 			continue;
 		}
 		line = &line[i];
 		break;
 	}
-	char *ret = malloc(strlen(line) + 1);
-	for (size_t i = 0; i < strlen(line); i++) {
+	line_len = strlen(line);
+	char *ret = malloc(line_len + 1);
+	for (size_t i = 0; i < line_len; i++) {
 		if (line[i] == '\\') {
-			if (i < strlen(line) - 2) {
+			if (i < line_len - 2) {
 				ret[i] = line[i];
 				i++;
 				ret[i] = line[i];
@@ -478,7 +482,8 @@ static char *line_get_left(const char *_Nonnull line)
 		ret[i + 1] = '\0';
 	}
 	// Skip space.
-	for (size_t i = strlen(ret) - 1; i > 0; i--) {
+	size_t ret_len = strlen(ret);
+	for (size_t i = ret_len - 1; i > 0; i--) {
 		if (ret[i] == ' ') {
 			continue;
 		}
@@ -490,7 +495,8 @@ static char *line_get_left(const char *_Nonnull line)
 static char *line_get_right(const char *_Nonnull line)
 {
 	// Skip space.
-	for (size_t i = 0; i < strlen(line); i++) {
+	size_t line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		if (line[i] == ' ') {
 			continue;
 		}
@@ -498,7 +504,8 @@ static char *line_get_right(const char *_Nonnull line)
 		break;
 	}
 	// Goto value.
-	for (size_t i = 0; i < strlen(line); i++) {
+	line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		// We allow to use \ in key.
 		if (line[i] == '\\') {
 			i++;
@@ -510,7 +517,8 @@ static char *line_get_right(const char *_Nonnull line)
 		}
 	}
 	// Skip space.
-	for (size_t i = 0; i < strlen(line); i++) {
+	line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		if (line[i] == ' ') {
 			continue;
 		}
@@ -518,7 +526,8 @@ static char *line_get_right(const char *_Nonnull line)
 		break;
 	}
 	char *ret = strdup(line);
-	for (size_t i = strlen(ret) - 1; i > 0; i--) {
+	size_t ret_len = strlen(ret);
+	for (size_t i = ret_len - 1; i > 0; i--) {
 		if (ret[i] == ' ') {
 			continue;
 		}
@@ -536,7 +545,8 @@ static bool __k2v_is_array(const char *_Nonnull line)
 	}
 	const char *p = line;
 	// Goto value.
-	for (size_t i = 0; i < strlen(line); i++) {
+	size_t line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		// We allow to use \ in key.
 		if (line[i] == '\\') {
 			i++;
@@ -548,7 +558,8 @@ static bool __k2v_is_array(const char *_Nonnull line)
 		}
 	}
 	// Check if the start of value is '['.
-	for (size_t i = 0; i < strlen(p); i++) {
+	size_t p_len = strlen(p);
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == ' ') {
 			continue;
 		}
@@ -568,7 +579,8 @@ static int __k2v_basic_lint(const char *_Nonnull line)
 	// So:
 	// NULL check.
 	// Skip space.
-	for (size_t i = 0; i < strlen(line); i++) {
+	size_t line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		if (line[i] == ' ') {
 			continue;
 		}
@@ -585,7 +597,8 @@ static int __k2v_basic_lint(const char *_Nonnull line)
 		warning("Key should not be empty: %s\n", line);
 		return -1;
 	}
-	for (size_t i = 0; i < strlen(line); i++) {
+	line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		if (line[i] == '\\') {
 			i++;
 			continue;
@@ -600,7 +613,8 @@ static int __k2v_basic_lint(const char *_Nonnull line)
 	}
 	// Goto value.
 	const char *p = NULL;
-	for (size_t i = 0; i < strlen(line); i++) {
+	line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		// We allow to use \ in key.
 		if (line[i] == '\\') {
 			i++;
@@ -617,12 +631,13 @@ static int __k2v_basic_lint(const char *_Nonnull line)
 		return -1;
 	}
 	// Check if value is empty.
-	if (strlen(p) == 0) {
+	size_t p_len = strlen(p);
+	if (p_len == 0) {
 		warning("Value should not be empty: %s\n", line);
 		return -1;
 	}
 	// Skip space.
-	for (size_t i = 0; i < strlen(p); i++) {
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == ' ') {
 			continue;
 		}
@@ -630,8 +645,9 @@ static int __k2v_basic_lint(const char *_Nonnull line)
 		break;
 	}
 	// Check if value start with `"` or `[`, and end with `"` or `]`.
+	p_len = strlen(p);
 	if (p[0] == '"') {
-		for (size_t i = strlen(p) - 1; i > 0; i--) {
+		for (size_t i = p_len - 1; i > 0; i--) {
 			if (p[i] == ' ') {
 				continue;
 			}
@@ -642,7 +658,7 @@ static int __k2v_basic_lint(const char *_Nonnull line)
 			return -1;
 		}
 	} else if (p[0] == '[') {
-		for (size_t i = strlen(p) - 1; i > 0; i--) {
+		for (size_t i = p_len - 1; i > 0; i--) {
 			if (p[i] == ' ') {
 				continue;
 			}
@@ -662,7 +678,8 @@ static int __k2v_array_lint(const char *_Nonnull line)
 {
 	const char *p = line;
 	// Goto value.
-	for (size_t i = 0; i < strlen(line); i++) {
+	size_t line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		// We allow to use \ in key.
 		if (line[i] == '\\') {
 			i++;
@@ -674,7 +691,8 @@ static int __k2v_array_lint(const char *_Nonnull line)
 		}
 	}
 	// Skip space.
-	for (size_t i = 0; i < strlen(p); i++) {
+	size_t p_len = strlen(p);
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == ' ') {
 			continue;
 		}
@@ -683,7 +701,8 @@ static int __k2v_array_lint(const char *_Nonnull line)
 	}
 	// Check for `[]`.
 	int bracket = 0;
-	for (size_t i = 0; i < strlen(p); i++) {
+	p_len = strlen(p);
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == '\\') {
 			i++;
 			continue;
@@ -698,7 +717,8 @@ static int __k2v_array_lint(const char *_Nonnull line)
 	}
 	// Check for `"`.
 	int quote = 0;
-	for (size_t i = 0; i < strlen(p); i++) {
+	p_len = strlen(p);
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == '\\') {
 			i++;
 			continue;
@@ -718,7 +738,7 @@ static int __k2v_array_lint(const char *_Nonnull line)
 	// Check value number.
 	int count = 0;
 	bool in_quote = false;
-	for (size_t i = 0; i < strlen(p); i++) {
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == '\\') {
 			i++;
 			continue;
@@ -743,7 +763,7 @@ static int __k2v_array_lint(const char *_Nonnull line)
 	if (quote == 2) {
 		return 0;
 	}
-	for (size_t i = 0; i < strlen(p); i++) {
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == '\\') {
 			i++;
 			continue;
@@ -767,7 +787,8 @@ static int __k2v_scalar_lint(const char *_Nonnull line)
 {
 	const char *p = line;
 	// Goto value.
-	for (size_t i = 0; i < strlen(line); i++) {
+	size_t line_len = strlen(line);
+	for (size_t i = 0; i < line_len; i++) {
 		// We allow to use \ in key.
 		if (line[i] == '\\') {
 			i++;
@@ -779,7 +800,8 @@ static int __k2v_scalar_lint(const char *_Nonnull line)
 		}
 	}
 	// Skip space.
-	for (size_t i = 0; i < strlen(p); i++) {
+	size_t p_len = strlen(p);
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == ' ') {
 			continue;
 		}
@@ -788,7 +810,8 @@ static int __k2v_scalar_lint(const char *_Nonnull line)
 	}
 	// Check for `"`.
 	int quote = 0;
-	for (size_t i = 0; i < strlen(p); i++) {
+	p_len = strlen(p);
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == '\\') {
 			i++;
 			continue;
@@ -1121,7 +1144,8 @@ static char *__goto_next_val(const char *_Nonnull p)
 	if (p == NULL) {
 		return NULL;
 	}
-	for (size_t i = 0; i < strlen(p); i++) {
+	size_t p_len = strlen(p);
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == ' ') {
 			i++;
 			continue;
@@ -1131,7 +1155,7 @@ static char *__goto_next_val(const char *_Nonnull p)
 		}
 		break;
 	}
-	for (size_t i = 0; i < strlen(p); i++) {
+	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == '\\') {
 			i++;
 			continue;
@@ -1153,19 +1177,21 @@ static char *__current_val(const char *_Nonnull p)
 	/*
 	 * free() after use.
 	 */
-	if (p == NULL || strlen(p) == 0) {
+	size_t p_len = strlen(p);
+	if (p == NULL || p_len == 0) {
 		return NULL;
 	}
-	char *tmp = malloc(strlen(p) + 8);
+	char *tmp = malloc(p_len + 8);
 	if (strchr(p, '"') == NULL) {
 		free(tmp);
 		return NULL;
 	}
 	char *q = strchr(p, '"') + 1;
 	size_t j = 0;
-	for (size_t i = 0; i < strlen(q); i++) {
+	size_t q_len = strlen(q);
+	for (size_t i = 0; i < q_len; i++) {
 		if (q[i] == '\\') {
-			if (i < strlen(q) - 2) {
+			if (i < q_len - 2) {
 				tmp[j] = q[i];
 				i++;
 				j++;

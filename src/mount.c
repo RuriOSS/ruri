@@ -50,7 +50,8 @@ int ruri_mkdirs(const char *_Nonnull dir, mode_t mode)
 	 * ret = mkdir("path/to/mkdir",mode);
 	 * return ret;
 	 */
-	for (size_t i = 1; i < strlen(dir); i++) {
+	size_t dir_len = strlen(dir);
+	for (size_t i = 1; i < dir_len; i++) {
 		if (dir[i] == '/') {
 			for (size_t j = 0; j < i; j++) {
 				buf[j] = dir[j];
@@ -60,7 +61,7 @@ int ruri_mkdirs(const char *_Nonnull dir, mode_t mode)
 		}
 	}
 	// If the end of `dir` is not '/', create the last level of the directory.
-	if (dir[strlen(dir) - 1] != '/') {
+	if (dir[dir_len - 1] != '/') {
 		ret = mkdir(dir, mode);
 	}
 	return ret;
