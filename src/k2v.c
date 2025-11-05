@@ -717,7 +717,6 @@ static int __k2v_array_lint(const char *_Nonnull line)
 	}
 	// Check for `"`.
 	int quote = 0;
-	p_len = strlen(p);
 	for (size_t i = 0; i < p_len; i++) {
 		if (p[i] == '\\') {
 			i++;
