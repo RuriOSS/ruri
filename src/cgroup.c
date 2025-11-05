@@ -28,6 +28,7 @@
  *
  */
 #include "include/ruri.h"
+#include <limits.h>
 /*
  * This file provides functions to set cgoup limits for container.
  * ${container_id} is set by the time creating the container,
@@ -138,7 +139,7 @@ static bool is_cgroupv2_support(const char *_Nonnull type)
 	buf[len] = '\0';
 	char str_to_find[32] = { '\0' };
 	ruri_log("{base}cgroup.controllers: %s\n", buf);
-	sprintf(str_to_find, "%s", type);
+	snprintf(str_to_find, sizeof(str_to_find), "%s", type);
 	ruri_log("{base}str_to_find: %s\n", str_to_find);
 	// If str_to_find is in buf and str_to_find+1 is space (' ') or end ('\0').
 	// We return true.
@@ -162,17 +163,34 @@ static char *memory_to_bytes(const char *_Nonnull memory)
 	char *ret = malloc(1024);
 	if (strstr(memory_dup, "K") != NULL) {
 		bytes = strtok(memory_dup, "K");
-		int kilobytes = atoi(bytes);
-		sprintf(ret, "%d", kilobytes * 1024);
+		long kilobytes = atol(bytes);
+		if (kilobytes < 0 || kilobytes > INT_MAX / 1024) {
+			free(memory_dup);
+			free(ret);
+			ruri_error("Memory value out of range\n");
+		}
+		snprintf(ret, 1024, "%ld", kilobytes * 1024);
 	} else if (strstr(memory_dup, "M") != NULL) {
 		bytes = strtok(memory_dup, "M");
-		int megabytes = atoi(bytes);
-		sprintf(ret, "%d", megabytes * 1024 * 1024);
+		long megabytes = atol(bytes);
+		if (megabytes < 0 || megabytes > INT_MAX / (1024 * 1024)) {
+			free(memory_dup);
+			free(ret);
+			ruri_error("Memory value out of range\n");
+		}
+		snprintf(ret, 1024, "%ld", megabytes * 1024 * 1024);
 	} else if (strstr(memory_dup, "G") != NULL) {
 		bytes = strtok(memory_dup, "G");
-		int gigabytes = atoi(bytes);
-		sprintf(ret, "%ld", (long)gigabytes * 1024 * 1024 * 1024);
+		long gigabytes = atol(bytes);
+		if (gigabytes < 0 || gigabytes > INT_MAX / (1024L * 1024 * 1024)) {
+			free(memory_dup);
+			free(ret);
+			ruri_error("Memory value out of range\n");
+		}
+		snprintf(ret, 1024, "%ld", gigabytes * 1024L * 1024 * 1024);
 	} else {
+		free(memory_dup);
+		free(ret);
 		ruri_error("Memory format error, only K M G is supported\n");
 	}
 	free(memory_dup);
@@ -190,14 +208,14 @@ static void set_cgroup_v1_memory(const struct RURI_CONTAINER *_Nonnull container
 	pid_t pid = getpid();
 	char buf[128] = { '\0' };
 	char memory_cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(memory_cgroup_path, "/sys/fs/cgroup/memory/%d", container->container_id);
+	snprintf(memory_cgroup_path, sizeof(memory_cgroup_path), "/sys/fs/cgroup/memory/%d", container->container_id);
 	mkdir(memory_cgroup_path, S_IRUSR | S_IWUSR);
 	usleep(200);
 	int fd = -1;
 	if (container->memory != NULL) {
 		// Set memory limit.
 		char memory_cgroup_limit_path[PATH_MAX] = { '\0' };
-		sprintf(memory_cgroup_limit_path, "/sys/fs/cgroup/memory/%d/memory.limit_in_bytes", container->container_id);
+		snprintf(memory_cgroup_limit_path, sizeof(memory_cgroup_limit_path), "/sys/fs/cgroup/memory/%d/memory.limit_in_bytes", container->container_id);
 		fd = open(memory_cgroup_limit_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
@@ -205,35 +223,35 @@ static void set_cgroup_v1_memory(const struct RURI_CONTAINER *_Nonnull container
 			return;
 		}
 		char *memory = memory_to_bytes(container->memory);
-		sprintf(buf, "%s\n", memory);
+		snprintf(buf, sizeof(buf), "%s\n", memory);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
 		}
 		free(memory);
 		close(fd);
 		char memory_oom[PATH_MAX] = { '\0' };
-		sprintf(memory_oom, "/sys/fs/cgroup/memory/%d/memory.oom_control", container->container_id);
+		snprintf(memory_oom, sizeof(memory_oom), "/sys/fs/cgroup/memory/%d/memory.oom_control", container->container_id);
 		fd = open(memory_oom, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "1\n");
+		snprintf(buf, sizeof(buf), "1\n");
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
 		}
 		close(fd);
 	}
 	char memory_cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(memory_cgroup_procs_path, "/sys/fs/cgroup/memory/%d/cgroup.procs", container->container_id);
+	snprintf(memory_cgroup_procs_path, sizeof(memory_cgroup_procs_path), "/sys/fs/cgroup/memory/%d/cgroup.procs", container->container_id);
 	// Add pid to container_id memory cgroup.
 	fd = open(memory_cgroup_procs_path, O_RDWR | O_CLOEXEC);
 	if (fd < 0) {
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		return;
 	}
-	sprintf(buf, "%d\n", pid);
+	snprintf(buf, sizeof(buf), "%d\n", pid);
 	write(fd, buf, strlen(buf));
 	close(fd);
 	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
@@ -249,7 +267,7 @@ static void set_cgroup_v1_cpu(const struct RURI_CONTAINER *_Nonnull container)
 	 */
 	mount_cgroup_v1_cpu();
 	char cpu_cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cpu_cgroup_path, "/sys/fs/cgroup/cpu/%d", container->container_id);
+	snprintf(cpu_cgroup_path, sizeof(cpu_cgroup_path), "/sys/fs/cgroup/cpu/%d", container->container_id);
 	mkdir(cpu_cgroup_path, S_IRUSR | S_IWUSR);
 	pid_t pid = getpid();
 	char buf[128] = { '\0' };
@@ -258,41 +276,41 @@ static void set_cgroup_v1_cpu(const struct RURI_CONTAINER *_Nonnull container)
 	if (container->cpupercent > 0) {
 		// Set memory limit.
 		char cpu_cgroup_quota_path[PATH_MAX] = { '\0' };
-		sprintf(cpu_cgroup_quota_path, "/sys/fs/cgroup/cpu/%d/cpu.cfs_quota_us", container->container_id);
+		snprintf(cpu_cgroup_quota_path, sizeof(cpu_cgroup_quota_path), "/sys/fs/cgroup/cpu/%d/cpu.cfs_quota_us", container->container_id);
 		fd = open(cpu_cgroup_quota_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "%d\n", container->cpupercent * 1000);
+		snprintf(buf, sizeof(buf), "%d\n", container->cpupercent * 1000);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
 		}
 		close(fd);
 		char cpu_cgroup_period_path[PATH_MAX] = { '\0' };
-		sprintf(cpu_cgroup_period_path, "/sys/fs/cgroup/cpu/%d/cpu.cfs_period_us", container->container_id);
+		snprintf(cpu_cgroup_period_path, sizeof(cpu_cgroup_period_path), "/sys/fs/cgroup/cpu/%d/cpu.cfs_period_us", container->container_id);
 		fd = open(cpu_cgroup_period_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "%d\n", 100000);
+		snprintf(buf, sizeof(buf), "%d\n", 100000);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
 		}
 		close(fd);
 	}
 	char cpu_cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cpu_cgroup_procs_path, "/sys/fs/cgroup/cpu/%d/cgroup.procs", container->container_id);
+	snprintf(cpu_cgroup_procs_path, sizeof(cpu_cgroup_procs_path), "/sys/fs/cgroup/cpu/%d/cgroup.procs", container->container_id);
 	// Add pid to container_id cpupercent cgroup.
 	fd = open(cpu_cgroup_procs_path, O_RDWR | O_CLOEXEC);
 	if (fd < 0) {
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		return;
 	}
-	sprintf(buf, "%d\n", pid);
+	snprintf(buf, sizeof(buf), "%d\n", pid);
 	write(fd, buf, strlen(buf));
 	close(fd);
 	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
@@ -306,7 +324,7 @@ static void set_cgroup_v1_cpuset(const struct RURI_CONTAINER *_Nonnull container
 	 */
 	mount_cgroup_v1_cpuset();
 	char cpuset_cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cpuset_cgroup_path, "/sys/fs/cgroup/cpuset/%d", container->container_id);
+	snprintf(cpuset_cgroup_path, sizeof(cpuset_cgroup_path), "/sys/fs/cgroup/cpuset/%d", container->container_id);
 	mkdir(cpuset_cgroup_path, S_IRUSR | S_IWUSR);
 	pid_t pid = getpid();
 	char buf[128] = { '\0' };
@@ -314,7 +332,7 @@ static void set_cgroup_v1_cpuset(const struct RURI_CONTAINER *_Nonnull container
 	if (container->cpuset != NULL) {
 		// Set cpuset limit.
 		char cpuset_cgroup_mems_path[PATH_MAX] = { '\0' };
-		sprintf(cpuset_cgroup_mems_path, "/sys/fs/cgroup/cpuset/%d/cpuset.mems", container->container_id);
+		snprintf(cpuset_cgroup_mems_path, sizeof(cpuset_cgroup_mems_path), "/sys/fs/cgroup/cpuset/%d/cpuset.mems", container->container_id);
 		fd = open(cpuset_cgroup_mems_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
@@ -325,7 +343,7 @@ static void set_cgroup_v1_cpuset(const struct RURI_CONTAINER *_Nonnull container
 		write(fd, "0\n", strlen("0\n"));
 		close(fd);
 		char cpuset_cgroup_cpus_path[PATH_MAX] = { '\0' };
-		sprintf(cpuset_cgroup_cpus_path, "/sys/fs/cgroup/cpuset/%d/cpuset.cpus", container->container_id);
+		snprintf(cpuset_cgroup_cpus_path, sizeof(cpuset_cgroup_cpus_path), "/sys/fs/cgroup/cpuset/%d/cpuset.cpus", container->container_id);
 		fd = open(cpuset_cgroup_cpus_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
@@ -333,14 +351,14 @@ static void set_cgroup_v1_cpuset(const struct RURI_CONTAINER *_Nonnull container
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "%s\n", container->cpuset);
+		snprintf(buf, sizeof(buf), "%s\n", container->cpuset);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpu limit failed{clear}\n");
 		}
 		close(fd);
 	}
 	char cpuset_cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cpuset_cgroup_procs_path, "/sys/fs/cgroup/cpuset/%d/cgroup.procs", container->container_id);
+	snprintf(cpuset_cgroup_procs_path, sizeof(cpuset_cgroup_procs_path), "/sys/fs/cgroup/cpuset/%d/cgroup.procs", container->container_id);
 	// Add pid to container_id cpuset cgroup.
 	fd = open(cpuset_cgroup_procs_path, O_RDWR | O_CLOEXEC);
 	if (fd < 0) {
@@ -348,7 +366,7 @@ static void set_cgroup_v1_cpuset(const struct RURI_CONTAINER *_Nonnull container
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		return;
 	}
-	sprintf(buf, "%d\n", pid);
+	snprintf(buf, sizeof(buf), "%d\n", pid);
 	write(fd, buf, strlen(buf));
 	close(fd);
 	// Do not keep the apifs mounted.
@@ -369,11 +387,11 @@ static void set_cgroup_v2_memory(const struct RURI_CONTAINER *_Nonnull container
 	pid_t pid = getpid();
 	char buf[128] = { '\0' };
 	char cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_path, "/sys/fs/cgroup/%d", container->container_id);
+	snprintf(cgroup_path, sizeof(cgroup_path), "/sys/fs/cgroup/%d", container->container_id);
 	mkdir(cgroup_path, S_IRUSR | S_IWUSR);
 	usleep(200);
 	char cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_procs_path, "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
+	snprintf(cgroup_procs_path, sizeof(cgroup_procs_path), "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
 	// Add pid to container_id cgroup.
 	int fd = open(cgroup_procs_path, O_RDWR | O_CLOEXEC);
 	if (fd < 0 && !container->no_warnings) {
@@ -382,13 +400,13 @@ static void set_cgroup_v2_memory(const struct RURI_CONTAINER *_Nonnull container
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		return;
 	}
-	sprintf(buf, "%d\n", pid);
+	snprintf(buf, sizeof(buf), "%d\n", pid);
 	write(fd, buf, strlen(buf));
 	close(fd);
 	if (container->memory != NULL) {
 		// Set memory limit.
 		char cgroup_memlimit_path[PATH_MAX] = { '\0' };
-		sprintf(cgroup_memlimit_path, "/sys/fs/cgroup/%d/memory.high", container->container_id);
+		snprintf(cgroup_memlimit_path, sizeof(cgroup_memlimit_path), "/sys/fs/cgroup/%d/memory.high", container->container_id);
 		fd = open(cgroup_memlimit_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
@@ -396,13 +414,13 @@ static void set_cgroup_v2_memory(const struct RURI_CONTAINER *_Nonnull container
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "%s\n", container->memory);
+		snprintf(buf, sizeof(buf), "%s\n", container->memory);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
 		}
 		close(fd);
 		char cgroup_memlimit_path2[PATH_MAX] = { '\0' };
-		sprintf(cgroup_memlimit_path2, "/sys/fs/cgroup/%d/memory.max", container->container_id);
+		snprintf(cgroup_memlimit_path2, sizeof(cgroup_memlimit_path2), "/sys/fs/cgroup/%d/memory.max", container->container_id);
 		fd = open(cgroup_memlimit_path2, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
@@ -410,13 +428,13 @@ static void set_cgroup_v2_memory(const struct RURI_CONTAINER *_Nonnull container
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "%s\n", container->memory);
+		snprintf(buf, sizeof(buf), "%s\n", container->memory);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
 		}
 		close(fd);
 		char cgroup_oom[PATH_MAX] = { '\0' };
-		sprintf(cgroup_oom, "/sys/fs/cgroup/%d/memory.oom.group", container->container_id);
+		snprintf(cgroup_oom, sizeof(cgroup_oom), "/sys/fs/cgroup/%d/memory.oom.group", container->container_id);
 		fd = open(cgroup_oom, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
@@ -424,7 +442,7 @@ static void set_cgroup_v2_memory(const struct RURI_CONTAINER *_Nonnull container
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "1\n");
+		snprintf(buf, sizeof(buf), "1\n");
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set memory limit failed{clear}\n");
 		}
@@ -447,11 +465,11 @@ static void set_cgroup_v2_cpuset(const struct RURI_CONTAINER *_Nonnull container
 	pid_t pid = getpid();
 	char buf[128] = { '\0' };
 	char cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_path, "/sys/fs/cgroup/%d", container->container_id);
+	snprintf(cgroup_path, sizeof(cgroup_path), "/sys/fs/cgroup/%d", container->container_id);
 	mkdir(cgroup_path, S_IRUSR | S_IWUSR);
 	usleep(200);
 	char cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_procs_path, "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
+	snprintf(cgroup_procs_path, sizeof(cgroup_procs_path), "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
 	// Add pid to container_id cgroup.
 	int fd = open(cgroup_procs_path, O_RDWR | O_CLOEXEC);
 	if (fd < 0 && !container->no_warnings) {
@@ -460,7 +478,7 @@ static void set_cgroup_v2_cpuset(const struct RURI_CONTAINER *_Nonnull container
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		return;
 	}
-	sprintf(buf, "%d\n", pid);
+	snprintf(buf, sizeof(buf), "%d\n", pid);
 	if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 		ruri_warning("{yellow}Set cgroup.procs failed{clear}\n");
 	}
@@ -468,7 +486,7 @@ static void set_cgroup_v2_cpuset(const struct RURI_CONTAINER *_Nonnull container
 	if (container->cpuset != NULL) {
 		// Set cpuset limit.
 		char cgroup_cpuset_path[PATH_MAX] = { '\0' };
-		sprintf(cgroup_cpuset_path, "/sys/fs/cgroup/%d/cpuset.cpus", container->container_id);
+		snprintf(cgroup_cpuset_path, sizeof(cgroup_cpuset_path), "/sys/fs/cgroup/%d/cpuset.cpus", container->container_id);
 		fd = open(cgroup_cpuset_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
@@ -476,7 +494,7 @@ static void set_cgroup_v2_cpuset(const struct RURI_CONTAINER *_Nonnull container
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "%s\n", container->cpuset);
+		snprintf(buf, sizeof(buf), "%s\n", container->cpuset);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
 		}
@@ -500,11 +518,11 @@ static void set_cgroup_v2_cpu(const struct RURI_CONTAINER *_Nonnull container)
 	pid_t pid = getpid();
 	char buf[128] = { '\0' };
 	char cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_path, "/sys/fs/cgroup/%d", container->container_id);
+	snprintf(cgroup_path, sizeof(cgroup_path), "/sys/fs/cgroup/%d", container->container_id);
 	mkdir(cgroup_path, S_IRUSR | S_IWUSR);
 	usleep(200);
 	char cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_procs_path, "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
+	snprintf(cgroup_procs_path, sizeof(cgroup_procs_path), "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
 	// Add pid to container_id cgroup.
 	int fd = open(cgroup_procs_path, O_RDWR | O_CLOEXEC);
 	if (fd < 0 && !container->no_warnings) {
@@ -513,7 +531,7 @@ static void set_cgroup_v2_cpu(const struct RURI_CONTAINER *_Nonnull container)
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		return;
 	}
-	sprintf(buf, "%d\n", pid);
+	snprintf(buf, sizeof(buf), "%d\n", pid);
 	if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 		ruri_warning("{yellow}Set cgroup.procs failed{clear}\n");
 	}
@@ -521,7 +539,7 @@ static void set_cgroup_v2_cpu(const struct RURI_CONTAINER *_Nonnull container)
 	if (container->cpupercent > 0) {
 		// Set cpuset limit.
 		char cgroup_cpu_path[PATH_MAX] = { '\0' };
-		sprintf(cgroup_cpu_path, "/sys/fs/cgroup/%d/cpu.max", container->container_id);
+		snprintf(cgroup_cpu_path, sizeof(cgroup_cpu_path), "/sys/fs/cgroup/%d/cpu.max", container->container_id);
 		fd = open(cgroup_cpu_path, O_RDWR | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
@@ -529,7 +547,7 @@ static void set_cgroup_v2_cpu(const struct RURI_CONTAINER *_Nonnull container)
 			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 			return;
 		}
-		sprintf(buf, "%d 100000\n", container->cpupercent * 1000);
+		snprintf(buf, sizeof(buf), "%d 100000\n", container->cpupercent * 1000);
 		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
 		}
