@@ -442,6 +442,7 @@ For more info, refer to the man page of `proc_pid_oom_score_adj(5)`.
 | Option | Description |
 |--------|-------------|
 | `-Q`, `--mask-path [path]` | Mask a path in the container |
+
 This option allows you to mask a path in the container with a read-only tmpfs or `/dev/null`.
 
 ---
