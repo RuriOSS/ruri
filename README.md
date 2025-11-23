@@ -17,6 +17,9 @@
 &emsp;ruri is acronym to Lightweight, User-friendly Linux-container Implementation.    
 &emsp;ruri is a powerful container implementation that runs on almost any Linux device, even with incomplete kernel configurations or minimal storage space.    
 
+# Keep updated:
+For the latest news, please follow our [Twitter(X)](https://x.com/RuriOSS).
+
 # Security Reporting:
 For vulnerability reporting, please refer to [SECURITY.md](SECURITY.md).
 

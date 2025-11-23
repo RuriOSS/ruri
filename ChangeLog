@@ -1,3 +1,5 @@
+# v3.9.4:
+  * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
 # v3.9.3:
   * Add `-g` option: `--skip-setgroups`.
   * Make setgroups() enabled for root user by default.
