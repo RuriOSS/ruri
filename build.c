@@ -714,6 +714,9 @@ void default_cflags(void)
 	check_and_add_cflag("-Wl,--strip-all", false);
 	check_and_add_cflag("-U_FORTIFY_SOURCE", false);
 	check_and_add_cflag("-D_FORTIFY_SOURCE=3", false);
+	check_and_add_cflag("-fvisibility=hidden", false);
+	check_and_add_cflag("-fsanitize=cfi", false);
+	check_and_add_cflag("-fsanitize=safe-stack", false);
 }
 // Dev cflags
 void dev_cflags(void)
