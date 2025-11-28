@@ -771,6 +771,7 @@ int main(int argc, char **argv)
 			}
 		} else if (strcmp(argv[i], "--static") == 0 || strcmp(argv[i], "-s") == 0) {
 			check_and_add_cflag("-static", true);
+			check_and_add_cflag("-static-pie", false);
 		} else if (strcmp(argv[i], "--core-only") == 0 || strcmp(argv[i], "-c") == 0) {
 			core_only = true;
 		} else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
