@@ -773,8 +773,10 @@ int main(int argc, char **argv)
 				error("Error: Invalid number of jobs: %s", argv[i]);
 			}
 		} else if (strcmp(argv[i], "--static") == 0 || strcmp(argv[i], "-s") == 0) {
-			check_and_add_cflag("-static", true);
 			check_and_add_cflag("-static-pie", false);
+			if (!check_c_flag("-static-pie")) {
+				check_and_add_cflag("-static", true);
+			}
 		} else if (strcmp(argv[i], "--core-only") == 0 || strcmp(argv[i], "-c") == 0) {
 			core_only = true;
 		} else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
