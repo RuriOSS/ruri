@@ -478,9 +478,9 @@ static void copy_qemu_binary(struct RURI_CONTAINER *container)
 		// because it does not need a buffer.
 		// !NOTE: Linux version under 2.6.33 does not support sendfile(2) for copying files.
 		sendfile(targetfd, sourcefd, &offset, (size_t)stat_buf.st_size);
-		close(targetfd);
 		close(sourcefd);
-		chmod(target, S_IRGRP | S_IXGRP | S_IRUSR | S_IXUSR | S_IROTH | S_IXOTH);
+		fchmod(targetfd, S_IRGRP | S_IXGRP | S_IRUSR | S_IXUSR | S_IROTH | S_IXOTH);
+		close(targetfd);
 		free(qemu_path);
 		// Correct the qemu-path.
 		free(container->qemu_path);
