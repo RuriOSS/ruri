@@ -48,33 +48,34 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
+#include <limits.h>
+#include <linux/fs.h>
 #include <linux/limits.h>
+#include <linux/loop.h>
 #include <linux/sched.h>
 #include <linux/securebits.h>
 #include <linux/version.h>
-#include <linux/loop.h>
-#include <sys/mount.h>
-#include <linux/fs.h>
-#include <sys/ioctl.h>
-#include <sys/syscall.h>
-#include <sys/sendfile.h>
-#include <sys/prctl.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/sysmacros.h>
-#include <sys/types.h>
-#include <sys/utsname.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <time.h>
-#include <signal.h>
-#include <unistd.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <grp.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/mount.h>
+#include <sys/prctl.h>
+#include <sys/sendfile.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <sys/sysmacros.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/utsname.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
 #ifndef DISABLE_LIBSECCOMP
 // This program need to be linked with `-lseccomp`.
 #include <seccomp.h>
@@ -125,9 +126,9 @@ typedef int cap_value_t;
 #undef NGROUPS_MAX
 #define NGROUPS_MAX 65536
 // Include other headers.
-#include "version.h"
-#include "k2v.h"
 #include "cprintf.h"
+#include "k2v.h"
+#include "version.h"
 #undef cprintf
 #undef cfprintf
 #define cprintf(format, ...) scprintf(format, ##__VA_ARGS__)

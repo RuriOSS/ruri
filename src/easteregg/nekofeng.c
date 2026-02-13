@@ -153,12 +153,12 @@ void ruri_AwA(void)
 	init();
 	struct NEKOFENG_LAYER layer;
 	layer.layer = U"\033[1;38;2;254;228;208m\n"
-			"          Keep moe.\n"
-			"          Keep cool.\n"
-			"         Keep hacking.\n"
-			"Keep on the side of technology.\n\n"
-			"      But talk is cheap,\n"
-			"       Show me the code.\n";
+		      "          Keep moe.\n"
+		      "          Keep cool.\n"
+		      "         Keep hacking.\n"
+		      "Keep on the side of technology.\n\n"
+		      "      But talk is cheap,\n"
+		      "       Show me the code.\n";
 	layer.x_offset = 3;
 	layer.y_offset = -2;
 	nekofeng_typewrite_layer(&layer, 50000, true);
@@ -187,11 +187,11 @@ void ruri_AwA(void)
 	}
 	printf("\033[H\033[2J");
 	layer.layer = U"\033[1;38;2;254;228;208m\n\n"
-			"●●●●  ●   ● ●●●●   ●●●\n"
-			"●   ● ●   ● ●   ●   ●\n"
-			"●●●●  ●   ● ●●●●    ●\n"
-			"●  ●  ●   ● ●  ●    ●\n"
-			"●   ●  ●●●  ●   ●  ●●●\n";
+		      "●●●●  ●   ● ●●●●   ●●●\n"
+		      "●   ● ●   ● ●   ●   ●\n"
+		      "●●●●  ●   ● ●●●●    ●\n"
+		      "●  ●  ●   ● ●  ●    ●\n"
+		      "●   ●  ●●●  ●   ●  ●●●\n";
 	layer.x_offset = 7;
 	layer.y_offset = -2;
 	nekofeng_typewrite_layer(&layer, 5000, false);

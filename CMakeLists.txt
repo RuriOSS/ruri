@@ -24,7 +24,7 @@ option(STRIP_DEBUGINFO "Strip debuginfo from ruri binary" ON)
 # ==============================
 # Platform Check
 # ==============================
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
     message(FATAL_ERROR "ruri is only supported on Linux platforms.")
 endif()
 

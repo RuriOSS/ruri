@@ -5,7 +5,8 @@
  *
  * MIT License
  *
- * Copyright (c) 2022-2024 Moe-hacker
+ * Copyright (c) 2022-2026 Moe-hacker
+ *  and partially...  2026 BarryLhm
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,507 +37,373 @@
  * TODO:
  * Add more cgroups support.
  */
-static void mount_cgroup_v1_memory(void)
+// Returns -1 for malformed size
+// Returns -2 for too large
+static ssize_t humansize_to_bytes(const char *_Nonnull human)
 {
-	/*
-	 * Mount Cgroup v1 memory controller.
-	 * Nothing to return because if this function run failed,
-	 * that means cgroup is fully not supported on the device.
-	 */
-	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
-	// Maybe needless.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-	// Mount /sys/fs/cgroup as tmpfs.
-	mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL);
-	// Mount memory controller.
-	mkdir("/sys/fs/cgroup/memory", S_IRUSR | S_IWUSR);
-	usleep(2000);
-	mount("none", "/sys/fs/cgroup/memory", "cgroup", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, "memory");
-	ruri_log("{base}Tried to mount cgroup v1 memory\n");
-}
-static void mount_cgroup_v1_cpu(void)
-{
-	/*
-	 * Mount Cgroup v1 cpu controller.
-	 * Nothing to return because if this function run failed,
-	 * that means cgroup is fully not supported on the device.
-	 */
-	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
-	// Maybe needless.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-	// Mount /sys/fs/cgroup as tmpfs.
-	mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL);
-	// Mount cpu controller.
-	mkdir("/sys/fs/cgroup/cpu", S_IRUSR | S_IWUSR);
-	usleep(2000);
-	mount("none", "/sys/fs/cgroup/cpu", "cgroup", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, "cpu");
-	ruri_log("{base}Tried to mount cgroup v1 cpu\n");
-}
-static void mount_cgroup_v1_cpuset(void)
-{
-	/*
-	 * Mount Cgroup v1 cpuset controller.
-	 * Nothing to return because if this function run failed,
-	 * that means cgroup is fully not supported on the device.
-	 */
-	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
-	// Maybe needless.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-	// Mount /sys/fs/cgroup as tmpfs.
-	mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL);
-	// Mount cpuset controller.
-	mkdir("/sys/fs/cgroup/cpuset", S_IRUSR | S_IWUSR);
-	usleep(2000);
-	mount("none", "/sys/fs/cgroup/cpuset", "cgroup", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, "cpuset");
-	ruri_log("{base}Tried to mount cgroup v1 cpuset\n");
-}
-static bool is_cgroupv2_support(const char *_Nonnull type)
-{
-	/*
-	 * Check if cgroup v2 supports type controller.
-	 * Return true if cgroup.controllers contains type.
-	 */
-	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
-	// Maybe needless.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-	// I love cgroup2, because it's easy to mount and control.
-	int stat = mount("none", "/sys/fs/cgroup", "cgroup2", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL);
-	if (stat != 0) {
-		return false;
-	}
-	usleep(200);
-	int subtree_control_fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_RDWR | O_CLOEXEC);
-	write(subtree_control_fd, "+memory\n", strlen("+memory\n"));
-	write(subtree_control_fd, "+cpu\n", strlen("+cpu\n"));
-	write(subtree_control_fd, "+cpuset\n", strlen("+cpuset\n"));
-	close(subtree_control_fd);
-	usleep(200);
-	// Check if we have a controlable cgroup for `type`.
-	mkdir("/sys/fs/cgroup/ruri", S_IRUSR | S_IWUSR);
-	int fd = open("/sys/fs/cgroup/ruri/cgroup.controllers", O_RDONLY | O_CLOEXEC);
-	if (fd < 0) {
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		ruri_log("{base}Cgroup v2 does not support %s\n", type);
-		ruri_log("{base}cgroup.controllers does not exist\n");
-		return false;
-	}
-	char buf[256] = { '\0' };
-	ssize_t len = read(fd, buf, 255);
-	if (len <= 0) {
-		close(fd);
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		ruri_log("{base}Cgroup v2 does not support %s\n", type);
-		ruri_log("{base}cgroup.controllers read failed\n");
-		return false;
-	}
-	if (len <= 0) {
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		ruri_log("{base}Cgroup v2 does not support %s\n", type);
-		ruri_log("{base}cgroup.controllers read failed\n");
-		return false;
-	}
-	buf[len] = '\0';
-	char str_to_find[32] = { '\0' };
-	ruri_log("{base}cgroup.controllers: %s\n", buf);
-	sprintf(str_to_find, "%s", type);
-	ruri_log("{base}str_to_find: %s\n", str_to_find);
-	// If str_to_find is in buf and str_to_find+1 is space (' ') or end ('\0').
-	// We return true.
-	if (strstr(buf, str_to_find) != NULL && (strstr(buf, str_to_find)[strlen(str_to_find)] == ' ' || strstr(buf, str_to_find)[strlen(str_to_find)] == '\0')) {
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		ruri_log("{base}Cgroup v2 supports %s\n", type);
-		return true;
-	}
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-	ruri_log("{base}Cgroup v2 does not support %s\n", type);
-	return false;
-}
-static char *memory_to_bytes(const char *_Nonnull memory)
-{
-	/*
-	 * Convert memory string to bytes.
-	 * Return a string of bytes.
-	 */
-	char *bytes = NULL;
-	char *memory_dup = strdup(memory);
-	char *ret = malloc(1024);
-	if (strstr(memory_dup, "K") != NULL) {
-		bytes = strtok(memory_dup, "K");
-		int kilobytes = atoi(bytes);
-		sprintf(ret, "%d", kilobytes * 1024);
-	} else if (strstr(memory_dup, "M") != NULL) {
-		bytes = strtok(memory_dup, "M");
-		int megabytes = atoi(bytes);
-		sprintf(ret, "%d", megabytes * 1024 * 1024);
-	} else if (strstr(memory_dup, "G") != NULL) {
-		bytes = strtok(memory_dup, "G");
-		int gigabytes = atoi(bytes);
-		sprintf(ret, "%ld", (long)gigabytes * 1024 * 1024 * 1024);
+	char *endptr = NULL;
+	errno = 0;
+	long long ret = strtoll(human, &endptr, 10);
+	// these become too long after formatted
+	// clang-format off
+	if (errno == ERANGE) return -2;
+	if (endptr == human || ret < 0) return -1; // no number or negative
+	if (!*endptr) { if (ret > SSIZE_MAX) return -2;
 	} else {
-		ruri_error("Memory format error, only K M G is supported\n");
+		if (*(endptr + 1)) return -1; // invalid unit
+		switch (*endptr) {
+		case 'k': case 'K': if (ret > SSIZE_MAX / 1024) return -2; ret *= 1024; break;
+		case 'm': case 'M': if (ret > SSIZE_MAX / 1024 / 1024) return -2; ret *= 1024 * 1024; break;
+		case 'g': case 'G': if (ret > SSIZE_MAX / 1024 / 1024 / 1024) return -2; ret *= 1024 * 1024 * 1024; break;
+		default: return -1; // invalid unit
+		}
 	}
-	free(memory_dup);
+	// clang-format on
 	return ret;
 }
-static void set_cgroup_v1_memory(const struct RURI_CONTAINER *_Nonnull container)
+// Returns 1 for failed open() and 2 for failed write().
+// Only write control files!!
+static int open_and_write(const char *file, const char *value)
+{
+	// Open and write control file
+	int fd = open(file, O_WRONLY | O_CLOEXEC);
+	if (fd < 0) {
+		return 1;
+	}
+	if (write(fd, value, strlen(value)) < 0) {
+		close(fd);
+		return 2;
+	};
+	close(fd);
+	return 0;
+}
+/*
+ *                                          _
+ *   ___ __ _ _ __ ___  _   _ _ __   __   _/ |
+ *  / __/ _` | '__/ _ \| | | | '_ \  \ \ / / |
+ * | (_| (_| | | | (_) | |_| | |_) |  \ V /| |
+ *  \___\__, |_|  \___/ \__,_| .__/    \_/ |_|
+ *      |___/                |_|
+ */
+// Returns 1 for failed mount().
+// Don't forget to usleep(200) after mount;
+static int mount_cgroup_v1(const char *_Nonnull controller)
 {
 	/*
-	 * Mount cgroupv1 memory controller and set limit.
-	 * Nothing to return, only warnings to show if cgroup is not supported.
-	 * Control file:
-	 * /sys/fs/cgroup/memory/${container_id}/memory.limit_in_bytes
+	 * Mount Cgroup v1 _any_ controller.
 	 */
-	mount_cgroup_v1_memory();
-	pid_t pid = getpid();
-	char buf[128] = { '\0' };
-	char memory_cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(memory_cgroup_path, "/sys/fs/cgroup/memory/%d", container->container_id);
-	mkdir(memory_cgroup_path, S_IRUSR | S_IWUSR);
-	usleep(200);
-	int fd = -1;
-	if (container->memory != NULL) {
-		// Set memory limit.
-		char memory_cgroup_limit_path[PATH_MAX] = { '\0' };
-		sprintf(memory_cgroup_limit_path, "/sys/fs/cgroup/memory/%d/memory.limit_in_bytes", container->container_id);
-		fd = open(memory_cgroup_limit_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
-		char *memory = memory_to_bytes(container->memory);
-		sprintf(buf, "%s\n", memory);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-		}
-		free(memory);
-		close(fd);
-		char memory_oom[PATH_MAX] = { '\0' };
-		sprintf(memory_oom, "/sys/fs/cgroup/memory/%d/memory.oom_control", container->container_id);
-		fd = open(memory_oom, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
-		sprintf(buf, "1\n");
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-		}
-		close(fd);
+	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
+	// Mount /sys/fs/cgroup as tmpfs.
+	if (mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL)) {
+		goto fail;
 	}
-	char memory_cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(memory_cgroup_procs_path, "/sys/fs/cgroup/memory/%d/cgroup.procs", container->container_id);
+	// Mount memory controller.
+	char cgroup_controller_path[PATH_MAX] = "";
+	sprintf(cgroup_controller_path, "/sys/fs/cgroup/%s", controller);
+	mkdir(cgroup_controller_path, S_IRUSR | S_IWUSR);
+	if (mount("none", cgroup_controller_path, "cgroup", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, controller)) {
+		goto fail;
+	}
+	char cgroup_root_node_path[PATH_MAX] = "";
+	sprintf(cgroup_root_node_path, "/sys/fs/cgroup/%s/ruri", controller);
+	// Create root node.
+	errno = 0;
+	if (mkdir(cgroup_root_node_path, S_IRUSR | S_IWUSR) && errno != EEXIST) {
+		goto fail;
+	};
+	ruri_log("{base}Successfully mounted cgroup v1 %s\n", controller);
+	return 0;
+fail:
+	ruri_log("{base}Failed to mount cgroup v1 %s\n", controller);
+	return 1;
+}
+// Returns the same as open_and_write().
+static int cgroup_v1_attach(const struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull controller)
+{
+	pid_t pid = getpid();
+	char buf[256] = "";
+	char cgroup_path[PATH_MAX] = "";
+	sprintf(cgroup_path, "/sys/fs/cgroup/%s/ruri/%d", controller, container->container_id);
+	mkdir(cgroup_path, S_IRUSR | S_IWUSR);
+	usleep(200);
+	char cgroup_procs_path[PATH_MAX] = "";
+	sprintf(cgroup_procs_path, "/sys/fs/cgroup/%s/ruri/%d/cgroup.procs", controller, container->container_id);
 	// Add pid to container_id memory cgroup.
-	fd = open(memory_cgroup_procs_path, O_RDWR | O_CLOEXEC);
-	if (fd < 0) {
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		return;
-	}
 	sprintf(buf, "%d\n", pid);
-	write(fd, buf, strlen(buf));
-	close(fd);
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
+	return open_and_write(cgroup_procs_path, buf);
 }
-static void set_cgroup_v1_cpu(const struct RURI_CONTAINER *_Nonnull container)
+static void set_cgroup_v1(const struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull controller)
 {
 	/*
-	 * Mount cgroupv1 cpu controller and set limit.
+	 * Mount cgroupv1 _any_ controller and set limit.
 	 * Nothing to return, only warnings to show if cgroup is not supported.
-	 * Control file:
-	 * /sys/fs/cgroup/cpu/${container_id}/cpu.cfs_quota_us
-	 * /sys/fs/cgroup/cpu/${container_id}/cpu.cfs_period_us
 	 */
-	mount_cgroup_v1_cpu();
-	char cpu_cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cpu_cgroup_path, "/sys/fs/cgroup/cpu/%d", container->container_id);
-	mkdir(cpu_cgroup_path, S_IRUSR | S_IWUSR);
-	pid_t pid = getpid();
-	char buf[128] = { '\0' };
+	mount_cgroup_v1(controller);
+	char cgroup_node_path[PATH_MAX] = "";
+	sprintf(cgroup_node_path, "/sys/fs/cgroup/%s/ruri/%d", controller, container->container_id);
+	mkdir(cgroup_node_path, S_IRUSR | S_IWUSR);
 	usleep(200);
-	int fd = -1;
-	if (container->cpupercent > 0) {
-		// Set memory limit.
-		char cpu_cgroup_quota_path[PATH_MAX] = { '\0' };
-		sprintf(cpu_cgroup_quota_path, "/sys/fs/cgroup/cpu/%d/cpu.cfs_quota_us", container->container_id);
-		fd = open(cpu_cgroup_quota_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
+	char *controller_name = "!!!internal error!!!";
+	if (!strcmp(controller, "memory")) {
+		if (!container->memory) {
+			goto cleanup;
 		}
+		controller_name = "memory";
+		// Set memory limit.
+		char memory_cgroup_limit_path[PATH_MAX] = "";
+		sprintf(memory_cgroup_limit_path, "/sys/fs/cgroup/memory/ruri/%d/memory.limit_in_bytes", container->container_id);
+		ssize_t memory = humansize_to_bytes(container->memory);
+		switch (memory) {
+		case -1:
+			if (!container->no_warnings) {
+				ruri_error("Memory format error, only ^[1-9]+[kKmMgG]$ is supported\n");
+			}
+			goto cleanup;
+		case -2:
+			if (!container->no_warnings) {
+				ruri_error("Memory value too big to current platform\n");
+			}
+			goto cleanup;
+		}
+		char buf[256] = "";
+		sprintf(buf, "%zd\n", memory);
+		if (open_and_write(memory_cgroup_limit_path, buf)) {
+			goto fail;
+		}
+		char memory_cgroup_oom_path[PATH_MAX] = "";
+		sprintf(memory_cgroup_oom_path, "/sys/fs/cgroup/memory/ruri/%d/memory.oom_control", container->container_id);
+		if (open_and_write(memory_cgroup_oom_path, "1\n")) {
+			goto fail;
+		}
+	} else if (!strcmp(controller, "cpu")) {
+		if (!container->cpupercent) {
+			goto cleanup;
+		}
+		controller_name = "cpupercent";
+		// Set cpu limit.
+		char cpu_cgroup_quota_path[PATH_MAX] = "";
+		sprintf(cpu_cgroup_quota_path, "/sys/fs/cgroup/cpu/ruri/%d/cpu.cfs_quota_us", container->container_id);
+		char buf[256] = "";
 		sprintf(buf, "%d\n", container->cpupercent * 1000);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
+		if (open_and_write(cpu_cgroup_quota_path, buf)) {
+			goto fail;
 		}
-		close(fd);
-		char cpu_cgroup_period_path[PATH_MAX] = { '\0' };
-		sprintf(cpu_cgroup_period_path, "/sys/fs/cgroup/cpu/%d/cpu.cfs_period_us", container->container_id);
-		fd = open(cpu_cgroup_period_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
+		char cpu_cgroup_period_path[PATH_MAX] = "";
+		sprintf(cpu_cgroup_period_path, "/sys/fs/cgroup/cpu/ruri/%d/cpu.cfs_period_us", container->container_id);
 		sprintf(buf, "%d\n", 100000);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
+		if (open_and_write(cpu_cgroup_period_path, buf)) {
+			goto fail;
 		}
-		close(fd);
-	}
-	char cpu_cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cpu_cgroup_procs_path, "/sys/fs/cgroup/cpu/%d/cgroup.procs", container->container_id);
-	// Add pid to container_id cpupercent cgroup.
-	fd = open(cpu_cgroup_procs_path, O_RDWR | O_CLOEXEC);
-	if (fd < 0) {
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		return;
-	}
-	sprintf(buf, "%d\n", pid);
-	write(fd, buf, strlen(buf));
-	close(fd);
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-}
-static void set_cgroup_v1_cpuset(const struct RURI_CONTAINER *_Nonnull container)
-{
-	/*
-	 * Mount cgroupv1 cpuset controller and set limit.
-	 * Nothing to return, only warnings to show if cgroup is not supported.
-	 * Control file: /sys/fs/cgroup/cpuset/${container_id}/cpuset.cpus
-	 */
-	mount_cgroup_v1_cpuset();
-	char cpuset_cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cpuset_cgroup_path, "/sys/fs/cgroup/cpuset/%d", container->container_id);
-	mkdir(cpuset_cgroup_path, S_IRUSR | S_IWUSR);
-	pid_t pid = getpid();
-	char buf[128] = { '\0' };
-	int fd = -1;
-	if (container->cpuset != NULL) {
+
+	} else if (!strcmp(controller, "cpuset")) {
+		if (!container->cpuset) {
+			goto cleanup;
+		}
+		controller_name = "cpuset";
 		// Set cpuset limit.
-		char cpuset_cgroup_mems_path[PATH_MAX] = { '\0' };
-		sprintf(cpuset_cgroup_mems_path, "/sys/fs/cgroup/cpuset/%d/cpuset.mems", container->container_id);
-		fd = open(cpuset_cgroup_mems_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
-			// Do not keep the apifs mounted.
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
+		char cpuset_cgroup_mems_path[PATH_MAX] = "";
+		sprintf(cpuset_cgroup_mems_path, "/sys/fs/cgroup/cpuset/ruri/%d/cpuset.mems", container->container_id);
+		if (open_and_write(cpuset_cgroup_mems_path, "all\n")) {
+			goto fail;
 		}
-		write(fd, "0\n", strlen("0\n"));
-		close(fd);
-		char cpuset_cgroup_cpus_path[PATH_MAX] = { '\0' };
-		sprintf(cpuset_cgroup_cpus_path, "/sys/fs/cgroup/cpuset/%d/cpuset.cpus", container->container_id);
-		fd = open(cpuset_cgroup_cpus_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
-			// Do not keep the apifs mounted.
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
+		char cpuset_cgroup_cpus_path[PATH_MAX] = "";
+		sprintf(cpuset_cgroup_cpus_path, "/sys/fs/cgroup/cpuset/ruri/%d/cpuset.cpus", container->container_id);
+		char buf[256] = "";
 		sprintf(buf, "%s\n", container->cpuset);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpu limit failed{clear}\n");
+		if (open_and_write(cpuset_cgroup_cpus_path, buf)) {
+			goto fail;
 		}
-		close(fd);
+	} else {
+		controller_name = "!!!internal error!!!";
+		goto fail;
 	}
-	char cpuset_cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cpuset_cgroup_procs_path, "/sys/fs/cgroup/cpuset/%d/cgroup.procs", container->container_id);
-	// Add pid to container_id cpuset cgroup.
-	fd = open(cpuset_cgroup_procs_path, O_RDWR | O_CLOEXEC);
-	if (fd < 0) {
-		// Do not keep the apifs mounted.
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		return;
+	if (cgroup_v1_attach(container, controller)) {
+		goto fail;
 	}
-	sprintf(buf, "%d\n", pid);
-	write(fd, buf, strlen(buf));
-	close(fd);
-	// Do not keep the apifs mounted.
+	goto cleanup;
+fail:
+	if (!container->no_warnings) {
+		ruri_warning("{yellow}Set %s limit failed{clear}\n", controller_name);
+	}
+cleanup:
 	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 }
-static void set_cgroup_v2_memory(const struct RURI_CONTAINER *_Nonnull container)
+/*
+ *                                          ____
+ *   ___ __ _ _ __ ___  _   _ _ __   __   _|___ \
+ *  / __/ _` | '__/ _ \| | | | '_ \  \ \ / / __) |
+ * | (_| (_| | | | (_) | |_| | |_) |  \ V / / __/
+ *  \___\__, |_|  \___/ \__,_| .__/    \_/ |_____|
+ *      |___/                |_|
+ */
+// Returns 1 for failed mount
+// Don't forget to usleep(200) after mount
+static int mount_cgroup_v2(void)
 {
-	/*
-	 * Mount cgroupv2 memory controller and set limit.
-	 * Nothing to return, only warnings to show if cgroup is not supported.
-	 * Control file: /sys/fs/cgroup/${container_id}/memory.max
-	 */
 	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
-	// Maybe needless.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 	// Mount /sys/fs/cgroup as cgroup2.
-	mount("none", "/sys/fs/cgroup", "cgroup2", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL);
+	if (mount("none", "/sys/fs/cgroup", "cgroup2", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL)) {
+		goto fail;
+	}
+	// Create root node
+	errno = 0;
+	if (mkdir("/sys/fs/cgroup/ruri", S_IRUSR | S_IWUSR) && errno != EEXIST) {
+		goto fail;
+	}
+	ruri_log("{base}Successfully mounted cgroup v2\n");
+	return 0;
+fail:
+	ruri_log("{base}Failed to mount cgroup v2\n");
+	return 1;
+}
+// Returns 1 for failure.
+static int cgroup_v2_attach(const struct RURI_CONTAINER *_Nonnull container)
+{
 	pid_t pid = getpid();
-	char buf[128] = { '\0' };
-	char cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_path, "/sys/fs/cgroup/%d", container->container_id);
+	char buf[256] = "";
+	char cgroup_path[PATH_MAX] = "";
+	sprintf(cgroup_path, "/sys/fs/cgroup/ruri/%d", container->container_id);
 	mkdir(cgroup_path, S_IRUSR | S_IWUSR);
 	usleep(200);
-	char cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_procs_path, "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
 	// Add pid to container_id cgroup.
-	int fd = open(cgroup_procs_path, O_RDWR | O_CLOEXEC);
-	if (fd < 0 && !container->no_warnings) {
-		ruri_warning("{yellow}Set cgroup.procs failed{clear}\n");
-		// Do not keep the apifs mounted.
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
+	char cgroup_procs_path[PATH_MAX] = "";
+	sprintf(cgroup_procs_path, "/sys/fs/cgroup/ruri/%d/cgroup.procs", container->container_id);
+	sprintf(buf, "%d\n", pid);
+	if (open_and_write(cgroup_procs_path, buf)) {
+		ruri_warning("{yellow}Attach cgroup failed{clear}\n");
+		// Report failure for apifs cleanup
+		return 1;
+	}
+	return 0;
+}
+static bool is_cgroupv2_support(const char *_Nonnull controller)
+{
+	/*
+	 * Check if cgroup v2 supports _any_ controller.
+	 * Return true if cgroup.controllers contains _controller_.
+	 */
+	// We love cgroup2, because it's easy to mount and control.
+	if (mount_cgroup_v2()) {
+		return false;
+	}
+	usleep(200);
+	char buf[256] = "";
+	sprintf(buf, "+%s\n", controller);
+	if (open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", buf)) {
+		goto fail;
+	}
+	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
+	ruri_log("{base}Cgroup v2 supports %s controller\n", controller);
+	return true;
+fail:
+	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
+	ruri_log("{base}Cgroup v2 does not support %s controller\n", controller);
+	return false;
+}
+static void set_cgroup_v2(const struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull controller)
+{
+	/*
+	 * Mount cgroupv2 _any_ controller and set limit.
+	 * Nothing to return, only warnings to show if cgroup is not supported.
+	 */
+	// Mount /sys/fs/cgroup as cgroup2.
+	if (mount_cgroup_v2()) {
 		return;
 	}
-	sprintf(buf, "%d\n", pid);
-	write(fd, buf, strlen(buf));
-	close(fd);
-	if (container->memory != NULL) {
+	char cgroup_node_path[PATH_MAX] = "";
+	sprintf(cgroup_node_path, "/sys/fs/cgroup/ruri/%d", container->container_id);
+	mkdir(cgroup_node_path, S_IRUSR | S_IWUSR);
+	usleep(200);
+	char *controller_name = "!!!internal error!!!";
+	if (!strcmp(controller, "attach")) {
+		; // no controller to set, only attach the container
+	} else if (!strcmp(controller, "memory")) {
+		if (!container->memory) {
+			goto cleanup;
+		}
+		controller_name = "memory";
 		// Set memory limit.
-		char cgroup_memlimit_path[PATH_MAX] = { '\0' };
-		sprintf(cgroup_memlimit_path, "/sys/fs/cgroup/%d/memory.high", container->container_id);
-		fd = open(cgroup_memlimit_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-			// Do not keep the apifs mounted.
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
+		char cgroup_memlimit_path[PATH_MAX] = "";
+		sprintf(cgroup_memlimit_path, "/sys/fs/cgroup/ruri/%d/memory.high", container->container_id);
+		char buf[256] = "";
 		sprintf(buf, "%s\n", container->memory);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
+		if (open_and_write(cgroup_memlimit_path, buf)) {
+			goto fail;
 		}
-		close(fd);
-		char cgroup_memlimit_path2[PATH_MAX] = { '\0' };
-		sprintf(cgroup_memlimit_path2, "/sys/fs/cgroup/%d/memory.max", container->container_id);
-		fd = open(cgroup_memlimit_path2, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-			// Do not keep the apifs mounted.
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
+		char cgroup_memlimit_path2[PATH_MAX] = "";
+		sprintf(cgroup_memlimit_path2, "/sys/fs/cgroup/ruri/%d/memory.max", container->container_id);
+		if (open_and_write(cgroup_memlimit_path2, buf)) {
+			goto fail;
 		}
-		sprintf(buf, "%s\n", container->memory);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-		}
-		close(fd);
-		char cgroup_oom[PATH_MAX] = { '\0' };
-		sprintf(cgroup_oom, "/sys/fs/cgroup/%d/memory.oom.group", container->container_id);
-		fd = open(cgroup_oom, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
-			// Do not keep the apifs mounted.
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
+		char cgroup_oom_path[PATH_MAX] = "";
+		sprintf(cgroup_oom_path, "/sys/fs/cgroup/ruri/%d/memory.oom.group", container->container_id);
 		sprintf(buf, "1\n");
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set memory limit failed{clear}\n");
+		if (open_and_write(cgroup_oom_path, buf)) {
+			goto fail;
 		}
-		close(fd);
-	}
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-}
-static void set_cgroup_v2_cpuset(const struct RURI_CONTAINER *_Nonnull container)
-{
-	/*
-	 * Mount cgroupv2 cpuset controller and set limit.
-	 * Nothing to return, only warnings to show if cgroup is not supported.
-	 * Control file: /sys/fs/cgroup/${container_id}/cpuset.cpus
-	 */
-	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
-	// Maybe needless.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-	// Mount /sys/fs/cgroup as cgroup2.
-	mount("none", "/sys/fs/cgroup", "cgroup2", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL);
-	pid_t pid = getpid();
-	char buf[128] = { '\0' };
-	char cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_path, "/sys/fs/cgroup/%d", container->container_id);
-	mkdir(cgroup_path, S_IRUSR | S_IWUSR);
-	usleep(200);
-	char cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_procs_path, "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
-	// Add pid to container_id cgroup.
-	int fd = open(cgroup_procs_path, O_RDWR | O_CLOEXEC);
-	if (fd < 0 && !container->no_warnings) {
-		ruri_warning("{yellow}Set cgroup.procs failed{clear}\n");
-		// Do not keep the apifs mounted.
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		return;
-	}
-	sprintf(buf, "%d\n", pid);
-	if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-		ruri_warning("{yellow}Set cgroup.procs failed{clear}\n");
-	}
-	close(fd);
-	if (container->cpuset != NULL) {
+	} else if (!strcmp(controller, "cpu")) {
+		if (!container->cpupercent) {
+			goto cleanup;
+		}
+		controller_name = "cpupercent";
 		// Set cpuset limit.
-		char cgroup_cpuset_path[PATH_MAX] = { '\0' };
-		sprintf(cgroup_cpuset_path, "/sys/fs/cgroup/%d/cpuset.cpus", container->container_id);
-		fd = open(cgroup_cpuset_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
-			// Do not keep the apifs mounted.
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
-		sprintf(buf, "%s\n", container->cpuset);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpuset limit failed{clear}\n");
-		}
-		close(fd);
-	}
-	// Do not keep the apifs mounted.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-}
-static void set_cgroup_v2_cpu(const struct RURI_CONTAINER *_Nonnull container)
-{
-	/*
-	 * Mount cgroupv2 cpu controller and set limit.
-	 * Nothing to return, only warnings to show if cgroup is not supported.
-	 * Control file: /sys/fs/cgroup/${container_id}/cpu.max
-	 */
-	mkdir("/sys/fs/cgroup", S_IRUSR | S_IWUSR);
-	// Maybe needless.
-	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-	// Mount /sys/fs/cgroup as cgroup2.
-	mount("none", "/sys/fs/cgroup", "cgroup2", MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME, NULL);
-	pid_t pid = getpid();
-	char buf[128] = { '\0' };
-	char cgroup_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_path, "/sys/fs/cgroup/%d", container->container_id);
-	mkdir(cgroup_path, S_IRUSR | S_IWUSR);
-	usleep(200);
-	char cgroup_procs_path[PATH_MAX] = { '\0' };
-	sprintf(cgroup_procs_path, "/sys/fs/cgroup/%d/cgroup.procs", container->container_id);
-	// Add pid to container_id cgroup.
-	int fd = open(cgroup_procs_path, O_RDWR | O_CLOEXEC);
-	if (fd < 0 && !container->no_warnings) {
-		ruri_warning("{yellow}Set cgroup.procs failed{clear}\n");
-		// Do not keep the apifs mounted.
-		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-		return;
-	}
-	sprintf(buf, "%d\n", pid);
-	if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-		ruri_warning("{yellow}Set cgroup.procs failed{clear}\n");
-	}
-	close(fd);
-	if (container->cpupercent > 0) {
-		// Set cpuset limit.
-		char cgroup_cpu_path[PATH_MAX] = { '\0' };
-		sprintf(cgroup_cpu_path, "/sys/fs/cgroup/%d/cpu.max", container->container_id);
-		fd = open(cgroup_cpu_path, O_RDWR | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
-			// Do not keep the apifs mounted.
-			umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
-			return;
-		}
+		char cgroup_cpu_path[PATH_MAX] = "";
+		sprintf(cgroup_cpu_path, "/sys/fs/cgroup/ruri/%d/cpu.max", container->container_id);
+		char buf[256] = "";
 		sprintf(buf, "%d 100000\n", container->cpupercent * 1000);
-		if (write(fd, buf, strlen(buf)) < 0 && !container->no_warnings) {
-			ruri_warning("{yellow}Set cpupercent limit failed{clear}\n");
+		if (open_and_write(cgroup_cpu_path, buf)) {
+			goto fail;
 		}
-		close(fd);
+	} else if (!strcmp(controller, "cpuset")) {
+		if (!container->cpuset) {
+			goto cleanup;
+		}
+		controller_name = "cpuset";
+		// Set cpuset limit.
+		char cgroup_mems_path[PATH_MAX] = "";
+		sprintf(cgroup_mems_path, "/sys/fs/cgroup/ruri/%d/cpuset.mems", container->container_id);
+		if (open_and_write(cgroup_mems_path, "all\n")) {
+			goto fail;
+		}
+		char cgroup_cpuset_path[PATH_MAX] = "";
+		sprintf(cgroup_cpuset_path, "/sys/fs/cgroup/ruri/%d/cpuset.cpus", container->container_id);
+		char buf[256] = "";
+		sprintf(buf, "%s\n", container->cpuset);
+		if (open_and_write(cgroup_cpuset_path, buf)) {
+			goto fail;
+		}
+	} else {
+		controller_name = "!!!unknown controller!!!";
+		goto fail;
 	}
-	// Do not keep the apifs mounted.
+	// Add pid to container_id cgroup.
+	if (cgroup_v2_attach(container)) {
+		goto fail;
+	}
+	goto cleanup;
+fail:
+	if (!container->no_warnings) {
+		ruri_warning("{yellow}Set %s limit failed{clear}\n", controller_name);
+	}
+cleanup:
 	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
+}
+/*
+ *  ___       _             __
+ * |_ _|_ __ | |_ ___ _ __ / _| __ _  ___ ___
+ *  | || '_ \| __/ _ \ '__| |_ / _` |/ __/ _ \
+ *  | || | | | ||  __/ |  |  _| (_| | (_|  __/
+ * |___|_| |_|\__\___|_|  |_|  \__,_|\___\___|
+ */
+void ruri_attach_cgroup_v2(const struct RURI_CONTAINER *_Nonnull container)
+{
+	/*
+	 * Mount cgroupv2 hierarchy and attach process.
+	 * Nothing to return, only warnings to show if cgroup is not supported.
+	 * Control file: /sys/fs/cgroup/ruri/${container_id}/cgroup.procs
+	 */
+	// Add pid to container_id cgroup.
+	set_cgroup_v2(container, "attach");
 }
 void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 {
@@ -544,27 +411,43 @@ void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 	 * Mount cgroup controller and set limit.
 	 * Nothing to return, only warnings to show if cgroup is not supported.
 	 */
-	// Umount the mask of /sys/fs
-	if (!container->unmask_dirs) {
-		umount2("/sys/fs", MNT_DETACH | MNT_FORCE);
+	char *controllers[] = { "memory", "cpu", "cpuset" };
+	for (int i = 0; i < sizeof controllers / sizeof(char *); ++i) {
+		if (is_cgroupv2_support(controllers[i])) {
+			set_cgroup_v2(container, controllers[i]);
+		} else {
+			set_cgroup_v1(container, controllers[i]);
+		}
 	}
-	if (is_cgroupv2_support("memory")) {
-		set_cgroup_v2_memory(container);
-	} else {
-		set_cgroup_v1_memory(container);
+}
+// Returns 1 for failed try
+int ruri_try_cgroup_kill(const struct RURI_CONTAINER *_Nonnull container)
+{
+	/*
+	 * Kill all processes in corresponding cgroup v2 structure.
+	 * FIXME I don't think this will be useful if we can't determine
+	 *	that the container is attached beforehand.
+	 */
+	if (mount_cgroup_v2()) {
+		goto fail;
 	}
-	if (is_cgroupv2_support("cpu")) {
-		set_cgroup_v2_cpu(container);
-	} else {
-		set_cgroup_v1_cpu(container);
+	usleep(200);
+	char cgroup_kill_path[PATH_MAX] = "";
+	sprintf(cgroup_kill_path, "/sys/fs/cgroup/ruri/%d/cgroup.kill", container->container_id);
+	// Pid should be added beforehand.
+	if (open_and_write(cgroup_kill_path, "1\n")) {
+		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
+		goto fail;
 	}
-	if (is_cgroupv2_support("cpuset")) {
-		set_cgroup_v2_cpuset(container);
-	} else {
-		set_cgroup_v1_cpuset(container);
+	umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
+	return 0;
+fail:
+	if (!container->no_warnings) {
+		ruri_log("{base}trying to kill container with cgroup v2 failed\n");
 	}
-	// Mask /sys/fs again.
-	if (!container->unmask_dirs) {
-		mount("tmpfs", "/sys/fs", "tmpfs", MS_RDONLY, NULL);
-	}
+	return 1;
+}
+void container_ps_with_cgroup_v2(const struct RURI_CONTAINER *_Nonnull container)
+{
+	; // TODO
 }

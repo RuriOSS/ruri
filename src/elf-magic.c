@@ -27,8 +27,8 @@
  *
  *
  */
-#include "include/ruri.h"
 #include "include/elf-magic.h"
+#include "include/ruri.h"
 /*
  * This file provides functions to get ELF magic number and mask for cross_arch.
  * These info will be used for binfmt_misc.

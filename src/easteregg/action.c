@@ -39,27 +39,27 @@ void nekofeng_face(useconds_t inr, unsigned int keep)
 	struct NEKOFENG_ACTION *action = NULL;
 	action = nekofeng_add_action(action, -17, -9,
 				     U"\033[0m              ██                        ██\n"
-				       "\033[0m            ██  ██                    ██  ██\n"
-				       "\033[0m            ██    ████              ██      ██\n"
-				       "\033[0m          ██          ██          ████      ██\n"
-				       "\033[0m          ██      ██████████████████          ██\n"
-				       "\033[0m        ██      ██                  ██        ██\n"
-				       "\033[0m        ██    ██                      ████    ██\n"
-				       "\033[0m      ████████        ██      ██          ████  ██\n"
-				       "\033[0m      ██    ██        ██    ██  ██    ██    ██  ██\n"
-				       "\033[0m    ████      ██    ██  ████  ██    ██  ██    ██████\n"
-				       "\033[0m    ██        ██  ██    ██      ████  ██  ██  ████████\n"
-				       "\033[0m    ██      ██  ██                          ████\n"
-				       "\033[0m    ██        ██                              ██\n"
-				       "\033[0m  ████        ██                              ██\n"
-				       "\033[0m  ██          ██                              ██\n"
-				       "\033[0m  ██          ██                               ██\n"
-				       "\033[0m  ██          ██                                ██\n"
-				       "\033[0m  ████    ██  ██                                ██\n"
-				       "\033[0m    ████  ██████                              ██\n"
-				       "\033[0m      ██████  ████                        ████\n"
-				       "\033[0m                ████                    ████\n"
-				       "\033[0m                    ████████████████████\n");
+				     "\033[0m            ██  ██                    ██  ██\n"
+				     "\033[0m            ██    ████              ██      ██\n"
+				     "\033[0m          ██          ██          ████      ██\n"
+				     "\033[0m          ██      ██████████████████          ██\n"
+				     "\033[0m        ██      ██                  ██        ██\n"
+				     "\033[0m        ██    ██                      ████    ██\n"
+				     "\033[0m      ████████        ██      ██          ████  ██\n"
+				     "\033[0m      ██    ██        ██    ██  ██    ██    ██  ██\n"
+				     "\033[0m    ████      ██    ██  ████  ██    ██  ██    ██████\n"
+				     "\033[0m    ██        ██  ██    ██      ████  ██  ██  ████████\n"
+				     "\033[0m    ██      ██  ██                          ████\n"
+				     "\033[0m    ██        ██                              ██\n"
+				     "\033[0m  ████        ██                              ██\n"
+				     "\033[0m  ██          ██                              ██\n"
+				     "\033[0m  ██          ██                               ██\n"
+				     "\033[0m  ██          ██                                ██\n"
+				     "\033[0m  ████    ██  ██                                ██\n"
+				     "\033[0m    ████  ██████                              ██\n"
+				     "\033[0m      ██████  ████                        ████\n"
+				     "\033[0m                ████                    ████\n"
+				     "\033[0m                    ████████████████████\n");
 	nekofeng_play_action(action, inr, keep);
 	nekofeng_free_action(action);
 }
@@ -68,20 +68,20 @@ void nekofeng_mouth(useconds_t inr, unsigned int keep)
 	struct NEKOFENG_ACTION *action = NULL;
 	action = nekofeng_add_action(action, 10, 8,
 				     U"\n"
-				       "\n"
-				       "  ███\n");
+				     "\n"
+				     "  ███\n");
 	action = nekofeng_add_action(action, 10, 8,
 				     U"\n"
-				       "\n"
-				       "  ████\n");
+				     "\n"
+				     "  ████\n");
 	action = nekofeng_add_action(action, 10, 8,
 				     U"\n"
-				       "\n"
-				       " ██████\n");
+				     "\n"
+				     " ██████\n");
 	action = nekofeng_add_action(action, 10, 8,
 				     U"\n"
-				       "██    ██\n"
-				       "  ████\n");
+				     "██    ██\n"
+				     "  ████\n");
 	nekofeng_play_action(action, inr, keep);
 	nekofeng_free_action(action);
 }
@@ -90,28 +90,28 @@ void nekofeng_ahoge(useconds_t inr, unsigned int keep)
 	struct NEKOFENG_ACTION *action = NULL;
 	action = nekofeng_add_action(action, 6, -8,
 				     U"      ██\n"
-				       "     ██\n"
-				       "    ██\n");
+				     "     ██\n"
+				     "    ██\n");
 	action = nekofeng_add_action(action, 6, -8,
 				     U"        ██\n"
-				       "      ██\n"
-				       "    ██\n");
+				     "      ██\n"
+				     "    ██\n");
 	action = nekofeng_add_action(action, 6, -8,
 				     U"      ██\n"
-				       "     ██\n"
-				       "    ██\n");
+				     "     ██\n"
+				     "    ██\n");
 	action = nekofeng_add_action(action, 6, -8,
 				     U"  ██\n"
-				       "   ██\n"
-				       "    ██\n");
+				     "   ██\n"
+				     "    ██\n");
 	action = nekofeng_add_action(action, 6, -8,
 				     U"██\n"
-				       "  ██\n"
-				       "    ██\n");
+				     "  ██\n"
+				     "    ██\n");
 	action = nekofeng_add_action(action, 6, -8,
 				     U"  ██\n"
-				       "   ██\n"
-				       "    ██\n");
+				     "   ██\n"
+				     "    ██\n");
 	nekofeng_play_action(action, inr, keep);
 	nekofeng_free_action(action);
 }
@@ -120,36 +120,36 @@ void nekofeng_blink_lefteye(useconds_t inr, unsigned int keep)
 	struct NEKOFENG_ACTION *action = NULL;
 	action = nekofeng_add_action(action, 1, 2,
 				     U"  ██████ \n"
-				       "██      ██\n"
-				       "  ██████\n"
-				       "  ██  ██\n"
-				       "  ██████\n");
+				     "██      ██\n"
+				     "  ██████\n"
+				     "  ██  ██\n"
+				     "  ██████\n");
 	action = nekofeng_add_action(action, 1, 2,
 				     U"\n"
-				       "  ██████ \n"
-				       "██      ██\n"
-				       "  ██  ██\n"
-				       "  ██████\n");
+				     "  ██████ \n"
+				     "██      ██\n"
+				     "  ██  ██\n"
+				     "  ██████\n");
 	action = nekofeng_add_action(action, 1, 2,
 				     U"\n\n"
-				       "  ██████ \n"
-				       "██      ██\n"
-				       "  ██████\n");
+				     "  ██████ \n"
+				     "██      ██\n"
+				     "  ██████\n");
 	action = nekofeng_add_action(action, 1, 2,
 				     U"\n\n\n"
-				       "  ██████ \n"
-				       "██████████\n");
+				     "  ██████ \n"
+				     "██████████\n");
 	action = nekofeng_add_action(action, 1, 2,
 				     U"\n\n"
-				       "   ████\n"
-				       "       ██\n"
-				       "  █████\n");
+				     "   ████\n"
+				     "       ██\n"
+				     "  █████\n");
 	action = nekofeng_add_action(action, 1, 2,
 				     U"\n"
-				       "  ████\n"
-				       "      ██\n"
-				       "        ██\n"
-				       "  ██████\n");
+				     "  ████\n"
+				     "      ██\n"
+				     "        ██\n"
+				     "  ██████\n");
 	nekofeng_play_action(action, inr, keep);
 	nekofeng_free_action(action);
 }
@@ -158,36 +158,36 @@ void nekofeng_blink_righteye(useconds_t inr, unsigned int keep)
 	struct NEKOFENG_ACTION *action = NULL;
 	action = nekofeng_add_action(action, 16, 2,
 				     U"  ██████ \n"
-				       "██      ██\n"
-				       "  \033[31m██  ██\n"
-				       "    ██  \n"
-				       "  ██  ██\n");
+				     "██      ██\n"
+				     "  \033[31m██  ██\n"
+				     "    ██  \n"
+				     "  ██  ██\n");
 	action = nekofeng_add_action(action, 16, 2,
 				     U"\n"
-				       "  ██████ \n"
-				       "██\033[31m██  ██\033[0m██\n"
-				       "    \033[31m██\n"
-				       "  ██  ██\n");
+				     "  ██████ \n"
+				     "██\033[31m██  ██\033[0m██\n"
+				     "    \033[31m██\n"
+				     "  ██  ██\n");
 	action = nekofeng_add_action(action, 16, 2,
 				     U"\n\n"
-				       "  ██████ \n"
-				       "██  \033[31m██\033[0m  ██\n"
-				       "  \033[31m██  ██\n");
+				     "  ██████ \n"
+				     "██  \033[31m██\033[0m  ██\n"
+				     "  \033[31m██  ██\n");
 	action = nekofeng_add_action(action, 16, 2,
 				     U"\n\n\n"
-				       "  ██████  \n"
-				       "██\033[31m██  ██\033[0m██ \n");
+				     "  ██████  \n"
+				     "██\033[31m██  ██\033[0m██ \n");
 	action = nekofeng_add_action(action, 16, 2,
 				     U"\n\n"
-				       "  ████\n"
-				       "██\n"
-				       "  █████\n");
+				     "  ████\n"
+				     "██\n"
+				     "  █████\n");
 	action = nekofeng_add_action(action, 16, 2,
 				     U"\n"
-				       "    ████\n"
-				       "  ██\n"
-				       "██\n"
-				       "  ██████\n");
+				     "    ████\n"
+				     "  ██\n"
+				     "██\n"
+				     "  ██████\n");
 	nekofeng_play_action(action, inr, keep);
 	nekofeng_free_action(action);
 }
