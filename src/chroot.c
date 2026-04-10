@@ -205,7 +205,8 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to create /dev/tty0, will continue.\n");
 		chown("/dev/tty0", 0, 5);
 		chmod("/dev/tty0", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-		if (false) {
+#ifndef DISABLE_SYSTEMD
+		if (container->systemd_mode) {
 			mount("tmpfs", "/run", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, "size=65536k,mode=755");
 			mkdir("/run/lock", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 			mount("tmpfs", "/run/lock", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, "size=65536k,mode=755");
@@ -217,6 +218,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 				close(systemd_container_config_fd);
 			}
 		}
+#endif
 		if (!container->unmask_dirs) {
 			// Mask some directories/files that we don't want the container modify it.
 			mount("tmpfs", "/proc/asound", "tmpfs", MS_RDONLY, NULL);
@@ -857,12 +859,14 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (!container->just_chroot) {
 		ruri_set_limit(container);
 	}
-	if (container->enable_unshare && container->first_init && false) {
+#ifndef DISABLE_SYSTEMD
+	if (container->enable_unshare && container->first_init && container->systemd_mode) {
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		umount2("/sys/fs/", MNT_DETACH | MNT_FORCE);
 		mkdir("/sys/fs/cgroup", 0555);
 		mount("cgroup2", "/sys/fs/cgroup", "cgroup2", 0, NULL);
 	}
+#endif
 	// Create character devices.
 	if (container->char_devs[0] != NULL) {
 		mk_char_devs(container);
@@ -899,12 +903,22 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	cprintf("{clear}");
 	// Change uid and gid.
 	change_user(container);
-	// Execute command in container.
-	// Use exec(3) function because system(3) may be unavailable now.
-	if (execvp(container->command[0], container->command) == -1) {
-		// Catch exceptions.
-		ruri_error("{red}Failed to execute `%s`\nexecv() returned: %d\nerror reason: %s\nNote: unset $LD_PRELOAD before running ruri might fix this{clear}\n", container->command[0], errno, strerror(errno));
+// Execute command in container.
+// Use exec(3) function because system(3) may be unavailable now.
+#ifndef DISABLE_SYSTEMD
+	if (container->systemd_mode) {
+		// In systemd mode, ruri acts as init process
+		ruri_run_systemd_init(container->command);
+		// ruri_run_systemd_init never returns
+	} else {
+#endif
+		if (execvp(container->command[0], container->command) == -1) {
+			// Catch exceptions.
+			ruri_error("{red}Failed to execute `%s`\nexecv() returned: %d\nerror reason: %s\nNote: unset $LD_PRELOAD before running ruri might fix this{clear}\n", container->command[0], errno, strerror(errno));
+		}
+#ifndef DISABLE_SYSTEMD
 	}
+#endif
 }
 // Run chroot container.
 void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull container)

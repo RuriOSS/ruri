@@ -44,6 +44,9 @@
 #ifndef DISABLE_RURIENV
 #define DISABLE_RURIENV
 #endif
+#ifndef DISABLE_SYSTEMD
+#define DISABLE_SYSTEMD
+#endif
 #endif
 #include <dirent.h>
 #include <errno.h>
@@ -212,6 +215,8 @@ struct RURI_CONTAINER {
 	bool skip_setgroups;
 	// First init.
 	bool first_init;
+	// Systemd mode.
+	bool systemd_mode;
 };
 // For ruri_get_magic().
 #define ruri_magicof(x) (x##_magic)
@@ -314,6 +319,10 @@ int ruri(int argc, char **argv);
 void ruri_init_config(struct RURI_CONTAINER *_Nonnull container);
 int ruri_mkdirs(const char *_Nonnull dir, mode_t mode);
 int ruri_get_groups(uid_t uid, gid_t groups[]);
+#ifndef DISABLE_SYSTEMD
+void ruri_init_systemd(struct RURI_CONTAINER *container);
+void ruri_run_systemd_init(char *const command[]);
+#endif
 #ifndef DISABLE_LIBCAP
 int ruri_cap_from_name(const char *str, cap_value_t *cap);
 #endif

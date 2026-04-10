@@ -706,6 +706,11 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		} else if (strcmp(argv[index], "-z") == 0 || strcmp(argv[index], "--enable-tty-signals") == 0) {
 			container->enable_tty_signals = true;
 		}
+#ifndef DISABLE_SYSTEMD
+		else if (strcmp(argv[index], "-Z") == 0 || strcmp(argv[index], "--systemd") == 0) {
+			container->systemd_mode = true;
+		}
+#endif
 		// If use_config_file is true.
 		// The first unrecognized argument will be treated as command to exec in container.
 		else if (use_config_file) {
@@ -1117,6 +1122,11 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 				case 'z':
 					container->enable_tty_signals = true;
 					break;
+#ifndef DISABLE_SYSTEMD
+				case 'Z':
+					container->systemd_mode = true;
+					break;
+#endif
 				case 'O':
 					if (i == (strlen(argv[index]) - 1)) {
 						index++;

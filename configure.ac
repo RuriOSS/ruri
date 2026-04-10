@@ -101,10 +101,16 @@ AS_IF([test "x${enable_static}" = "xyes" || test "x${enable_static_pie}" = "xyes
     [enable_dynamic=yes])
 
 AC_ARG_ENABLE([dev],
-    [AS_HELP_STRING([--enable-dev],
-        [Enable dev build: strict warnings + defines RURI_DEV])],
-    [enable_dev=${enableval}],
-    [enable_dev=no])
+[AS_HELP_STRING([--enable-dev],
+[Enable dev build: strict warnings + defines RURI_DEV])],
+[enable_dev=${enableval}],
+[enable_dev=no])
+
+AC_ARG_ENABLE([systemd],
+[AS_HELP_STRING([--disable-systemd],
+[Disable systemd support in container])],
+[enable_systemd=${enableval}],
+[enable_systemd=yes])
 
 #  Flags/Link
 AC_DEFUN([RURI_CHECK_CFLAG], [dnl
@@ -236,13 +242,14 @@ AS_IF([test -z "$commit_id"], [
 ])
 AC_SUBST([COMMIT_CFLAGS])
 
-AM_CONDITIONAL([HAVE_LIBCAP],       [test "x${have_libcap}"       = "xyes"])
-AM_CONDITIONAL([HAVE_LIBSECCOMP],   [test "x${have_libseccomp}"   = "xyes"])
-AM_CONDITIONAL([ENABLE_COREONLY],   [test "x${enable_coreonly}"   = "xyes"])
-AM_CONDITIONAL([ENABLE_RURIENV],    [test "x${enable_rurienv}"    = "xyes"])
-AM_CONDITIONAL([ENABLE_STATIC],     [test "x${enable_static}"     = "xyes"])
-AM_CONDITIONAL([ENABLE_DEBUG],      [test "x${enable_debug}"      = "xyes"])
-AM_CONDITIONAL([ENABLE_DEV],        [test "x${enable_dev}"        = "xyes"])
+AM_CONDITIONAL([HAVE_LIBCAP], [test "x${have_libcap}" = "xyes"])
+AM_CONDITIONAL([HAVE_LIBSECCOMP], [test "x${have_libseccomp}" = "xyes"])
+AM_CONDITIONAL([ENABLE_COREONLY], [test "x${enable_coreonly}" = "xyes"])
+AM_CONDITIONAL([ENABLE_RURIENV], [test "x${enable_rurienv}" = "xyes"])
+AM_CONDITIONAL([ENABLE_STATIC], [test "x${enable_static}" = "xyes"])
+AM_CONDITIONAL([ENABLE_DEBUG], [test "x${enable_debug}" = "xyes"])
+AM_CONDITIONAL([ENABLE_DEV], [test "x${enable_dev}" = "xyes"])
+AM_CONDITIONAL([DISABLE_SYSTEMD], [test "x${enable_systemd}" = "xno"])
 
 AC_CONFIG_FILES([
     Makefile
