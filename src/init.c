@@ -28,7 +28,7 @@
  */
 #include "include/ruri.h"
 
-#ifdef ENABLE_SYSTEMD
+#ifndef DISABLE_SYSTEMD
 /*
  * This file provides init process functionality for systemd mode.
  * When running as PID 1 in a container, ruri needs to reap zombie processes
