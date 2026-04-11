@@ -739,5 +739,6 @@ int ruri_get_groups(uid_t uid, gid_t groups[])
 		}
 	}
 	free(username);
+	free(buf);
 	return ret;
 }
