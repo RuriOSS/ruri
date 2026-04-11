@@ -46,9 +46,11 @@
 #include <sys/epoll.h>
 
 static volatile sig_atomic_t child_exited = 0;
-static volatile sig_atomic_t signal_received = 0;
 static pid_t systemd_pid = 0;
 static int systemd_exit_status = 0;
+
+/* Signals to forward to systemd and handle via signalfd */
+static const int forward_signals[] = { SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGUSR1, SIGUSR2, SIGPWR, SIGWINCH, SIGCHLD, 0 };
 
 /*
  * Verify that we are running as PID 1 and in a proper mount namespace.
@@ -70,7 +72,6 @@ static void verify_pid1_environment(void)
 		if (self_mnt.st_ino == init_mnt.st_ino) {
 			/* Same mount namespace - we might be on the host */
 			ruri_log("{yellow}Warning: ruri appears to be in the same mount namespace as init\n");
-			/* Don't fail here as it might be intentional in some setups */
 		}
 	}
 
@@ -95,76 +96,9 @@ static void setup_child_subreaper(void)
  */
 static void forward_signal_to_systemd(int sig)
 {
-	if (systemd_pid > 0) {
-		if (kill(systemd_pid, sig) < 0) {
-			ruri_warning("{yellow}Warning: Failed to forward signal %d to systemd: %s\n", sig, strerror(errno));
-		} else {
-			ruri_log("{base}Forwarded signal %d to systemd (PID %d)\n", sig, systemd_pid);
-		}
+	if (systemd_pid > 0 && kill(systemd_pid, sig) < 0) {
+		ruri_warning("{yellow}Warning: Failed to forward signal %d to systemd: %s\n", sig, strerror(errno));
 	}
-}
-
-/*
- * Traditional signal handler for systems without signalfd support (Android/Bionic).
- */
-static void sigchld_handler(int sig __attribute__((unused)))
-{
-	child_exited = 1;
-}
-
-static void forward_signal_handler(int sig)
-{
-	signal_received = sig;
-	forward_signal_to_systemd(sig);
-}
-
-static void setup_traditional_signal_handlers(void)
-{
-	struct sigaction sa;
-
-	/* Setup SIGCHLD handler for zombie reaping */
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = sigchld_handler;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-
-#ifdef __ANDROID__
-	/* Bionic doesn't use sa_restorer */
-	sigaction(SIGCHLD, &sa, NULL);
-
-	/* Setup signal forwarding */
-	sa.sa_handler = forward_signal_handler;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-
-	sigaction(SIGHUP, &sa, NULL);
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGQUIT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
-	sigaction(SIGUSR1, &sa, NULL);
-	sigaction(SIGUSR2, &sa, NULL);
-	sigaction(SIGPWR, &sa, NULL);
-	sigaction(SIGWINCH, &sa, NULL);
-#else
-	sa.sa_restorer = NULL;
-	sigaction(SIGCHLD, &sa, NULL);
-
-	/* Setup signal forwarding */
-	sa.sa_handler = forward_signal_handler;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-	sa.sa_restorer = NULL;
-
-	sigaction(SIGHUP, &sa, NULL);
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGQUIT, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
-	sigaction(SIGUSR1, &sa, NULL);
-	sigaction(SIGUSR2, &sa, NULL);
-	sigaction(SIGPWR, &sa, NULL);
-	sigaction(SIGWINCH, &sa, NULL);
-#endif
-	ruri_log("{base}Using traditional signal handlers\n");
 }
 
 /*
@@ -203,22 +137,15 @@ static int reap_children(void)
  */
 static void run_init_loop_signalfd(void)
 {
-	int epoll_fd;
+	int epoll_fd, sfd;
 	struct epoll_event ev, events[10];
-	int sfd;
 	sigset_t mask;
 
 	/* Block signals that we want to handle via signalfd */
 	sigemptyset(&mask);
-	sigaddset(&mask, SIGCHLD);
-	sigaddset(&mask, SIGHUP);
-	sigaddset(&mask, SIGINT);
-	sigaddset(&mask, SIGQUIT);
-	sigaddset(&mask, SIGTERM);
-	sigaddset(&mask, SIGUSR1);
-	sigaddset(&mask, SIGUSR2);
-	sigaddset(&mask, SIGPWR);
-	sigaddset(&mask, SIGWINCH);
+	for (int i = 0; forward_signals[i]; i++) {
+		sigaddset(&mask, forward_signals[i]);
+	}
 
 	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
 		ruri_warning("{yellow}Warning: Failed to block signals: %s\n", strerror(errno));
@@ -228,7 +155,6 @@ static void run_init_loop_signalfd(void)
 	sfd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
 	if (sfd < 0) {
 		ruri_warning("{yellow}Warning: Failed to create signalfd: %s\n", strerror(errno));
-		/* Fall back to traditional signal handling */
 		sigprocmask(SIG_UNBLOCK, &mask, NULL);
 		return;
 	}
@@ -245,48 +171,81 @@ static void run_init_loop_signalfd(void)
 	ev.data.fd = sfd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sfd, &ev) < 0) {
 		ruri_warning("{yellow}Warning: Failed to add signalfd to epoll: %s\n", strerror(errno));
-		close(epoll_fd);
-		close(sfd);
-		sigprocmask(SIG_UNBLOCK, &mask, NULL);
-		return;
+		goto cleanup;
 	}
 
 	ruri_log("{base}Init loop started with signalfd/epoll\n");
 
 	while (1) {
 		int nfds = epoll_wait(epoll_fd, events, 10, -1);
-		if (nfds < 0) {
-			if (errno == EINTR) {
-				continue;
-			}
+		if (nfds < 0 && errno != EINTR) {
 			ruri_warning("{yellow}Warning: epoll_wait failed: %s\n", strerror(errno));
 			continue;
 		}
 
 		for (int i = 0; i < nfds; i++) {
-			if (events[i].data.fd == sfd) {
-				struct signalfd_siginfo fdsi;
-				ssize_t s = read(sfd, &fdsi, sizeof(fdsi));
+			if (events[i].data.fd != sfd) {
+				continue;
+			}
 
-				if (s != sizeof(fdsi)) {
-					continue;
-				}
+			struct signalfd_siginfo fdsi;
+			if (read(sfd, &fdsi, sizeof(fdsi)) != sizeof(fdsi)) {
+				continue;
+			}
 
-				if (fdsi.ssi_signo == SIGCHLD) {
-					/* Reap children */
-					if (reap_children()) {
-						/* Systemd exited */
-						close(epoll_fd);
-						close(sfd);
-						exit(systemd_exit_status);
-					}
-				} else {
-					/* Forward signal to systemd */
-					forward_signal_to_systemd(fdsi.ssi_signo);
+			if (fdsi.ssi_signo == SIGCHLD) {
+				if (reap_children()) {
+					close(epoll_fd);
+					close(sfd);
+					exit(systemd_exit_status);
 				}
+			} else {
+				forward_signal_to_systemd(fdsi.ssi_signo);
 			}
 		}
 	}
+
+cleanup:
+	close(epoll_fd);
+	close(sfd);
+	sigprocmask(SIG_UNBLOCK, &mask, NULL);
+}
+
+/*
+ * Traditional signal handlers for systems without signalfd support.
+ */
+static void sigchld_handler(int sig __attribute__((unused)))
+{
+	child_exited = 1;
+}
+
+static void forward_signal_handler(int sig)
+{
+	forward_signal_to_systemd(sig);
+}
+
+static void setup_traditional_signal_handlers(void)
+{
+	struct sigaction sa;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+
+	/* Setup SIGCHLD handler */
+	sa.sa_handler = sigchld_handler;
+	sigaction(SIGCHLD, &sa, NULL);
+
+	/* Setup signal forwarding for other signals */
+	sa.sa_handler = forward_signal_handler;
+	sa.sa_flags = SA_RESTART;
+
+	for (int i = 0; forward_signals[i]; i++) {
+		if (forward_signals[i] != SIGCHLD) {
+			sigaction(forward_signals[i], &sa, NULL);
+		}
+	}
+
+	ruri_log("{base}Using traditional signal handlers\n");
 }
 
 /*
@@ -297,16 +256,12 @@ static void run_init_loop_traditional(void)
 	ruri_log("{base}Init loop started with traditional signal handling\n");
 
 	while (1) {
-		/* Check if any child exited */
 		if (child_exited) {
 			child_exited = 0;
 			if (reap_children()) {
-				/* Systemd exited */
 				exit(systemd_exit_status);
 			}
 		}
-
-		/* Wait for next signal */
 		pause();
 	}
 }
@@ -317,43 +272,25 @@ static void run_init_loop_traditional(void)
  */
 static void run_systemd_as_init(char *const argv[])
 {
-	/*
-	 * Verify we're in proper environment before starting.
-	 */
 	verify_pid1_environment();
-
-	/*
-	 * Setup child subreaper to handle orphaned processes.
-	 */
 	setup_child_subreaper();
 
-	/*
-	 * Fork and exec systemd.
-	 */
 	systemd_pid = fork();
 	if (systemd_pid < 0) {
 		ruri_error("{red}Failed to fork for systemd: %s\n", strerror(errno));
 	}
 
 	if (systemd_pid == 0) {
-		/* Child process: exec systemd */
-		/* Reset signal handlers */
-		signal(SIGCHLD, SIG_DFL);
-		signal(SIGHUP, SIG_DFL);
-		signal(SIGINT, SIG_DFL);
-		signal(SIGQUIT, SIG_DFL);
-		signal(SIGTERM, SIG_DFL);
-		signal(SIGUSR1, SIG_DFL);
-		signal(SIGUSR2, SIG_DFL);
-		signal(SIGPWR, SIG_DFL);
-		signal(SIGWINCH, SIG_DFL);
+		/* Child process: exec systemd - reset all signal handlers */
+		for (int i = 0; forward_signals[i]; i++) {
+			signal(forward_signals[i], SIG_DFL);
+		}
 
 		/* Unblock all signals */
 		sigset_t mask;
 		sigfillset(&mask);
 		sigprocmask(SIG_UNBLOCK, &mask, NULL);
 
-		/* Set default environment for systemd */
 		setenv("container", "ruri", 1);
 		setenv("SYSTEMD_IGNORE_CHROOT", "1", 1);
 
@@ -364,15 +301,8 @@ static void run_systemd_as_init(char *const argv[])
 	/* Parent process: act as init */
 	ruri_log("{base}Started systemd as PID %d\n", systemd_pid);
 
-	/*
-	 * Try signalfd first, fall back to traditional signal handling.
-	 * signalfd might not be available on older kernels or Android.
-	 */
-	if (access("/proc/self/ns/pid", F_OK) == 0) {
-		/* signalfd requires kernel 2.6.22+, check if we have modern kernel features */
-		run_init_loop_signalfd();
-		/* If signalfd setup failed, it returns and we fall through */
-	}
+	/* Try signalfd first, fall back to traditional signal handling */
+	run_init_loop_signalfd();
 
 	/* Fallback to traditional signal handling */
 	setup_traditional_signal_handlers();
@@ -381,25 +311,14 @@ static void run_systemd_as_init(char *const argv[])
 
 void ruri_init_systemd(struct RURI_CONTAINER *container)
 {
-	/*
-	 * Initialize systemd mode.
-	 * This should be called after chroot but before exec.
-	 */
 	if (!container->systemd_mode) {
 		return;
 	}
 
-	/*
-	 * Verify we can only work in unshare mode (PID namespace).
-	 * The actual PID 1 check happens in run_systemd_as_init().
-	 */
 	if (!container->enable_unshare) {
 		ruri_error("{red}systemd mode requires --unshare option (PID namespace)\n");
 	}
 
-	/*
-	 * Ensure we're running as root in the container.
-	 */
 	if (getuid() != 0 && geteuid() != 0) {
 		ruri_error("{red}systemd mode requires root privileges\n");
 	}
@@ -409,15 +328,10 @@ void ruri_init_systemd(struct RURI_CONTAINER *container)
 
 void ruri_run_systemd_init(char *const command[])
 {
-	/*
-	 * Run systemd with ruri acting as init process.
-	 * This function never returns (it calls exit when systemd exits).
-	 */
 	if (command == NULL || command[0] == NULL) {
 		ruri_error("{red}No command specified for systemd mode\n");
 	}
 
-	/* Check if the init binary exists */
 	if (access(command[0], X_OK) != 0) {
 		ruri_error("{red}Init binary not found or not executable: %s\n", command[0]);
 	}
