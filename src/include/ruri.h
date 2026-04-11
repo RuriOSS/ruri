@@ -215,10 +215,8 @@ struct RURI_CONTAINER {
 	bool skip_setgroups;
 	// First init.
 	bool first_init;
-	// Systemd mode.
+	// Systemd mode (implies dbus support).
 	bool systemd_mode;
-	// Systemd dbus support.
-	bool systemd_dbus;
 };
 // For ruri_get_magic().
 #define ruri_magicof(x) (x##_magic)

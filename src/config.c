@@ -90,7 +90,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->skip_setgroups = false;
 	container->first_init = true;
 	container->systemd_mode = false;
-	container->systemd_dbus = false;
 }
 static int pmcrts(const char *s1, const char *s2)
 {
@@ -394,6 +393,18 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// skip_setgroups.
 	ret = k2v_add_comment(ret, "Skip setgroups() call.");
 	ret = k2v_add_config(bool, ret, "skip_setgroups", container->skip_setgroups);
+	ret = k2v_add_newline(ret);
+	// systemd_mode.
+	ret = k2v_add_comment(ret, "Enable systemd mode.");
+	ret = k2v_add_comment(ret, "Requires unshare feature enabled.");
+	ret = k2v_add_comment(ret, "Also enables dbus support automatically.");
+	ret = k2v_add_comment(ret, "Default is false.");
+	ret = k2v_add_config(bool, ret, "systemd_mode", container->systemd_mode);
+	ret = k2v_add_newline(ret);
+	// first_init.
+	ret = k2v_add_comment(ret, "Mark if this is the first init process.");
+	ret = k2v_add_comment(ret, "Used internally for systemd mode.");
+	ret = k2v_add_config(bool, ret, "first_init", container->first_init);
 	return ret;
 }
 void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull path)
@@ -411,7 +422,7 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 		ruri_error("{red}Failed to read config file:%s\n{clear}", path);
 	}
 	// Check if config is valid.
-	char *key_list[] = { "timens_realtime_offset", "timens_monotonic_offset", "hidepid", "char_devs", "use_kvm", "no_network", "container_dir", "user", "drop_caplist", "no_new_privs", "enable_seccomp", "rootless", "no_warnings", "cross_arch", "qemu_path", "use_rurienv", "cpuset", "memory", "cpupercent", "just_chroot", "unmask_dirs", "mount_host_runtime", "work_dir", "rootfs_source", "ro_root", "extra_mountpoint", "extra_ro_mountpoint", "env", "command", "hostname", NULL };
+	char *key_list[] = { "timens_realtime_offset", "timens_monotonic_offset", "hidepid", "char_devs", "use_kvm", "no_network", "container_dir", "user", "drop_caplist", "no_new_privs", "enable_seccomp", "rootless", "no_warnings", "cross_arch", "qemu_path", "use_rurienv", "cpuset", "memory", "cpupercent", "just_chroot", "unmask_dirs", "mount_host_runtime", "work_dir", "rootfs_source", "ro_root", "extra_mountpoint", "extra_ro_mountpoint", "env", "command", "hostname", "systemd_mode", "first_init", NULL };
 	for (int i = 0; key_list[i] != NULL; i++) {
 		if (!have_key(key_list[i], buf)) {
 			ruri_error("{red}Invalid config file, there is no key:%s\nHint:\n You can try to use `ruri -C config` to fix the config file{clear}", key_list[i]);
@@ -531,6 +542,10 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get command.
 	int comlen = k2v_get_key(char_array, "command", buf, container->command, RURI_MAX_COMMANDS);
 	container->command[comlen] = NULL;
+	// Get systemd_mode (implies dbus support).
+	container->systemd_mode = k2v_get_key(bool, "systemd_mode", buf);
+	// Get first_init.
+	container->first_init = k2v_get_key(bool, "first_init", buf);
 	free(buf);
 	buf = ruri_container_info_to_k2v(container);
 	ruri_log("{base}Container config in %s:{cyan}\n%s", path, buf);
@@ -790,6 +805,18 @@ void ruri_correct_config(const char *_Nonnull path)
 		container.oom_score_adj = 0;
 	} else {
 		container.oom_score_adj = k2v_get_key(int, "oom_score_adj", buf);
+	}
+	if (!have_key("systemd_mode", buf)) {
+		ruri_warning("{green}No key systemd_mode found, set to false\n{clear}");
+		container.systemd_mode = false;
+	} else {
+		container.systemd_mode = k2v_get_key(bool, "systemd_mode", buf);
+	}
+	if (!have_key("first_init", buf)) {
+		ruri_warning("{green}No key first_init found, set to true\n{clear}");
+		container.first_init = true;
+	} else {
+		container.first_init = k2v_get_key(bool, "first_init", buf);
 	}
 	free(buf);
 	unlink(path);
