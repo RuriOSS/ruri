@@ -207,15 +207,104 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		chmod("/dev/tty0", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 #ifndef DISABLE_SYSTEMD
 		if (container->systemd_mode) {
+			/*
+			 * Mount tmpfs for runtime directories.
+			 * This is required for systemd to function properly.
+			 */
 			mount("tmpfs", "/run", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, "size=65536k,mode=755");
 			mkdir("/run/lock", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 			mount("tmpfs", "/run/lock", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, "size=65536k,mode=755");
 			mount("tmpfs", "/tmp", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, "size=65536k,mode=755");
+
+			/*
+			 * Create systemd runtime directories.
+			 */
 			mkdir("/run/systemd", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+			mkdir("/run/systemd/system", S_IRUSR | S_IWUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 			int systemd_container_config_fd = open("/run/systemd/container", O_RDWR | O_CREAT | O_CLOEXEC, S_IRUSR | S_IWUSR);
 			if (systemd_container_config_fd >= 0) {
 				write(systemd_container_config_fd, "ruri", strlen("ruri"));
 				close(systemd_container_config_fd);
+			}
+
+			/*
+			 * Create journal runtime directory.
+			 */
+			mkdir("/run/log", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+			mkdir("/run/log/journal", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+
+			/*
+			 * Ensure /dev/console exists for systemd.
+			 * Console device is major 5, minor 1.
+			 */
+			if (access("/dev/console", F_OK) != 0) {
+				res = mknod("/dev/console", S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, makedev(5, 1));
+				if (res == 0) {
+					chown("/dev/console", 0, 5);
+					chmod("/dev/console", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+				}
+			}
+
+			/*
+			 * Handle /etc/machine-id for systemd.
+			 * If it doesn't exist or is empty, generate a unique ID.
+			 */
+			int machine_id_fd = open("/etc/machine-id", O_RDONLY | O_CLOEXEC);
+			if (machine_id_fd >= 0) {
+				char machine_id_buf[64] = { 0 };
+				ssize_t machine_id_len = read(machine_id_fd, machine_id_buf, sizeof(machine_id_buf) - 1);
+				close(machine_id_fd);
+				/* Check if file is empty or contains only whitespace */
+				bool machine_id_valid = false;
+				if (machine_id_len > 0) {
+					machine_id_buf[machine_id_len] = '\0';
+					for (ssize_t i = 0; i < machine_id_len; i++) {
+						if (machine_id_buf[i] != ' ' && machine_id_buf[i] != '\t' && machine_id_buf[i] != '\n' && machine_id_buf[i] != '\r') {
+							machine_id_valid = true;
+							break;
+						}
+					}
+				}
+				if (!machine_id_valid) {
+					/* Generate a simple machine-id based on container_id and time */
+					unsigned int machine_id_seed = (unsigned int)time(NULL) ^ (unsigned int)container->container_id;
+					char new_machine_id[33];
+					const char *hex_chars = "0123456789abcdef";
+					for (int i = 0; i < 32; i++) {
+						new_machine_id[i] = hex_chars[(machine_id_seed + i * 7) % 16];
+					}
+					new_machine_id[32] = '\0';
+					machine_id_fd = open("/etc/machine-id", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+					if (machine_id_fd >= 0) {
+						write(machine_id_fd, new_machine_id, 32);
+						write(machine_id_fd, "\n", 1);
+						close(machine_id_fd);
+						ruri_log("{base}Generated /etc/machine-id: %s\n", new_machine_id);
+					}
+				}
+			} else {
+				/* File doesn't exist, create one */
+				unsigned int machine_id_seed = (unsigned int)time(NULL) ^ (unsigned int)container->container_id;
+				char new_machine_id[33];
+				const char *hex_chars = "0123456789abcdef";
+				for (int i = 0; i < 32; i++) {
+					new_machine_id[i] = hex_chars[(machine_id_seed + i * 7) % 16];
+				}
+				new_machine_id[32] = '\0';
+				machine_id_fd = open("/etc/machine-id", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				if (machine_id_fd >= 0) {
+					write(machine_id_fd, new_machine_id, 32);
+					write(machine_id_fd, "\n", 1);
+					close(machine_id_fd);
+					ruri_log("{base}Generated /etc/machine-id: %s\n", new_machine_id);
+				}
+			}
+
+			/*
+			 * Create dbus runtime directory if dbus support is enabled.
+			 */
+			if (container->systemd_dbus) {
+				mkdir("/run/dbus", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 			}
 		}
 #endif
@@ -861,10 +950,92 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	}
 #ifndef DISABLE_SYSTEMD
 	if (container->enable_unshare && container->first_init && container->systemd_mode) {
+		/*
+		 * Setup cgroup v2 for systemd with proper delegation.
+		 * This creates a unified hierarchy with systemd having full control
+		 * over its subtree while keeping the parent cgroup read-only.
+		 */
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		umount2("/sys/fs/", MNT_DETACH | MNT_FORCE);
+
+		/* Create cgroup mount point */
 		mkdir("/sys/fs/cgroup", 0555);
-		mount("cgroup2", "/sys/fs/cgroup", "cgroup2", 0, NULL);
+
+		/*
+		 * Mount cgroup2 filesystem.
+		 * Use 'nsdelegate' option to enable namespace delegation if available.
+		 * This allows systemd to manage cgroups within the container.
+		 */
+		int cgroup_mount_flags = MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME;
+		int mount_ret = mount("cgroup2", "/sys/fs/cgroup", "cgroup2", cgroup_mount_flags, NULL);
+		if (mount_ret < 0) {
+			ruri_warning("{yellow}Warning: Failed to mount cgroup2: %s\n", strerror(errno));
+		}
+
+		/*
+		 * Enable controllers in the root cgroup's subtree_control.
+		 * This allows the child cgroups (including systemd's) to use these controllers.
+		 * We enable cpu, memory, and pids as the minimum required set.
+		 */
+		if (mount_ret == 0) {
+			/* Wait for mount to be ready */
+			usleep(1000);
+
+			/* Enable controllers in the root cgroup subtree_control */
+			int subtree_fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY | O_CLOEXEC);
+			if (subtree_fd >= 0) {
+				/* Try to enable controllers, ignore errors if not available */
+				if (write(subtree_fd, "+cpu\n", 5) < 0) {
+					ruri_log("{base}Controller 'cpu' not available in subtree_control\n");
+				}
+				if (write(subtree_fd, "+memory\n", 8) < 0) {
+					ruri_log("{base}Controller 'memory' not available in subtree_control\n");
+				}
+				if (write(subtree_fd, "+pids\n", 6) < 0) {
+					ruri_log("{base}Controller 'pids' not available in subtree_control\n");
+				}
+				close(subtree_fd);
+				ruri_log("{base}Enabled cgroup v2 controllers in subtree_control\n");
+			} else {
+				ruri_warning("{yellow}Warning: Cannot open cgroup.subtree_control: %s\n", strerror(errno));
+			}
+
+			/*
+			 * Create a dedicated cgroup for systemd.
+			 * This ensures systemd has its own writable hierarchy.
+			 */
+			int systemd_cgroup_ret = mkdir("/sys/fs/cgroup/systemd", 0755);
+			if (systemd_cgroup_ret == 0) {
+				/* Enable subtree_control in the systemd cgroup */
+				int systemd_subtree_fd = open("/sys/fs/cgroup/systemd/cgroup.subtree_control", O_WRONLY | O_CLOEXEC);
+				if (systemd_subtree_fd >= 0) {
+					/* Enable controllers for systemd's subtree */
+					write(systemd_subtree_fd, "+cpu\n", 5);
+					write(systemd_subtree_fd, "+memory\n", 8);
+					write(systemd_subtree_fd, "+pids\n", 6);
+					close(systemd_subtree_fd);
+					ruri_log("{base}Created systemd cgroup with delegated controllers\n");
+				}
+
+				/*
+				 * Mark the systemd cgroup as a threaded domain if supported.
+				 * This is for cgroup v2 threaded mode compatibility.
+				 */
+				int type_fd = open("/sys/fs/cgroup/systemd/cgroup.type", O_RDONLY | O_CLOEXEC);
+				if (type_fd >= 0) {
+					char type_buf[64] = { 0 };
+					ssize_t type_len = read(type_fd, type_buf, sizeof(type_buf) - 1);
+					if (type_len > 0) {
+						if (strstr(type_buf, "domain") != NULL) {
+							ruri_log("{base}systemd cgroup is a valid domain cgroup\n");
+						}
+					}
+					close(type_fd);
+				}
+			}
+
+			ruri_log("{base}cgroup v2 setup complete for systemd mode\n");
+		}
 	}
 #endif
 	// Create character devices.

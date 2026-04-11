@@ -150,6 +150,7 @@ void ruri_show_helps(void)
 	cprintf("{base} -Q, --mask-path [path] ......................: Mask a path in the container\n");
 #ifndef DISABLE_SYSTEMD
 	cprintf("{base} -Z, --systemd .............................: Run container with systemd support (*15)\n");
+	cprintf("{base}     --systemd-dbus ..........................: Enable dbus support for systemd (*15)\n");
 #endif
 	cprintf("{base} -z, --enable-tty-signals ....................: Enable TTY signals in the container (*16)\n");
 	cprintf("{base}  -g, --skip-setgroups ........................: Skip setgroups() call\n");
