@@ -79,8 +79,10 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	if (unshare(CLONE_NEWPID) == -1 && !container->no_warnings) {
 		ruri_warning("{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (unshare(CLONE_NEWCGROUP) == -1 && !container->no_warnings) {
-		ruri_warning("{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+	if (!container->systemd_mode) {
+		if (unshare(CLONE_NEWCGROUP) == -1 && !container->no_warnings) {
+			ruri_warning("{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+		}
 	}
 	if (unshare(CLONE_NEWTIME) == -1) {
 		if (container->timens_realtime_offset != 0 || container->timens_monotonic_offset != 0) {
@@ -203,15 +205,17 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		}
 		close(ns_fd);
 	}
-	ns_fd = open(cgroup_ns_file, O_RDONLY | O_CLOEXEC);
-	if (ns_fd < 0 && !container->no_warnings) {
-		ruri_warning("{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
-	} else {
-		usleep(1000);
-		if (setns(ns_fd, CLONE_NEWCGROUP) == -1) {
-			ruri_error("{red}Failed to setns cgroup namespace QwQ\n");
+	if (!container->systemd_mode) {
+		ns_fd = open(cgroup_ns_file, O_RDONLY | O_CLOEXEC);
+		if (ns_fd < 0 && !container->no_warnings) {
+			ruri_warning("{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+		} else {
+			usleep(1000);
+			if (setns(ns_fd, CLONE_NEWCGROUP) == -1) {
+				ruri_error("{red}Failed to setns cgroup namespace QwQ\n");
+			}
+			close(ns_fd);
 		}
-		close(ns_fd);
 	}
 	ns_fd = open(ipc_ns_file, O_RDONLY | O_CLOEXEC);
 	if (ns_fd < 0 && !container->no_warnings) {
