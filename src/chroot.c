@@ -284,7 +284,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		res = mknod("/dev/null", S_IFCHR, makedev(1, 3));
 		warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to create /dev/null, will continue.\n");
 		chmod("/dev/null", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-		res = mknod("/dev/console", S_IFCHR, makedev(5, 0));
+		res = mknod("/dev/console", S_IFCHR, makedev(5, 1));
 		warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to create /dev/console, will continue.\n");
 		chown("/dev/console", 0, 5);
 		chmod("/dev/console", S_IRUSR | S_IWUSR | S_IWGRP | S_IWOTH);
@@ -319,7 +319,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		symlink("/proc/self/fd/0", "/dev/stdin");
 		symlink("/proc/self/fd/1", "/dev/stdout");
 		symlink("/proc/self/fd/2", "/dev/stderr");
-		res = mknod("/dev/tty0", S_IFCHR, makedev(5, 0));
+		res = mknod("/dev/tty0", S_IFCHR, makedev(4, 0));
 		warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to create /dev/tty0, will continue.\n");
 		chown("/dev/tty0", 0, 5);
 		chmod("/dev/tty0", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
