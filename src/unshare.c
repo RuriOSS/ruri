@@ -139,7 +139,13 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		// Fix `can't access tty` issue.
 		int stat = 0;
 		waitpid(unshare_pid, &stat, 0);
-		exit(stat);
+		if (WIFEXITED(stat)) {
+			exit(WEXITSTATUS(stat));
+		}
+		if (WIFSIGNALED(stat)) {
+			exit(128 + WTERMSIG(stat));
+		}
+		exit(EXIT_FAILURE);
 	} else if (unshare_pid < 0) {
 		ruri_error("{red}Fork error, QwQ?\n");
 	}
@@ -256,7 +262,13 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		// Wait until current process exit.
 		int stat = 0;
 		waitpid(unshare_pid, &stat, 0);
-		exit(stat);
+		if (WIFEXITED(stat)) {
+			exit(WEXITSTATUS(stat));
+		}
+		if (WIFSIGNALED(stat)) {
+			exit(128 + WTERMSIG(stat));
+		}
+		exit(EXIT_FAILURE);
 	}
 	// Maybe this will never be run.
 	else if (unshare_pid < 0) {
