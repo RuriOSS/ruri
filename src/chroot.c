@@ -254,9 +254,6 @@ static void setup_systemd_runtime(struct RURI_CONTAINER *_Nonnull container)
 	/* Setup /etc/machine-id */
 	setup_machine_id(container->container_id);
 
-	/* Move into a dedicated cgroup before systemd initializes its own scopes. */
-	prepare_systemd_cgroup_scope(container);
-
 	/* Mount host dbus socket */
 	mount_host_dbus_socket();
 }
@@ -1023,6 +1020,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_warning("{yellow}Warning: Failed to mount cgroup2: %s\n", strerror(errno));
 		} else {
 			ruri_log("{base}Mounted clean cgroup v2 hierarchy for systemd mode\n");
+			prepare_systemd_cgroup_scope(container);
 		}
 	}
 #endif
