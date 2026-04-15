@@ -182,6 +182,37 @@ static void mount_host_dbus_socket(void)
 }
 
 /*
+ * Move PID 1 into a dedicated cgroup subtree before execing systemd.
+ * This avoids inheriting an invalid parent cgroup such as /init.
+ */
+static void prepare_systemd_cgroup_scope(const struct RURI_CONTAINER *_Nonnull container)
+{
+	char scope_dir[PATH_MAX] = { 0 };
+	char scope_procs[PATH_MAX] = { 0 };
+	char pid_buf[64] = { 0 };
+
+	snprintf(scope_dir, sizeof(scope_dir), "/sys/fs/cgroup/ruri-%d", container->container_id);
+	snprintf(scope_procs, sizeof(scope_procs), "%s/cgroup.procs", scope_dir);
+
+	if (mkdir(scope_dir, 0755) < 0 && errno != EEXIST) {
+		ruri_warning("{yellow}Warning: Failed to create systemd cgroup scope %s: %s\n", scope_dir, strerror(errno));
+		return;
+	}
+
+	int fd = open(scope_procs, O_WRONLY | O_CLOEXEC);
+	if (fd < 0) {
+		ruri_warning("{yellow}Warning: Failed to open %s: %s\n", scope_procs, strerror(errno));
+		return;
+	}
+
+	snprintf(pid_buf, sizeof(pid_buf), "%d\n", getpid());
+	if (write(fd, pid_buf, strlen(pid_buf)) < 0) {
+		ruri_warning("{yellow}Warning: Failed to move systemd pid into %s: %s\n", scope_dir, strerror(errno));
+	}
+	close(fd);
+}
+
+/*
  * Setup complete systemd runtime environment.
  * This includes all directories and files systemd needs to function.
  */
@@ -222,6 +253,9 @@ static void setup_systemd_runtime(struct RURI_CONTAINER *_Nonnull container)
 
 	/* Setup /etc/machine-id */
 	setup_machine_id(container->container_id);
+
+	/* Move into a dedicated cgroup before systemd initializes its own scopes. */
+	prepare_systemd_cgroup_scope(container);
 
 	/* Mount host dbus socket */
 	mount_host_dbus_socket();
