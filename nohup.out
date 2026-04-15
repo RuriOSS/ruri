@@ -1,15 +1,11 @@
-  UNIT                  LOAD   ACTIVE SUB    DESCRIPTION
-● console-getty.service loaded failed failed Console Getty
-● e2scrub_reap.service  loaded failed failed Remove Stale Online ext4 Metadata Check Snapshots
-● getty@tty1.service    loaded failed failed Getty on tty1
-● getty@tty2.service    loaded failed failed Getty on tty2
-● getty@tty3.service    loaded failed failed Getty on tty3
-● getty@tty4.service    loaded failed failed Getty on tty4
-● getty@tty5.service    loaded failed failed Getty on tty5
-● getty@tty6.service    loaded failed failed Getty on tty6
+○ dbus.socket - D-Bus System Message Bus Socket
+     Loaded: loaded (/usr/lib/systemd/system/dbus.socket; static)
+     Active: inactive (dead)
+   Triggers: ● dbus.service
+     Listen: /run/dbus/system_bus_socket (Stream)
 
-Legend: LOAD   → Reflects whether the unit definition was properly loaded.
-        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
-        SUB    → The low-level unit activation state, values depend on unit type.
-
-8 loaded units listed.
+○ dbus.service - D-Bus System Message Bus
+     Loaded: loaded (/usr/lib/systemd/system/dbus.service; static)
+     Active: inactive (dead)
+TriggeredBy: ○ dbus.socket
+       Docs: man:dbus-daemon(1)
