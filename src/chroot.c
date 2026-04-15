@@ -1067,8 +1067,10 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (container->enable_default_seccomp || container->seccomp_denied_syscall[0] != NULL) {
 		ruri_setup_seccomp(container);
 	}
-	// Drop caps.
-	drop_caps(container);
+	// Let systemd retain its capabilities and manage them itself as PID 1.
+	if (!container->systemd_mode) {
+		drop_caps(container);
+	}
 	// Set envs.
 	set_envs(container);
 	// Fix a bug that the terminal is frozen.

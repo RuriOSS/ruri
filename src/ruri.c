@@ -1255,10 +1255,6 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			close(nullfd);
 		}
 	}
-	// systemd needs CAP_SYS_RESOURCE to adjust resource limits such as RLIMIT_CORE.
-	if (container->systemd_mode) {
-		ruri_add_to_caplist(keep_caplist_extra, CAP_SYS_RESOURCE);
-	}
 	// Build the caplist to drop.
 	ruri_build_caplist(container->drop_caplist, privileged, drop_caplist_extra, keep_caplist_extra);
 	// Dump config.
