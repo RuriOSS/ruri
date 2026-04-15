@@ -1093,8 +1093,15 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Fix console color.
 	cprintf("{clear}");
+#ifndef DISABLE_SYSTEMD
+	// In systemd mode, ruri stays as root to manage systemd as PID 1
+	if (!container->systemd_mode) {
+#endif
 	// Change uid and gid.
-	change_user(container);
+		change_user(container);
+#ifndef DISABLE_SYSTEMD
+	}
+#endif
 // Execute command in container.
 // Use exec(3) function because system(3) may be unavailable now.
 #ifndef DISABLE_SYSTEMD
