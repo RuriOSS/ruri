@@ -755,6 +755,7 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 			int groups_count = 0;
 			gid_t *groups = malloc(NGROUPS_MAX * sizeof(gid_t));
 			uid_t user_uid = ruri_get_user_uid(user);
+			gid_t user_gid = ruri_get_user_gid(user);
 			if (RURI_PWD_ERRNO != 0) {
 				ruri_warning("{yellow}Warning: failed to get user info for `%s`: %s{clear}\n", user, strerror(RURI_PWD_ERRNO));
 				return;
@@ -770,11 +771,6 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 			}
 			usleep(1000);
 			free(groups);
-			gid_t user_gid = ruri_get_user_gid(user);
-			if (RURI_PWD_ERRNO != 0) {
-				ruri_warning("{yellow}Warning: failed to get user info for `%s`: %s{clear}\n", user, strerror(RURI_PWD_ERRNO));
-				return;
-			}
 			res = setgid(user_gid);
 			panic_on_error(res, 0, "{red}Error: failed to set gid QwQ\n");
 			res = setuid(user_uid);
@@ -1097,7 +1093,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// In systemd mode, ruri stays as root to manage systemd as PID 1
 	if (!container->systemd_mode) {
 #endif
-	// Change uid and gid.
+		// Change uid and gid.
 		change_user(container);
 #ifndef DISABLE_SYSTEMD
 	}
