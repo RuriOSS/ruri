@@ -962,7 +962,8 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Umount binfmt_misc apifs.
 	umount2("/proc/sys/fs/binfmt_misc", MNT_DETACH | MNT_FORCE);
 	// Set up cgroup limit.
-	if (!container->just_chroot) {
+	// In systemd mode, let systemd manage the delegated cgroup hierarchy itself.
+	if (!container->just_chroot && !container->systemd_mode) {
 		ruri_set_limit(container);
 	}
 #ifndef DISABLE_SYSTEMD
