@@ -64,27 +64,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (container->timens_monotonic_offset != 0) {
-		usleep(1000);
-		int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
-		if (fd < 0) {
-			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
-		}
-		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
-		write(fd, buf, strlen(buf));
-		close(fd);
-	}
-	if (container->timens_realtime_offset != 0) {
-		int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
-		if (fd < 0) {
-			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
-		}
-		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
-		write(fd, buf, strlen(buf));
-		close(fd);
-	}
+	ruri_setup_timens(container);
 	unshare_ret = unshare(CLONE_FILES);
 	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that we could not unshare file descriptors with child process QwQ{clear}\n");
 	unshare_ret = unshare(CLONE_FS);

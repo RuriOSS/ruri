@@ -102,12 +102,12 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 		ruri_error("{red}Error: --arch and --qemu-path should be set at the same time QwQ\n");
 	}
 	for (int i = 0; container->extra_mountpoint[i] != NULL; i++) {
-		if (strlen(container->extra_mountpoint[i]) > PATH_MAX) {
+		if (strlen(container->extra_mountpoint[i]) >= PATH_MAX) {
 			ruri_error("{red}Error: mountpoint path is too long QwQ\n");
 		}
 	}
 	for (int i = 0; container->extra_ro_mountpoint[i] != NULL; i++) {
-		if (strlen(container->extra_ro_mountpoint[i]) > PATH_MAX) {
+		if (strlen(container->extra_ro_mountpoint[i]) >= PATH_MAX) {
 			ruri_error("{red}Error: mountpoint path is too long QwQ\n");
 		}
 	}
@@ -148,6 +148,7 @@ static void parse_cgroup_settings(const char *_Nonnull str, struct RURI_CONTAINE
 			ruri_error("{red}Error: cpupercent should be in range 1-100\n");
 		}
 	} else {
+		free(limit);
 		ruri_error("{red}Unknown cgroup option %s\n", str);
 	}
 }
@@ -171,6 +172,98 @@ static bool is_container_dir(char *dir)
 	}
 	return true;
 }
+static void add_to_strarray(char *_Nonnull array[], int max, const char *_Nonnull str)
+{
+	for (int i = 0; i < max; i++) {
+		if (array[i] == NULL) {
+			array[i] = strdup(str);
+			array[i + 1] = NULL;
+			return;
+		}
+		if (i == (max - 1)) {
+			ruri_error("{red}Too many items QwQ\n");
+		}
+	}
+}
+static void add_mount(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull source, const char *_Nonnull target, bool ro)
+{
+	char **arr = ro ? container->extra_ro_mountpoint : container->extra_mountpoint;
+	for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i += 3) {
+		if (arr[i] == NULL) {
+			arr[i] = strdup(source);
+			arr[i + 1] = strdup(target);
+			arr[i + 2] = NULL;
+			if (strcmp(target, "/") == 0) {
+				free(arr[i]);
+				free(arr[i + 1]);
+				arr[i] = NULL;
+				arr[i + 1] = NULL;
+				if (container->rootfs_source == NULL) {
+					container->rootfs_source = strdup(source);
+					if (ro) {
+						container->ro_root = true;
+					}
+				} else {
+					ruri_error("{red}You can only mount one source to / QwQ\n");
+				}
+			}
+			return;
+		}
+		if (i >= (RURI_MAX_MOUNTPOINTS - 3)) {
+			ruri_error("{red}Too many mountpoints QwQ\n");
+		}
+	}
+}
+static void add_env(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull key, const char *_Nonnull value)
+{
+	for (int i = 0; i < RURI_MAX_ENVS; i += 2) {
+		if (container->env[i] == NULL) {
+			container->env[i] = strdup(key);
+			container->env[i + 1] = strdup(value);
+			container->env[i + 2] = NULL;
+			return;
+		}
+		if (i >= (RURI_MAX_ENVS - 2)) {
+			ruri_error("{red}Too many envs QwQ\n");
+		}
+	}
+}
+static void add_masked_path(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull path)
+{
+	add_to_strarray(container->masked_path, RURI_MAX_MOUNTPOINTS, path);
+}
+static void add_char_dev(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull name, int major, int minor)
+{
+	for (int i = 0; i < RURI_MAX_CHAR_DEVS; i += 3) {
+		if (container->char_devs[i] == NULL) {
+			container->char_devs[i] = strdup(name);
+			container->char_devs[i + 1] = malloc(16);
+			container->char_devs[i + 2] = malloc(16);
+			sprintf(container->char_devs[i + 1], "%d", major);
+			sprintf(container->char_devs[i + 2], "%d", minor);
+			container->char_devs[i + 3] = NULL;
+			return;
+		}
+		if (i >= (RURI_MAX_CHAR_DEVS - 3)) {
+			ruri_error("{red}Too many char devices QwQ\n");
+		}
+	}
+}
+#ifndef DISABLE_LIBCAP
+static void add_cap(cap_value_t caplist[], const char *_Nonnull cap_str)
+{
+	if (atoi(cap_str) != 0) {
+		ruri_add_to_caplist(caplist, atoi(cap_str));
+	} else {
+		cap_value_t cap = RURI_INIT_VALUE;
+		if (ruri_cap_from_name(cap_str, &cap) == 0) {
+			ruri_add_to_caplist(caplist, cap);
+		} else {
+			ruri_error("{red}Error: unknown capability `%s`\nQwQ{clear}\n", cap_str);
+		}
+	}
+}
+#endif
 static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
@@ -193,7 +286,6 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 	char *output_path = NULL;
 	cap_value_t keep_caplist_extra[RURI_CAP_LAST_CAP + 1] = { RURI_INIT_VALUE };
 	cap_value_t drop_caplist_extra[RURI_CAP_LAST_CAP + 1] = { RURI_INIT_VALUE };
-	cap_value_t cap = RURI_INIT_VALUE;
 	bool privileged = false;
 	bool use_config_file = false;
 	bool background = false;
@@ -469,17 +561,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		else if (strcmp(argv[index], "-Q") == 0 || strcmp(argv[index], "--mask-path") == 0) {
 			index++;
 			if (index < argc) {
-				for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i++) {
-					if (container->masked_path[i] == NULL) {
-						container->masked_path[i] = strdup(argv[index]);
-						container->masked_path[i + 1] = NULL;
-						break;
-					}
-					// Max 512 mountpoints.
-					if (i == (RURI_MAX_MOUNTPOINTS - 1)) {
-						ruri_error("{red}Too many masked paths QwQ\n");
-					}
-				}
+				add_masked_path(container, argv[index]);
 			} else {
 				ruri_error("{red}Unknown masked path QwQ\n");
 			}
@@ -488,19 +570,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		else if (strcmp(argv[index], "-e") == 0 || strcmp(argv[index], "--env") == 0) {
 			index++;
 			if ((argv[index] != NULL) && (argv[index + 1] != NULL)) {
-				for (int i = 0; i < RURI_MAX_ENVS; i++) {
-					if (container->env[i] == NULL) {
-						container->env[i] = strdup(argv[index]);
-						index++;
-						container->env[i + 1] = strdup(argv[index]);
-						container->env[i + 2] = NULL;
-						break;
-					}
-					// Max 512 envs.
-					if (i == (RURI_MAX_ENVS - 1)) {
-						ruri_error("{red}Too many envs QwQ\n");
-					}
-				}
+				add_env(container, argv[index], argv[index + 1]);
+				index++;
 			} else {
 				ruri_error("{red}Error: unknown env QwQ\n");
 			}
@@ -512,30 +583,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 				if (strcmp(argv[index], "/") == 0) {
 					ruri_error("{red}/ is not allowed to use as a mountpoint QwQ\n");
 				}
-				for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i++) {
-					if (container->extra_mountpoint[i] == NULL) {
-						container->extra_mountpoint[i] = strdup(argv[index]);
-						index++;
-						container->extra_mountpoint[i + 1] = strdup(argv[index]);
-						if (strcmp(argv[index], "/") == 0) {
-							free(container->extra_mountpoint[i]);
-							free(container->extra_mountpoint[i + 1]);
-							container->extra_mountpoint[i] = NULL;
-							container->extra_mountpoint[i + 1] = NULL;
-							if (container->rootfs_source == NULL) {
-								container->rootfs_source = strdup(argv[index - 1]);
-							} else {
-								ruri_error("{red}You can only mount one source to / QwQ\n");
-							}
-						}
-						container->extra_mountpoint[i + 2] = NULL;
-						break;
-					}
-					// Max 512 mountpoints.
-					if (i == (RURI_MAX_MOUNTPOINTS - 1)) {
-						ruri_error("{red}Too many mountpoints QwQ\n");
-					}
-				}
+				add_mount(container, argv[index], argv[index + 1], false);
+				index++;
 			} else {
 				ruri_error("{red}Error: unknown mountpoint QwQ\n");
 			}
@@ -544,31 +593,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		else if (strcmp(argv[index], "-M") == 0 || strcmp(argv[index], "--ro-mount") == 0) {
 			index++;
 			if ((argv[index] != NULL) && (argv[index + 1] != NULL)) {
-				for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i++) {
-					if (container->extra_ro_mountpoint[i] == NULL) {
-						container->extra_ro_mountpoint[i] = strdup(argv[index]);
-						index++;
-						container->extra_ro_mountpoint[i + 1] = strdup(argv[index]);
-						container->extra_ro_mountpoint[i + 2] = NULL;
-						if (strcmp(argv[index], "/") == 0) {
-							free(container->extra_ro_mountpoint[i]);
-							free(container->extra_ro_mountpoint[i + 1]);
-							container->extra_ro_mountpoint[i] = NULL;
-							container->extra_ro_mountpoint[i + 1] = NULL;
-							if (container->rootfs_source == NULL) {
-								container->rootfs_source = strdup(argv[index - 1]);
-								container->ro_root = true;
-							} else {
-								ruri_error("{red}You can only mount one source to / QwQ\n");
-							}
-						}
-						break;
-					}
-					// Max 512 mountpoints.
-					if (i == (RURI_MAX_MOUNTPOINTS - 1)) {
-						ruri_error("{red}Too many mountpoints QwQ\n");
-					}
-				}
+				add_mount(container, argv[index], argv[index + 1], true);
+				index++;
 			} else {
 				ruri_error("{red}Error: unknown mountpoint QwQ\n");
 			}
@@ -577,45 +603,27 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		else if (strcmp(argv[index], "-I") == 0 || strcmp(argv[index], "--char-dev") == 0) {
 			index++;
 			if ((argv[index] != NULL) && (argv[index + 1] != NULL) && (argv[index + 2] != NULL)) {
-				for (int i = 0; i < RURI_MAX_CHAR_DEVS; i++) {
-					if (container->char_devs[i] == NULL) {
-						container->char_devs[i] = strdup(argv[index]);
-						index++;
-						if (atoi(argv[index]) < 0) {
-							ruri_error("{red}Error: invalid major number QwQ\n");
-						}
-						container->char_devs[i + 1] = strdup(argv[index]);
-						index++;
-						if (atoi(argv[index]) <= 0 && strcmp(argv[index], "0") != 0) {
-							ruri_error("{red}Error: invalid minor number QwQ\n");
-						}
-						container->char_devs[i + 2] = strdup(argv[index]);
-						container->char_devs[i + 3] = NULL;
-						// If major is 0, we will auto-detect the major and minor number from the host device.
-						if (atoi(container->char_devs[i + 1]) == 0) {
-							free(container->char_devs[i + 1]);
-							free(container->char_devs[i + 2]);
-							char dev_path[PATH_MAX];
-							sprintf(dev_path, "/dev/%s", container->char_devs[i]);
-							struct stat st;
-							if (stat(dev_path, &st) != 0) {
-								ruri_error("{red}Error: device %s does not exist on host QwQ\n", dev_path);
-							}
-							if (!S_ISCHR(st.st_mode)) {
-								ruri_error("{red}Error: device %s is not a char device on host QwQ\n", dev_path);
-							}
-							container->char_devs[i + 1] = malloc(16);
-							container->char_devs[i + 2] = malloc(16);
-							sprintf(container->char_devs[i + 1], "%d", major(st.st_rdev));
-							sprintf(container->char_devs[i + 2], "%d", minor(st.st_rdev));
-							ruri_log("{base}Auto-detected char device: %s (major: %s, minor: %s)\n", container->char_devs[i], container->char_devs[i + 1], container->char_devs[i + 2]);
-						}
-						break;
-					}
-					if (i == (RURI_MAX_CHAR_DEVS - 1)) {
-						ruri_error("{red}Too many char devices QwQ\n");
-					}
+				int major_num = atoi(argv[index + 1]);
+				int minor_num = atoi(argv[index + 2]);
+				if (major_num < 0) {
+					ruri_error("{red}Error: invalid major number QwQ\n");
 				}
+				if (major_num == 0) {
+					char dev_path[PATH_MAX];
+					sprintf(dev_path, "/dev/%s", argv[index]);
+					struct stat st;
+					if (stat(dev_path, &st) != 0) {
+						ruri_error("{red}Error: device %s does not exist on host QwQ\n", dev_path);
+					}
+					if (!S_ISCHR(st.st_mode)) {
+						ruri_error("{red}Error: device %s is not a char device on host QwQ\n", dev_path);
+					}
+					major_num = major(st.st_rdev);
+					minor_num = minor(st.st_rdev);
+					ruri_log("{base}Auto-detected char device: %s (major: %d, minor: %d)\n", argv[index], major_num, minor_num);
+				}
+				add_char_dev(container, argv[index], major_num, minor_num);
+				index += 2;
 			} else {
 				ruri_error("{red}Error: unknown char devices QwQ\n");
 			}
@@ -625,16 +633,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 #ifndef DISABLE_LIBSECCOMP
 			index++;
 			if (argv[index] != NULL) {
-				for (int i = 0; i < RURI_MAX_SECCOMP_DENIED_SYSCALL; i++) {
-					if (container->seccomp_denied_syscall[i] == NULL) {
-						container->seccomp_denied_syscall[i] = strdup(argv[index]);
-						container->seccomp_denied_syscall[i + 1] = NULL;
-						break;
-					}
-					if (i == (RURI_MAX_SECCOMP_DENIED_SYSCALL - 1)) {
-						ruri_error("{red}Too many syscalls QwQ\n");
-					}
-				}
+				add_to_strarray(container->seccomp_denied_syscall, RURI_MAX_SECCOMP_DENIED_SYSCALL, argv[index]);
 			} else {
 				ruri_error("{red}Error: unknown syscall QwQ\n");
 			}
@@ -663,17 +662,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 #ifndef DISABLE_LIBCAP
 			index++;
 			if (argv[index] != NULL) {
-				// We both support capability name and number,
-				// because in the fulture, there might be new capabilities that
-				// we can not use the name to match it in current libcap.
-				if (atoi(argv[index]) != 0) {
-					ruri_add_to_caplist(keep_caplist_extra, atoi(argv[index]));
-				} else if (ruri_cap_from_name(argv[index], &cap) == 0) {
-					ruri_add_to_caplist(keep_caplist_extra, cap);
-					ruri_log("{base}Keep capability: %s\n", argv[index]);
-				} else {
-					ruri_error("{red}or: unknown capability `%s`\nQwQ{clear}\n", argv[index]);
-				}
+				add_cap(keep_caplist_extra, argv[index]);
+				ruri_log("{base}Keep capability: %s\n", argv[index]);
 			} else {
 				ruri_error("{red}Missing argument\n");
 			}
@@ -686,13 +676,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 #ifndef DISABLE_LIBCAP
 			index++;
 			if (argv[index] != NULL) {
-				if (atoi(argv[index]) != 0) {
-					ruri_add_to_caplist(drop_caplist_extra, atoi(argv[index]));
-				} else if (cap_from_name(argv[index], &cap) == 0) {
-					ruri_add_to_caplist(drop_caplist_extra, cap);
-				} else {
-					ruri_error("{red}Error: unknown capability `%s`\nQwQ{clear}\n", argv[index]);
-				}
+				add_cap(drop_caplist_extra, argv[index]);
 			} else {
 				ruri_error("{red}Missing argument\n");
 			}
@@ -899,17 +883,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					if (i == (strlen(argv[index]) - 1)) {
 						index++;
 						if (argv[index] != NULL) {
-							// We both support capability name and number,
-							// because in the fulture, there might be new capabilities that
-							// we can not use the name to match it in current libcap.
-							if (atoi(argv[index]) != 0) {
-								ruri_add_to_caplist(keep_caplist_extra, atoi(argv[index]));
-							} else if (ruri_cap_from_name(argv[index], &cap) == 0) {
-								ruri_add_to_caplist(keep_caplist_extra, cap);
-								ruri_log("{base}Keep capability: %s\n", argv[index]);
-							} else {
-								ruri_error("{red}or: unknown capability `%s`\nQwQ{clear}\n", argv[index]);
-							}
+							add_cap(keep_caplist_extra, argv[index]);
+							ruri_log("{base}Keep capability: %s\n", argv[index]);
 						} else {
 							ruri_error("{red}Missing argument\n");
 						}
@@ -925,13 +900,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					if (i == (strlen(argv[index]) - 1)) {
 						index++;
 						if (argv[index] != NULL) {
-							if (atoi(argv[index]) != 0) {
-								ruri_add_to_caplist(drop_caplist_extra, atoi(argv[index]));
-							} else if (ruri_cap_from_name(argv[index], &cap) == 0) {
-								ruri_add_to_caplist(drop_caplist_extra, cap);
-							} else {
-								ruri_error("{red}Error: unknown capability `%s`\nQwQ{clear}\n", argv[index]);
-							}
+							add_cap(drop_caplist_extra, argv[index]);
 						} else {
 							ruri_error("{red}Missing argument\n");
 						}
@@ -946,19 +915,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					if (i == (strlen(argv[index]) - 1)) {
 						index++;
 						if ((argv[index] != NULL) && (argv[index + 1] != NULL)) {
-							for (int i = 0; i < RURI_MAX_ENVS; i++) {
-								if (container->env[i] == NULL) {
-									container->env[i] = strdup(argv[index]);
-									index++;
-									container->env[i + 1] = strdup(argv[index]);
-									container->env[i + 2] = NULL;
-									break;
-								}
-								// Max 512 envs.
-								if (i == (RURI_MAX_ENVS - 1)) {
-									ruri_error("{red}Too many envs QwQ\n");
-								}
-							}
+							add_env(container, argv[index], argv[index + 1]);
+							index++;
 						} else {
 							ruri_error("{red}Error: unknown env QwQ\n");
 						}
@@ -973,30 +931,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 							if (strcmp(argv[index], "/") == 0) {
 								ruri_error("{red}/ is not allowed to use as a mountpoint QwQ\n");
 							}
-							for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i++) {
-								if (container->extra_mountpoint[i] == NULL) {
-									container->extra_mountpoint[i] = strdup(argv[index]);
-									index++;
-									container->extra_mountpoint[i + 1] = strdup(argv[index]);
-									if (strcmp(argv[index], "/") == 0) {
-										free(container->extra_mountpoint[i]);
-										free(container->extra_mountpoint[i + 1]);
-										container->extra_mountpoint[i] = NULL;
-										container->extra_mountpoint[i + 1] = NULL;
-										if (container->rootfs_source == NULL) {
-											container->rootfs_source = strdup(argv[index - 1]);
-										} else {
-											ruri_error("{red}You can only mount one source to / QwQ\n");
-										}
-									}
-									container->extra_mountpoint[i + 2] = NULL;
-									break;
-								}
-								// Max 512 mountpoints.
-								if (i == (RURI_MAX_MOUNTPOINTS - 1)) {
-									ruri_error("{red}Too many mountpoints QwQ\n");
-								}
-							}
+							add_mount(container, argv[index], argv[index + 1], false);
+							index++;
 						} else {
 							ruri_error("{red}Error: unknown mountpoint QwQ\n");
 						}
@@ -1008,31 +944,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					if (i == (strlen(argv[index]) - 1)) {
 						index++;
 						if ((argv[index] != NULL) && (argv[index + 1] != NULL)) {
-							for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i++) {
-								if (container->extra_ro_mountpoint[i] == NULL) {
-									container->extra_ro_mountpoint[i] = strdup(argv[index]);
-									index++;
-									container->extra_ro_mountpoint[i + 1] = strdup(argv[index]);
-									container->extra_ro_mountpoint[i + 2] = NULL;
-									if (strcmp(argv[index], "/") == 0) {
-										free(container->extra_ro_mountpoint[i]);
-										free(container->extra_ro_mountpoint[i + 1]);
-										container->extra_ro_mountpoint[i] = NULL;
-										container->extra_ro_mountpoint[i + 1] = NULL;
-										if (container->rootfs_source == NULL) {
-											container->rootfs_source = strdup(argv[index - 1]);
-											container->ro_root = true;
-										} else {
-											ruri_error("{red}You can only mount one source to / QwQ\n");
-										}
-									}
-									break;
-								}
-								// Max 512 mountpoints.
-								if (i == (RURI_MAX_MOUNTPOINTS - 1)) {
-									ruri_error("{red}Too many mountpoints QwQ\n");
-								}
-							}
+							add_mount(container, argv[index], argv[index + 1], true);
+							index++;
 						} else {
 							ruri_error("{red}Error: unknown mountpoint QwQ\n");
 						}
@@ -1184,16 +1097,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 							ruri_error("{red}Please specify the syscall\n{clear}");
 						}
 						index++;
-						for (int i = 0; i < RURI_MAX_SECCOMP_DENIED_SYSCALL; i++) {
-							if (container->seccomp_denied_syscall[i] == NULL) {
-								container->seccomp_denied_syscall[i] = strdup(argv[index]);
-								container->seccomp_denied_syscall[i + 1] = NULL;
-								break;
-							}
-							if (i == (RURI_MAX_SECCOMP_DENIED_SYSCALL - 1)) {
-								ruri_error("{red}Too many syscalls QwQ\n");
-							}
-						}
+						add_to_strarray(container->seccomp_denied_syscall, RURI_MAX_SECCOMP_DENIED_SYSCALL, argv[index]);
 					} else {
 						ruri_error("Invalid argument %s\n", argv[index]);
 					}
@@ -1243,11 +1147,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			exit(EXIT_SUCCESS);
 		}
 		// Ignore SIGTTIN, we are now running in the background, SIGTTIN may kill this process.
-		sigset_t sigs;
-		sigemptyset(&sigs);
-		sigaddset(&sigs, SIGTTIN);
-		sigaddset(&sigs, SIGTTOU);
-		sigprocmask(SIG_BLOCK, &sigs, 0);
+		ruri_block_tty_signals();
 		// Redirect stdout and stderr to log file or /dev/null.
 		if (log_file != NULL) {
 			ruri_mkdirs(log_file, 0755);

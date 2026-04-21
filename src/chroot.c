@@ -131,7 +131,7 @@ static void generate_machine_id(int container_id)
 	new_machine_id[32] = '\0';
 	remove("/etc/machine-id");
 	unlink("/etc/machine-id");
-	int machine_id_fd = open("/etc/machine-id", O_WRONLY | O_CREAT | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	int machine_id_fd = open("/etc/machine-id", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (machine_id_fd >= 0) {
 		write(machine_id_fd, new_machine_id, 32);
 		write(machine_id_fd, "\n", 1);
@@ -256,8 +256,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		if (container->memory == NULL) {
 			devshm_options = strdup("mode=1777");
 		} else {
-			devshm_options = malloc(strlen(container->memory) + strlen("mode=1777") + 114);
-			sprintf(devshm_options, "size=65536k,mode=1777");
+			devshm_options = strdup("size=65536k,mode=1777");
 		}
 		res = mkdir("/dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		ruri_warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to create /dev/shm, will continue.\n");
@@ -314,37 +313,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		if (!container->unmask_dirs) {
 			// Mask some directories/files that we don't want the container modify it.
-			mount("tmpfs", "/proc/asound", "tmpfs", MS_RDONLY, NULL);
-			mount("tmpfs", "/proc/acpi", "tmpfs", MS_RDONLY, NULL);
-			mount("/dev/null", "/proc/kcore", "", MS_BIND, NULL);
-			mount("/dev/null", "/proc/keys", "", MS_BIND, NULL);
-			mount("/dev/null", "/proc/latency_stats", "", MS_BIND, NULL);
-			mount("/dev/null", "/proc/timer_list", "", MS_BIND, NULL);
-			mount("/dev/null", "/proc/timer_stats", "", MS_BIND, NULL);
-			mount("/dev/null", "/proc/sched_debug", "", MS_BIND, NULL);
-			mount("/dev/null", "/proc/sysrq-trigger", "", MS_BIND, NULL);
-			mount("tmpfs", "/proc/scsi", "tmpfs", MS_RDONLY, NULL);
-			mount("tmpfs", "/sys/firmware", "tmpfs", MS_RDONLY, NULL);
-			mount("tmpfs", "/sys/devices/virtual/powercap", "tmpfs", MS_RDONLY, NULL);
-			mount("tmpfs", "/sys/block", "tmpfs", MS_RDONLY, NULL);
-			mount("tmpfs", "/sys/kernel/debug", "tmpfs", MS_RDONLY, NULL);
-			mount("tmpfs", "/sys/module", "tmpfs", MS_RDONLY, NULL);
-			mount("tmpfs", "/sys/class/net", "tmpfs", MS_RDONLY, NULL);
-			if (!container->systemd_mode) {
-				mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_RDONLY, NULL);
-			}
-			// Protect some system runtime directories by mounting themselves as read-only.
-			mount("/proc/bus", "/proc/bus", NULL, MS_BIND | MS_REC, NULL);
-			mount("/proc/bus", "/proc/bus", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
-			mount("/proc/fs", "/proc/fs", NULL, MS_BIND | MS_REC, NULL);
-			mount("/proc/fs", "/proc/fs", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
-			mount("/proc/irq", "/proc/irq", NULL, MS_BIND | MS_REC, NULL);
-			mount("/proc/irq", "/proc/irq", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
-			mount("/proc/sys", "/proc/sys", NULL, MS_BIND | MS_REC, NULL);
-			mount("/proc/sys", "/proc/sys", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
-			mount("/proc/sys-trigger", "/proc/sys-trigger", NULL, MS_BIND | MS_REC, NULL);
-			mount("/proc/sys-trigger", "/proc/sys-trigger", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
-			mount("/dev/null", "/sys/class/tty/console/active", NULL, MS_BIND, NULL);
+			ruri_mask_proc_sys(container);
 		}
 		// Mask other user-specified path.
 		for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i++) {
@@ -833,6 +802,102 @@ static void hidepid(int stat)
 		mount("none", "/proc", "proc", MS_REMOUNT, "hidepid=2");
 	}
 }
+void ruri_block_tty_signals(void)
+{
+	/*
+	 * Block SIGTTIN and SIGTTOU signals.
+	 * This is useful when running in the background.
+	 */
+	sigset_t sigs;
+	sigemptyset(&sigs);
+	sigaddset(&sigs, SIGTTIN);
+	sigaddset(&sigs, SIGTTOU);
+	sigprocmask(SIG_BLOCK, &sigs, 0);
+}
+void ruri_mask_proc_sys(const struct RURI_CONTAINER *_Nonnull container)
+{
+	/*
+	 * Mask some directories/files in /sys and /proc
+	 * to avoid security issues.
+	 */
+	if (container->unmask_dirs) {
+		return;
+	}
+	mount("tmpfs", "/proc/asound", "tmpfs", MS_RDONLY, NULL);
+	mount("tmpfs", "/proc/acpi", "tmpfs", MS_RDONLY, NULL);
+	mount("/dev/null", "/proc/kcore", "", MS_BIND, NULL);
+	mount("/dev/null", "/proc/keys", "", MS_BIND, NULL);
+	mount("/dev/null", "/proc/latency_stats", "", MS_BIND, NULL);
+	mount("/dev/null", "/proc/timer_list", "", MS_BIND, NULL);
+	mount("/dev/null", "/proc/timer_stats", "", MS_BIND, NULL);
+	mount("/dev/null", "/proc/sched_debug", "", MS_BIND, NULL);
+	mount("/dev/null", "/proc/sysrq-trigger", "", MS_BIND, NULL);
+	mount("tmpfs", "/proc/scsi", "tmpfs", MS_RDONLY, NULL);
+	mount("tmpfs", "/sys/firmware", "tmpfs", MS_RDONLY, NULL);
+	mount("tmpfs", "/sys/devices/virtual/powercap", "tmpfs", MS_RDONLY, NULL);
+	mount("tmpfs", "/sys/block", "tmpfs", MS_RDONLY, NULL);
+	mount("tmpfs", "/sys/kernel/debug", "tmpfs", MS_RDONLY, NULL);
+	mount("tmpfs", "/sys/module", "tmpfs", MS_RDONLY, NULL);
+	mount("tmpfs", "/sys/class/net", "tmpfs", MS_RDONLY, NULL);
+	if (!container->systemd_mode) {
+		mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_RDONLY, NULL);
+	}
+	mount("/proc/bus", "/proc/bus", NULL, MS_BIND | MS_REC, NULL);
+	mount("/proc/bus", "/proc/bus", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
+	mount("/proc/fs", "/proc/fs", NULL, MS_BIND | MS_REC, NULL);
+	mount("/proc/fs", "/proc/fs", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
+	mount("/proc/irq", "/proc/irq", NULL, MS_BIND | MS_REC, NULL);
+	mount("/proc/irq", "/proc/irq", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
+	mount("/proc/sys", "/proc/sys", NULL, MS_BIND | MS_REC, NULL);
+	mount("/proc/sys", "/proc/sys", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
+	mount("/proc/sys-trigger", "/proc/sys-trigger", NULL, MS_BIND | MS_REC, NULL);
+	mount("/proc/sys-trigger", "/proc/sys-trigger", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);
+	mount("/dev/null", "/sys/class/tty/console/active", NULL, MS_BIND, NULL);
+}
+void ruri_set_default_command(struct RURI_CONTAINER *_Nonnull container)
+{
+	/*
+	 * Set default command for exec().
+	 */
+	if (container->command[0] != NULL) {
+		return;
+	}
+	if (su_biany_exist(container->container_dir) && container->user == NULL) {
+		container->command[0] = "/bin/su";
+		container->command[1] = "-";
+		container->command[2] = NULL;
+	} else {
+		container->command[0] = "/bin/sh";
+		container->command[1] = NULL;
+	}
+}
+void ruri_setup_timens(const struct RURI_CONTAINER *_Nonnull container)
+{
+	/*
+	 * Setup time namespace offsets.
+	 */
+	if (container->timens_monotonic_offset != 0) {
+		usleep(1000);
+		int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
+		if (fd < 0) {
+			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
+		}
+		char buf[1024] = { '\0' };
+		sprintf(buf, _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
+		write(fd, buf, strlen(buf));
+		close(fd);
+	}
+	if (container->timens_realtime_offset != 0) {
+		int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
+		if (fd < 0) {
+			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
+		}
+		char buf[1024] = { '\0' };
+		sprintf(buf, _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
+		write(fd, buf, strlen(buf));
+		close(fd);
+	}
+}
 static void set_oom_score(int score)
 {
 	/*
@@ -871,11 +936,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	set_hostname(container);
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
 	if (!container->enable_tty_signals) {
-		sigset_t sigs;
-		sigemptyset(&sigs);
-		sigaddset(&sigs, SIGTTIN);
-		sigaddset(&sigs, SIGTTOU);
-		sigprocmask(SIG_BLOCK, &sigs, 0);
+		ruri_block_tty_signals();
 	}
 	// Check if system runtime files are already created.
 	// container_dir should bind-mount before chroot(2),
@@ -914,16 +975,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	// Set default command for exec().
-	if (container->command[0] == NULL) {
-		if (su_biany_exist(container->container_dir) && container->user == NULL) {
-			container->command[0] = "/bin/su";
-			container->command[1] = "-";
-			container->command[2] = NULL;
-		} else {
-			container->command[0] = "/bin/sh";
-			container->command[1] = NULL;
-		}
-	}
+	ruri_set_default_command(container);
 	// Check binary used.
 	check_binary(container);
 	// Set up cgroup limit on host.
@@ -1049,11 +1101,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	 */
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
 	if (!container->enable_tty_signals) {
-		sigset_t sigs;
-		sigemptyset(&sigs);
-		sigaddset(&sigs, SIGTTIN);
-		sigaddset(&sigs, SIGTTOU);
-		sigprocmask(SIG_BLOCK, &sigs, 0);
+		ruri_block_tty_signals();
 	}
 	// Mount mountpoints.
 	mount_rootfs(container);
@@ -1065,20 +1113,12 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		mount(container->container_dir, container->container_dir, NULL, MS_BIND | MS_REMOUNT | MS_RDONLY, NULL);
 	}
 	// Set default command for exec().
+	ruri_set_default_command(container);
 	if (container->command[0] == NULL) {
-		if (su_biany_exist(container->container_dir) && container->user == NULL) {
-			container->command[0] = "/bin/su";
-			container->command[1] = "-";
+		if (busybox_exists(container->container_dir)) {
+			container->command[0] = "/bin/busybox";
+			container->command[1] = "sh";
 			container->command[2] = NULL;
-		} else {
-			if (busybox_exists(container->container_dir)) {
-				container->command[0] = "/bin/busybox";
-				container->command[1] = "sh";
-				container->command[2] = NULL;
-			} else {
-				container->command[0] = "/bin/sh";
-				container->command[1] = NULL;
-			}
 		}
 	}
 	// Check binary used.

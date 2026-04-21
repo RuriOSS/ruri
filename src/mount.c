@@ -188,14 +188,12 @@ static int mk_mountpoint_dir(const char *_Nonnull target)
 	// I know this can hardly be happen, just to avoid some unexpected errors.
 	remove(target);
 	// Check if mountpoint exists.
-	char *test = realpath(target, NULL);
-	if (test == NULL) {
-		if (ruri_mkdirs(target, S_IRGRP | S_IWGRP | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH) != 0) {
-			return -1;
-		}
-	} else {
-		free(test);
+	struct stat st;
+	if (stat(target, &st) == 0) {
 		return 0;
+	}
+	if (ruri_mkdirs(target, S_IRGRP | S_IWGRP | S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH) != 0) {
+		return -1;
 	}
 	return 0;
 }

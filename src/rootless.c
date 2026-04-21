@@ -159,8 +159,7 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	if (container->memory == NULL) {
 		devshm_options = strdup("mode=1777");
 	} else {
-		devshm_options = malloc(strlen(container->memory) + strlen("mode=1777") + 114);
-		sprintf(devshm_options, "size=65536k,mode=1777");
+		devshm_options = strdup("size=65536k,mode=1777");
 	}
 	mkdir("./dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 	mount("tmpfs", "./dev/shm", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, devshm_options);
@@ -187,12 +186,12 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		mount("/dev/null", "./proc/timer_list", "", MS_BIND, NULL);
 		mount("/dev/null", "./proc/timer_stats", "", MS_BIND, NULL);
 		mount("/dev/null", "./proc/sched_debug", "", MS_BIND, NULL);
-		mount("/dev/null", "/proc/sysrq-trigger", "", MS_BIND, NULL);
+		mount("/dev/null", "./proc/sysrq-trigger", "", MS_BIND, NULL);
 		mount("tmpfs", "./proc/scsi", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/firmware", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/devices/virtual/powercap", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/block", "tmpfs", MS_RDONLY, NULL);
-		mount("tmpfs", "/sys/kernel/debug", "tmpfs", MS_RDONLY, NULL);
+		mount("tmpfs", "./sys/kernel/debug", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/module", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/class/net", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/fs/cgroup", "tmpfs", MS_RDONLY, NULL);
@@ -420,21 +419,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 				ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 			}
 		}
-		if (container->timens_monotonic_offset != 0) {
-			usleep(1000);
-			int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
-			char buf[1024] = { '\0' };
-			sprintf(buf, _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
-			write(fd, buf, strlen(buf));
-			close(fd);
-		}
-		if (container->timens_realtime_offset != 0) {
-			int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
-			char buf[1024] = { '\0' };
-			sprintf(buf, _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
-			write(fd, buf, strlen(buf));
-			close(fd);
-		}
+		ruri_setup_timens(container);
 		if (unshare(CLONE_SYSVSEM) == -1) {
 			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that semaphore namespace is not supported on this device QwQ{clear}\n");
 		}

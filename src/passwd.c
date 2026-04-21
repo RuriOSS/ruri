@@ -47,7 +47,10 @@ static char *line_get_username(const char *_Nonnull p)
 	 * Get username by line.
 	 * free() after use.
 	 */
-	char *ret = malloc(LOGIN_NAME_MAX * 4);
+	char *ret = malloc(LOGIN_NAME_MAX);
+	if (ret == NULL) {
+		return NULL;
+	}
 	ret[0] = '\0';
 	// /etc/passwd format:
 	// name:password:uid:gid:comment:home directory:login shell
@@ -57,7 +60,7 @@ static char *line_get_username(const char *_Nonnull p)
 		return ret;
 	}
 	// Read the username until we meet the first colon.
-	for (int i = 0; p[i] != '\0' && i < (LOGIN_NAME_MAX * 2); i++) {
+	for (int i = 0; p[i] != '\0' && i < (LOGIN_NAME_MAX - 1); i++) {
 		if (p[i] == ':') {
 			break;
 		}

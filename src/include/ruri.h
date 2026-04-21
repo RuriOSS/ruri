@@ -338,6 +338,19 @@ int ruri_get_groups(uid_t uid, gid_t groups[]);
 int ruri_cap_from_name(const char *str, cap_value_t *cap);
 #endif
 void ruri_clear_env(char *const *_Nonnull argv);
+void ruri_block_tty_signals(void);
+void ruri_setup_timens(const struct RURI_CONTAINER *_Nonnull container);
+void ruri_mask_proc_sys(const struct RURI_CONTAINER *_Nonnull container);
+void ruri_set_default_command(struct RURI_CONTAINER *_Nonnull container);
+void ruri_add_to_strarray(char *_Nonnull array[], int max, const char *_Nonnull str);
+void ruri_add_mount(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull source, const char *_Nonnull target, bool ro);
+void ruri_add_env(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull key, const char *_Nonnull value);
+void ruri_add_masked_path(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull path);
+void ruri_add_char_dev(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull name, int major, int minor);
+void ruri_add_seccomp_syscall(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull syscall);
+#ifndef DISABLE_LIBCAP
+void ruri_add_cap(cap_value_t caplist[], const char *_Nonnull cap_str);
+#endif
 // Bionic does not have memfd_create()
 #ifdef __ANDROID__
 #define memfd_create(...) syscall(SYS_memfd_create, __VA_ARGS__)
