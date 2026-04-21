@@ -119,20 +119,18 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 // drop_caplist.
 #ifndef DISABLE_LIBCAP
 	char *drop_caplist[RURI_CAP_LAST_CAP + 1] = { NULL };
-	char *cap_tmp = NULL;
 	for (int i = 0; true; i++) {
 		if (container->drop_caplist[i] == RURI_INIT_VALUE) {
 			len = i;
 			break;
 		}
-		cap_tmp = cap_to_name(container->drop_caplist[i]);
+		char *cap_tmp = cap_to_name(container->drop_caplist[i]);
 		if (cap_tmp == NULL) {
-			drop_caplist[i] = malloc(114);
-			sprintf(drop_caplist[i], "%d", container->drop_caplist[i]);
+			drop_caplist[i] = malloc(16);
+			snprintf(drop_caplist[i], 16, "%d", container->drop_caplist[i]);
 		} else {
 			drop_caplist[i] = strdup(cap_tmp);
 			cap_free(cap_tmp);
-			cap_tmp = NULL;
 		}
 	}
 	ret = k2v_add_comment(ret, "The capability to drop.");
@@ -268,6 +266,10 @@ void ruri_store_info(const struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Creat .rurienv file and open it.
 	fd = open(file, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IWUSR | S_IRUSR);
+	if (fd < 0) {
+		free(info);
+		ruri_error("{red}Error: failed to create .rurienv file QwQ\n");
+	}
 	// Write info to .rurienv file.
 	write(fd, info, strlen(info));
 	// Set immutable flag on .rurienv file.
@@ -350,13 +352,13 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		int fd = open(file, O_RDONLY | O_CLOEXEC);
 		if (fd < 0 && !container->no_warnings) {
 			ruri_warning("{yellow}Open .rurienv failed{clear}\n");
+		} else {
+			int attr = 0;
+			ioctl(fd, FS_IOC_GETFLAGS, &attr);
+			attr &= ~FS_IMMUTABLE_FL;
+			ioctl(fd, FS_IOC_SETFLAGS, &attr);
+			close(fd);
 		}
-		int attr = 0;
-		ioctl(fd, FS_IOC_GETFLAGS, &attr);
-		attr &= ~FS_IMMUTABLE_FL;
-		ioctl(fd, FS_IOC_SETFLAGS, &attr);
-		remove(file);
-		close(fd);
 		remove(file);
 		return container;
 	}

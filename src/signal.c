@@ -43,8 +43,11 @@ static void panic(int sig)
 	signal(sig, SIG_DFL);
 	int clifd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
 	char buf[1024];
-	ssize_t bufsize = read(clifd, buf, sizeof(buf));
-	close(clifd);
+	ssize_t bufsize = 0;
+	if (clifd >= 0) {
+		bufsize = read(clifd, buf, sizeof(buf));
+		close(clifd);
+	}
 	cfprintf(stderr, "{base}");
 	cfprintf(stderr, "{base}%s\n", "  .^.   .^.");
 	cfprintf(stderr, "{base}%s\n", "  /⋀\\_ﾉ_/⋀\\");

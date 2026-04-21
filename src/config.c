@@ -145,20 +145,18 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	char *drop_caplist[RURI_CAP_LAST_CAP + 1] = { NULL };
 	int len = 0;
 #ifndef DISABLE_LIBCAP
-	char *cap_tmp = NULL;
 	for (int i = 0; true; i++) {
 		if (container->drop_caplist[i] == RURI_INIT_VALUE) {
 			len = i;
 			break;
 		}
-		cap_tmp = cap_to_name(container->drop_caplist[i]);
+		char *cap_tmp = cap_to_name(container->drop_caplist[i]);
 		if (cap_tmp == NULL) {
-			drop_caplist[i] = malloc(114);
-			sprintf(drop_caplist[i], "%d", container->drop_caplist[i]);
+			drop_caplist[i] = malloc(16);
+			snprintf(drop_caplist[i], 16, "%d", container->drop_caplist[i]);
 		} else {
 			drop_caplist[i] = strdup(cap_tmp);
 			cap_free(cap_tmp);
-			cap_tmp = NULL;
 		}
 	}
 #endif
