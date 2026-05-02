@@ -114,10 +114,8 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	mount("proc", "./proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL);
 	mkdir("./dev", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 	mount("tmpfs", "./dev", "tmpfs", MS_NOSUID, "size=65536k,mode=755");
-	close(open("./dev/tty", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
-	mount("/dev/tty", "./dev/tty", NULL, MS_BIND, NULL);
-	close(open("./dev/console", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
-	mount("/dev/console", "./dev/console", NULL, MS_BIND, NULL);
+	close(open("./dev/full", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+	mount("/dev/full", "./dev/full", NULL, MS_BIND, NULL);
 	close(open("./dev/null", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 	mount("/dev/null", "./dev/null", NULL, MS_BIND, NULL);
 	close(open("./dev/ptmx", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
@@ -136,7 +134,9 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	symlink("/proc/self/fd/0", "./dev/stdin");
 	symlink("/proc/self/fd/1", "./dev/stdout");
 	symlink("/proc/self/fd/2", "./dev/stderr");
-	symlink("/dev/null", "./dev/tty0");
+	symlink("./dev/null", "./dev/tty0");
+	symlink("./dev/null", "./dev/console");
+	symlink("./dev/null", "./dev/tty");
 	mkdir("./dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 	mount("devpts", "./dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "gid=5,mode=620,ptmxmode=666,max=1024");
 	// Mount other char devices.
@@ -196,6 +196,7 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		mount("tmpfs", "./sys/module", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/class/net", "tmpfs", MS_RDONLY, NULL);
 		mount("tmpfs", "./sys/fs/cgroup", "tmpfs", MS_RDONLY, NULL);
+		mount("/dev/null", "./sys/class/tty/console/active", NULL, MS_BIND, NULL);
 	}
 }
 static void set_id_map(uid_t uid, gid_t gid)

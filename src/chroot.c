@@ -271,6 +271,9 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		res = mount("binfmt_misc", "/proc/sys/fs/binfmt_misc", "binfmt_misc", 0, NULL);
 		ruri_warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to mount binfmt_misc, will continue.\n");
 		// Create system runtime files in /dev and then fix permissions.
+		res = mknod("/dev/full", S_IFCHR, makedev(1, 7));
+		ruri_warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to create /dev/full, will continue.\n");
+		chmod("/dev/full", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		res = mknod("/dev/null", S_IFCHR, makedev(1, 3));
 		ruri_warn_on_error(res, 0, !container->no_warnings, "{yellow}Warning: Failed to create /dev/null, will continue.\n");
 		chmod("/dev/null", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
