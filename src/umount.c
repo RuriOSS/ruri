@@ -28,50 +28,56 @@
  *
  */
 #include "include/ruri.h"
+#include <mntent.h>
 /*
  * This file provides function to umount the container.
  * All pids detected in the container will be killed at the same time.
  * TODO:
  * Maybe we should use info in /proc/mounts first?
  */
-static char *proc_mounts(void)
+struct UMOUNT_ENTRY {
+	char *_Nonnull mount_point;
+	bool use_force;
+};
+static bool should_use_mnt_force(const char *_Nonnull mnt_type)
 {
-	/*
-	 * Read /proc/mounts
-	 * Warning: free() after use.
-	 */
-	// As procfs does not support stat(),
-	// that means we can not know the size of /proc/mounts,
-	// so we have to use a buffer to read it.
-	int fd = open("/proc/mounts", O_RDONLY | O_CLOEXEC);
-	if (fd < 0) {
-		return NULL;
-	}
-	char buf[1024 + 1];
-	size_t bufsize = 1024;
-	ssize_t bytes_read = 0;
-	char *ret = malloc(bufsize);
-	ret[0] = '\0';
-	while ((bytes_read = read(fd, buf, 1024)) > 0) {
-		bufsize += 1024;
-		ret = realloc(ret, bufsize);
-		buf[bytes_read] = '\0';
-		strcat(ret, buf);
-	}
-	close(fd);
-	return ret;
+	return strcmp(mnt_type, "fuse") != 0 && strncmp(mnt_type, "fuse.", 5) != 0;
 }
-static char *goto_next_line(const char *_Nonnull buf)
+static bool is_submount(const char *_Nonnull dir, const char *_Nonnull mount_point)
 {
-	/*
-	 * Goto next line, without any check.
-	 * We assume all input is legal.
-	 */
-	if (strchr(buf, '\n') == NULL) {
-		return NULL;
+	if (strcmp(dir, mount_point) == 0) {
+		return true;
 	}
-	return strchr(buf, '\n') + 1;
+	size_t dir_len = strlen(dir);
+	if (strncmp(dir, mount_point, dir_len) != 0) {
+		return false;
+	}
+	return mount_point[dir_len] == '/';
 }
+static int mount_depth_cmp(const void *_Nonnull a, const void *_Nonnull b)
+{
+	const struct UMOUNT_ENTRY *entry_a = a;
+	const struct UMOUNT_ENTRY *entry_b = b;
+	size_t len_a = strlen(entry_a->mount_point);
+	size_t len_b = strlen(entry_b->mount_point);
+	if (len_a < len_b) {
+		return 1;
+	}
+	if (len_a > len_b) {
+		return -1;
+	}
+	return strcmp(entry_b->mount_point, entry_a->mount_point);
+}
+#ifdef RURI_TEST
+bool ruri_test_is_submount(const char *_Nonnull dir, const char *_Nonnull mount_point)
+{
+	return is_submount(dir, mount_point);
+}
+bool ruri_test_should_use_mnt_force(const char *_Nonnull mnt_type)
+{
+	return should_use_mnt_force(mnt_type);
+}
+#endif
 static void umount_subdir(const char *_Nonnull dir)
 {
 	/*
@@ -80,45 +86,68 @@ static void umount_subdir(const char *_Nonnull dir)
 	 * we use it as a double-check.
 	 */
 
-	/*
-	 * /proc/mounts format:
-	 * device mount_point filesystem_type options dump fsck_order
-	 * We just use strstr to find `dir` in /proc/mounts,
-	 * and umount it.
-	 * This is okey in most scenarios.
-	 */
-	char *mount_info = proc_mounts();
-	if (mount_info == NULL) {
+	char normalized_dir[PATH_MAX] = { '\0' };
+	if (snprintf(normalized_dir, sizeof(normalized_dir), "%s", dir) >= (int)sizeof(normalized_dir)) {
 		return;
 	}
-	// A simple way to check if container is umounted.
-	if (strstr(mount_info, dir) != NULL) {
-		ruri_log("{base}There's still umounted dirs, using info in /proc/mounts to umount them\n");
-	} else {
-		// Make ASAN happy.
-		free(mount_info);
+	size_t normalized_len = strlen(normalized_dir);
+	while (normalized_len > 1 && normalized_dir[normalized_len - 1] == '/') {
+		normalized_dir[normalized_len - 1] = '\0';
+		normalized_len--;
+	}
+	FILE *mnt_file = setmntent("/proc/mounts", "r");
+	if (mnt_file == NULL) {
 		return;
 	}
-	char *umount_point = NULL;
-	char *p = mount_info;
-	while ((p = strstr(p, dir)) != NULL) {
-		if (p == NULL) {
-			break;
-		}
-		// To avoid that we have dir=/foo but strstr find /foobar.
-		if (p[strlen(dir)] != '/' && p[strlen(dir) - 1] != '/' && p[strlen(dir)] != ' ') {
-			p = goto_next_line(p);
+	char mntent_buf[8192];
+	struct mntent mntbuf;
+	struct UMOUNT_ENTRY *entries = NULL;
+	size_t entries_len = 0;
+	size_t entries_cap = 0;
+	while (getmntent_r(mnt_file, &mntbuf, mntent_buf, sizeof(mntent_buf)) != NULL) {
+		if (!is_submount(normalized_dir, mntbuf.mnt_dir)) {
 			continue;
 		}
-		umount_point = strdup(p);
-		*strchr(umount_point, ' ') = '\0';
-		ruri_log("{base}Umounting %s{green}\n", umount_point);
-		umount2(umount_point, MNT_DETACH | MNT_FORCE);
-		free(umount_point);
-		p = goto_next_line(p);
+		if (entries_len + 1 > entries_cap) {
+			entries_cap = entries_cap == 0 ? 16 : entries_cap * 2;
+			struct UMOUNT_ENTRY *new_entries = realloc(entries, entries_cap * sizeof(*entries));
+			if (new_entries == NULL) {
+				for (size_t i = 0; i < entries_len; i++) {
+					free(entries[i].mount_point);
+				}
+				free(entries);
+				endmntent(mnt_file);
+				return;
+			}
+			entries = new_entries;
+		}
+		entries[entries_len].mount_point = strdup(mntbuf.mnt_dir);
+		if (entries[entries_len].mount_point == NULL) {
+			continue;
+		}
+		entries[entries_len].use_force = should_use_mnt_force(mntbuf.mnt_type);
+		entries_len++;
 	}
-	// Make ASAN happy.
-	free(mount_info);
+	endmntent(mnt_file);
+	if (entries_len <= 0) {
+		free(entries);
+		return;
+	}
+	ruri_log("{base}There's still umounted dirs, using info in /proc/mounts to umount them\n");
+	qsort(entries, entries_len, sizeof(*entries), mount_depth_cmp);
+	for (size_t i = 0; i < entries_len; i++) {
+		if (entries[i].mount_point == NULL) {
+			continue;
+		}
+		ruri_log("{base}Umounting %s{green}\n", entries[i].mount_point);
+		int flags = MNT_DETACH;
+		if (entries[i].use_force) {
+			flags |= MNT_FORCE;
+		}
+		umount2(entries[i].mount_point, flags);
+		free(entries[i].mount_point);
+	}
+	free(entries);
 }
 // Umount container.
 void ruri_umount_container(const char *_Nonnull container_dir)
