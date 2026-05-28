@@ -72,7 +72,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
 		}
 		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
+		snprintf(buf, sizeof(buf), _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
 		write(fd, buf, strlen(buf));
 		close(fd);
 	}
@@ -82,7 +82,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
 		}
 		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
+		snprintf(buf, sizeof(buf), _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
 		write(fd, buf, strlen(buf));
 		close(fd);
 	}
@@ -157,12 +157,12 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	char pid_ns_file[PATH_MAX] = { '\0' };
 	char time_ns_file[PATH_MAX] = { '\0' };
 	char uts_ns_file[PATH_MAX] = { '\0' };
-	sprintf(cgroup_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/cgroup");
-	sprintf(ipc_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/ipc");
-	sprintf(mount_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/mnt");
-	sprintf(pid_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/pid");
-	sprintf(time_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/time");
-	sprintf(uts_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/uts");
+	snprintf(cgroup_ns_file, sizeof(cgroup_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/cgroup");
+	snprintf(ipc_ns_file, sizeof(ipc_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/ipc");
+	snprintf(mount_ns_file, sizeof(mount_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/mnt");
+	snprintf(pid_ns_file, sizeof(pid_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/pid");
+	snprintf(time_ns_file, sizeof(time_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/time");
+	snprintf(uts_ns_file, sizeof(uts_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/uts");
 	// Enter namespaces via setns(2).
 	int ns_fd = RURI_INIT_VALUE;
 	ns_fd = open(pid_ns_file, O_RDONLY | O_CLOEXEC);
@@ -213,7 +213,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	// Disable network.
 	if (container->no_network) {
 		char net_ns_file[PATH_MAX] = { '\0' };
-		sprintf(net_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/net");
+		snprintf(net_ns_file, sizeof(net_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/net");
 		ns_fd = open(net_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
 			ruri_error("{red}--no-network detected, but failed to open network namespace QwQ\n");
@@ -225,7 +225,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		// Join net ns will be forced.
 		// As I plan to add net ns support in rurima.
 		char net_ns_file[PATH_MAX] = { '\0' };
-		sprintf(net_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/net");
+		snprintf(net_ns_file, sizeof(net_ns_file), "%s%d%s", "/proc/", container->ns_pid, "/ns/net");
 		ns_fd = open(net_ns_file, O_RDONLY | O_CLOEXEC);
 		setns(ns_fd, CLONE_NEWNET);
 	}
@@ -267,11 +267,13 @@ static void setup_cgroup2(int container_id)
 {
 	mkdir("/sys/fs/cgroup/ruri", 0755);
 	char cgroup_dir[PATH_MAX] = { '\0' };
-	sprintf(cgroup_dir, "/sys/fs/cgroup/ruri/%d", container_id);
+	snprintf(cgroup_dir, sizeof(cgroup_dir), "/sys/fs/cgroup/ruri/%d", container_id);
 	if (mkdir(cgroup_dir, 0755) == -1) {
 		ruri_error("{red}Failed to create cgroup directory QwQ\n");
 	}
-	FILE *cgroup_procs = fopen(strcat(cgroup_dir, "/cgroup.procs"), "we");
+	char cgroup_procs_file[PATH_MAX] = { '\0' };
+	snprintf(cgroup_procs_file, sizeof(cgroup_procs_file), "%s/cgroup.procs", cgroup_dir);
+	FILE *cgroup_procs = fopen(cgroup_procs_file, "we");
 	if (!cgroup_procs) {
 		ruri_error("{red}Failed to open cgroup.procs QwQ\n");
 	}
@@ -281,7 +283,7 @@ static void setup_cgroup2(int container_id)
 static void join_cgroup2(int container_id)
 {
 	char cgroup_dir[PATH_MAX] = { '\0' };
-	sprintf(cgroup_dir, "/sys/fs/cgroup/ruri/%d/cgroup.procs", container_id);
+	snprintf(cgroup_dir, sizeof(cgroup_dir), "/sys/fs/cgroup/ruri/%d/cgroup.procs", container_id);
 	FILE *cgroup_procs = fopen(cgroup_dir, "we");
 	if (!cgroup_procs) {
 		ruri_error("{red}Failed to open cgroup.procs QwQ\n");
