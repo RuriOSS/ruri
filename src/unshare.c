@@ -72,7 +72,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
 		}
 		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
+		snprintf(buf, sizeof(buf), _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
 		write(fd, buf, strlen(buf));
 		close(fd);
 	}
@@ -82,7 +82,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
 		}
 		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
+		snprintf(buf, sizeof(buf), _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
 		write(fd, buf, strlen(buf));
 		close(fd);
 	}
@@ -171,12 +171,12 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	char pid_ns_file[PATH_MAX] = { '\0' };
 	char time_ns_file[PATH_MAX] = { '\0' };
 	char uts_ns_file[PATH_MAX] = { '\0' };
-	sprintf(cgroup_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/cgroup");
-	sprintf(ipc_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/ipc");
-	sprintf(mount_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/mnt");
-	sprintf(pid_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/pid");
-	sprintf(time_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/time");
-	sprintf(uts_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/uts");
+	snprintf(cgroup_ns_file, PATH_MAX, "%s%d%s", "/proc/", container->ns_pid, "/ns/cgroup");
+	snprintf(ipc_ns_file, PATH_MAX, "%s%d%s", "/proc/", container->ns_pid, "/ns/ipc");
+	snprintf(mount_ns_file, PATH_MAX, "%s%d%s", "/proc/", container->ns_pid, "/ns/mnt");
+	snprintf(pid_ns_file, PATH_MAX, "%s%d%s", "/proc/", container->ns_pid, "/ns/pid");
+	snprintf(time_ns_file, PATH_MAX, "%s%d%s", "/proc/", container->ns_pid, "/ns/time");
+	snprintf(uts_ns_file, PATH_MAX, "%s%d%s", "/proc/", container->ns_pid, "/ns/uts");
 	// Enter namespaces via setns(2).
 	int ns_fd = RURI_INIT_VALUE;
 	ns_fd = open(pid_ns_file, O_RDONLY | O_CLOEXEC);
