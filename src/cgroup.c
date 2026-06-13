@@ -55,6 +55,7 @@ struct RURI_CGROUP_ENV {
 	struct RURI_CGROUP_NODE cpupercent;
 	struct RURI_CGROUP_NODE pids;
 	struct RURI_CGROUP_NODE io;
+	struct RURI_CGROUP_NODE freezer;
 };
 // Returns -1 for malformed size
 // Returns -2 for too large
@@ -145,6 +146,11 @@ static void detect_cgroup_unified(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->io.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->io.type = RURI_CGROUP_V2;
 	}
+	// Freezer is built-in for cgroup v2
+	if (access("/sys/fs/cgroup/unified/ruri/cgroup.freeze", F_OK) == 0 && cg_env->freezer.type == RURI_CGROUP_ENOSYS) {
+		cg_env->freezer.prefix = "/sys/fs/cgroup/unified/ruri/";
+		cg_env->freezer.type = RURI_CGROUP_V2;
+	}
 }
 static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 {
@@ -173,6 +179,11 @@ static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 		mkdir("/sys/fs/cgroup/blkio/ruri", S_IRUSR | S_IWUSR);
 		cg_env->io.prefix = "/sys/fs/cgroup/blkio/ruri/";
 		cg_env->io.type = RURI_CGROUP_V1;
+	}
+	if (access("/sys/fs/cgroup/freezer/freezer.state", F_OK) == 0 && cg_env->freezer.type == RURI_CGROUP_ENOSYS) {
+		mkdir("/sys/fs/cgroup/freezer/ruri", S_IRUSR | S_IWUSR);
+		cg_env->freezer.prefix = "/sys/fs/cgroup/freezer/ruri/";
+		cg_env->freezer.type = RURI_CGROUP_V1;
 	}
 	// For some Android devices, they mount cgroup v1 controllers in /dev.
 	if (access("/dev/memcg/memory.limit_in_bytes", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
@@ -224,6 +235,11 @@ static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->io.type = RURI_CGROUP_V2;
 		cg_env->io.prefix = "/sys/fs/cgroup/ruri/";
 	}
+	// Freezer is built-in for cgroup v2, no need to enable in subtree_control
+	if (access("/sys/fs/cgroup/ruri/cgroup.freeze", F_OK) == 0) {
+		cg_env->freezer.type = RURI_CGROUP_V2;
+		cg_env->freezer.prefix = "/sys/fs/cgroup/ruri/";
+	}
 }
 static void ruri_detect_cgroup_env(struct RURI_CGROUP_ENV *cg_env)
 {
@@ -239,6 +255,8 @@ static void ruri_detect_cgroup_env(struct RURI_CGROUP_ENV *cg_env)
 	cg_env->pids.type = RURI_CGROUP_ENOSYS;
 	cg_env->io.prefix = NULL;
 	cg_env->io.type = RURI_CGROUP_ENOSYS;
+	cg_env->freezer.prefix = NULL;
+	cg_env->freezer.type = RURI_CGROUP_ENOSYS;
 	detect_cgroup_v2(cg_env);
 	detect_cgroup_unified(cg_env);
 	detect_cgroup_v1_fallback(cg_env);
@@ -272,6 +290,11 @@ static void ruri_dump_cg_env(struct RURI_CGROUP_ENV *cg_env)
 		ruri_log("{base}  I/O controller: %s (type: %s)\n", cg_env->io.prefix, cg_env->io.type == RURI_CGROUP_V2 ? "v2" : "v1");
 	} else {
 		ruri_log("{base}  I/O controller: not supported\n");
+	}
+	if (cg_env->freezer.type != RURI_CGROUP_ENOSYS) {
+		ruri_log("{base}  Freezer controller: %s (type: %s)\n", cg_env->freezer.prefix, cg_env->freezer.type == RURI_CGROUP_V2 ? "v2" : "v1");
+	} else {
+		ruri_log("{base}  Freezer controller: not supported\n");
 	}
 	// NOLINTEND
 }
@@ -782,4 +805,56 @@ bool ruri_pid_in_cgroup(pid_t pid, int container_id)
 	}
 	fclose(f);
 	return false;
+}
+int ruri_freeze_container(int container_id)
+{
+	/*
+	 * Freeze (pause) all processes in the container.
+	 * Returns 0 on success, 1 on failure.
+	 */
+	struct RURI_CGROUP_ENV cg_env;
+	ruri_detect_cgroup_env(&cg_env);
+	if (cg_env.freezer.type == RURI_CGROUP_ENOSYS) {
+		return 1;
+	}
+	if (cg_env.freezer.type == RURI_CGROUP_V2) {
+		char cgroup_freeze_path[PATH_MAX] = "";
+		sprintf(cgroup_freeze_path, "%s%d/cgroup.freeze", cg_env.freezer.prefix, container_id);
+		if (open_and_write(cgroup_freeze_path, "1\n")) {
+			return 1;
+		}
+	} else if (cg_env.freezer.type == RURI_CGROUP_V1) {
+		char cgroup_freezer_state_path[PATH_MAX] = "";
+		sprintf(cgroup_freezer_state_path, "%s%d/freezer.state", cg_env.freezer.prefix, container_id);
+		if (open_and_write(cgroup_freezer_state_path, "FROZEN\n")) {
+			return 1;
+		}
+	}
+	return 0;
+}
+int ruri_thaw_container(int container_id)
+{
+	/*
+	 * Thaw (resume) all processes in the container.
+	 * Returns 0 on success, 1 on failure.
+	 */
+	struct RURI_CGROUP_ENV cg_env;
+	ruri_detect_cgroup_env(&cg_env);
+	if (cg_env.freezer.type == RURI_CGROUP_ENOSYS) {
+		return 1;
+	}
+	if (cg_env.freezer.type == RURI_CGROUP_V2) {
+		char cgroup_freeze_path[PATH_MAX] = "";
+		sprintf(cgroup_freeze_path, "%s%d/cgroup.freeze", cg_env.freezer.prefix, container_id);
+		if (open_and_write(cgroup_freeze_path, "0\n")) {
+			return 1;
+		}
+	} else if (cg_env.freezer.type == RURI_CGROUP_V1) {
+		char cgroup_freezer_state_path[PATH_MAX] = "";
+		sprintf(cgroup_freezer_state_path, "%s%d/freezer.state", cg_env.freezer.prefix, container_id);
+		if (open_and_write(cgroup_freezer_state_path, "THAWED\n")) {
+			return 1;
+		}
+	}
+	return 0;
 }
