@@ -33,10 +33,6 @@
  * This file provides functions to set cgoup limits for container.
  * ${container_id} is set by the time creating the container,
  * And it will be unified by .rurienv file.
- *
- * TODO:
- * Add more cgroups support.
- * Maybe cgroup freezer and killer?
  */
 // For cgroup detection on host side.
 enum RURI_CGROUP_TYPE { RURI_CGROUP_V1, RURI_CGROUP_V2, RURI_CGROUP_ENOSYS };
