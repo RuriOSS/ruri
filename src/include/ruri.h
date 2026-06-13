@@ -165,6 +165,8 @@ struct RURI_CONTAINER {
 	char *_Nullable memory;
 	// Cpulimit.
 	int cpupercent;
+	// Max PIDs.
+	int max_pids;
 	// A number based on the time when creating container.
 	int container_id;
 	// Do not create runtime directory.

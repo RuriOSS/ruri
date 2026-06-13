@@ -53,6 +53,7 @@ struct RURI_CGROUP_ENV {
 	struct RURI_CGROUP_NODE memory;
 	struct RURI_CGROUP_NODE cpuset;
 	struct RURI_CGROUP_NODE cpupercent;
+	struct RURI_CGROUP_NODE pids;
 };
 // Returns -1 for malformed size
 // Returns -2 for too large
@@ -129,6 +130,13 @@ static void detect_cgroup_unified(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->cpuset.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->cpuset.type = RURI_CGROUP_V2;
 	}
+	if (access("/sys/fs/cgroup/unified/pids.max", F_OK) == 0 && cg_env->pids.type == RURI_CGROUP_ENOSYS) {
+		mkdir("/sys/fs/cgroup/unified/ruri", S_IRUSR | S_IWUSR);
+		open_and_write("/sys/fs/cgroup/unified/cgroup.subtree_control", "+pids\n");
+		open_and_write("/sys/fs/cgroup/unified/ruri/cgroup.subtree_control", "+pids\n");
+		cg_env->pids.prefix = "/sys/fs/cgroup/unified/ruri/";
+		cg_env->pids.type = RURI_CGROUP_V2;
+	}
 }
 static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 {
@@ -147,6 +155,11 @@ static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 		mkdir("/sys/fs/cgroup/cpuset/ruri", S_IRUSR | S_IWUSR);
 		cg_env->cpuset.prefix = "/sys/fs/cgroup/cpuset/ruri/";
 		cg_env->cpuset.type = RURI_CGROUP_V1;
+	}
+	if (access("/sys/fs/cgroup/pids/pids.max", F_OK) == 0 && cg_env->pids.type == RURI_CGROUP_ENOSYS) {
+		mkdir("/sys/fs/cgroup/pids/ruri", S_IRUSR | S_IWUSR);
+		cg_env->pids.prefix = "/sys/fs/cgroup/pids/ruri/";
+		cg_env->pids.type = RURI_CGROUP_V1;
 	}
 	// For some Android devices, they mount cgroup v1 controllers in /dev.
 	if (access("/dev/memcg/memory.limit_in_bytes", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
@@ -176,6 +189,7 @@ static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+memory\n");
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+cpu\n");
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+cpuset\n");
+	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+pids\n");
 	if (!open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+memory\n")) {
 		cg_env->memory.type = RURI_CGROUP_V2;
 		cg_env->memory.prefix = "/sys/fs/cgroup/ruri/";
@@ -188,6 +202,10 @@ static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->cpuset.type = RURI_CGROUP_V2;
 		cg_env->cpuset.prefix = "/sys/fs/cgroup/ruri/";
 	}
+	if (!open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+pids\n")) {
+		cg_env->pids.type = RURI_CGROUP_V2;
+		cg_env->pids.prefix = "/sys/fs/cgroup/ruri/";
+	}
 }
 static void ruri_detect_cgroup_env(struct RURI_CGROUP_ENV *cg_env)
 {
@@ -199,6 +217,8 @@ static void ruri_detect_cgroup_env(struct RURI_CGROUP_ENV *cg_env)
 	cg_env->cpuset.type = RURI_CGROUP_ENOSYS;
 	cg_env->cpupercent.prefix = NULL;
 	cg_env->cpupercent.type = RURI_CGROUP_ENOSYS;
+	cg_env->pids.prefix = NULL;
+	cg_env->pids.type = RURI_CGROUP_ENOSYS;
 	detect_cgroup_v2(cg_env);
 	detect_cgroup_unified(cg_env);
 	detect_cgroup_v1_fallback(cg_env);
@@ -222,6 +242,11 @@ static void ruri_dump_cg_env(struct RURI_CGROUP_ENV *cg_env)
 		ruri_log("{base}  Cpuset controller: %s (type: %s)\n", cg_env->cpuset.prefix, cg_env->cpuset.type == RURI_CGROUP_V2 ? "v2" : "v1");
 	} else {
 		ruri_log("{base}  Cpuset controller: not supported\n");
+	}
+	if (cg_env->pids.type != RURI_CGROUP_ENOSYS) {
+		ruri_log("{base}  PIDs controller: %s (type: %s)\n", cg_env->pids.prefix, cg_env->pids.type == RURI_CGROUP_V2 ? "v2" : "v1");
+	} else {
+		ruri_log("{base}  PIDs controller: not supported\n");
 	}
 	// NOLINTEND
 }
@@ -458,6 +483,59 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 		return;
 	}
 }
+static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
+{
+	// Set PIDs limit for the container.
+	//
+	// Join cgroup, this option will be enforced even if no PIDs limit is set.
+	// Because for the same container, we will only setup cgroup once.
+	if (cg_env->pids.type == RURI_CGROUP_V2) {
+		char cgroup_pids_path[PATH_MAX] = "";
+		sprintf(cgroup_pids_path, "%s%d/", cg_env->pids.prefix, container->container_id);
+		mkdir(cgroup_pids_path, S_IRUSR | S_IWUSR);
+		char cgroup_procs_path[PATH_MAX] = "";
+		sprintf(cgroup_procs_path, "%scgroup.procs", cgroup_pids_path);
+		char buf[256] = "";
+		sprintf(buf, "%d", getpid());
+		if (open_and_write(cgroup_procs_path, buf)) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			return;
+		}
+	} else if (cg_env->pids.type == RURI_CGROUP_V1) {
+		char cgroup_pids_path[PATH_MAX] = "";
+		sprintf(cgroup_pids_path, "%s%d/", cg_env->pids.prefix, container->container_id);
+		mkdir(cgroup_pids_path, S_IRUSR | S_IWUSR);
+		char cgroup_procs_path[PATH_MAX] = "";
+		sprintf(cgroup_procs_path, "%scgroup.procs", cgroup_pids_path);
+		char buf[256] = "";
+		sprintf(buf, "%d\n", getpid());
+		if (open_and_write(cgroup_procs_path, buf)) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
+			return;
+		}
+	} else {
+		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No PIDs cgroup support detected\n");
+		return;
+	}
+	// If PIDs limit is not set, just join the cgroup without setting PIDs limit.
+	if (container->max_pids <= 0) {
+		return;
+	}
+	// Set PIDs limit for our cgroup.
+	if (cg_env->pids.type == RURI_CGROUP_V2 || cg_env->pids.type == RURI_CGROUP_V1) {
+		char cgroup_pids_max_path[PATH_MAX] = "";
+		sprintf(cgroup_pids_max_path, "%s%d/pids.max", cg_env->pids.prefix, container->container_id);
+		char buf[256] = "";
+		sprintf(buf, "%d\n", container->max_pids);
+		if (open_and_write(cgroup_pids_max_path, buf)) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to set PIDs limit for %s\n", cgroup_pids_max_path);
+			return;
+		}
+	} else {
+		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No PIDs cgroup support detected\n");
+		return;
+	}
+}
 void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
@@ -470,6 +548,7 @@ void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 	ruri_set_memory_limit(container, &cg_env);
 	ruri_set_cpuset(container, &cg_env);
 	ruri_set_cpupercent(container, &cg_env);
+	ruri_set_pids(container, &cg_env);
 }
 static bool is_cgroup_v2_mounted()
 {
@@ -534,6 +613,10 @@ bool ruri_pid_in_cgroup(pid_t pid, int container_id)
 		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.cpupercent.prefix, container_id);
 	} else if (cg_env.cpupercent.type == RURI_CGROUP_V1) {
 		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.cpupercent.prefix, container_id);
+	} else if (cg_env.pids.type == RURI_CGROUP_V2) {
+		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.pids.prefix, container_id);
+	} else if (cg_env.pids.type == RURI_CGROUP_V1) {
+		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.pids.prefix, container_id);
 	} else {
 		return false;
 	}
