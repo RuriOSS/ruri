@@ -159,7 +159,14 @@ static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->cpuset.prefix = "/dev/cpuset/ruri/";
 		cg_env->cpuset.type = RURI_CGROUP_V1;
 	}
-	// TODO: /dev/cpuctl
+#ifdef __ANDROID__
+	// For some Android devices, they mount cpu controller in /dev/cpuctl.
+	if (access("/dev/cpuctl/cpu.cfs_quota_us", F_OK) == 0 && cg_env->cpupercent.type == RURI_CGROUP_ENOSYS) {
+		mkdir("/dev/cpuctl/ruri", S_IRUSR | S_IWUSR);
+		cg_env->cpupercent.prefix = "/dev/cpuctl/ruri/";
+		cg_env->cpupercent.type = RURI_CGROUP_V1;
+	}
+#endif
 }
 static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 {
