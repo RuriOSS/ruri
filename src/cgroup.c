@@ -54,6 +54,7 @@ struct RURI_CGROUP_ENV {
 	struct RURI_CGROUP_NODE cpuset;
 	struct RURI_CGROUP_NODE cpupercent;
 	struct RURI_CGROUP_NODE pids;
+	struct RURI_CGROUP_NODE io;
 };
 // Returns -1 for malformed size
 // Returns -2 for too large
@@ -137,6 +138,13 @@ static void detect_cgroup_unified(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->pids.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->pids.type = RURI_CGROUP_V2;
 	}
+	if (access("/sys/fs/cgroup/unified/io.max", F_OK) == 0 && cg_env->io.type == RURI_CGROUP_ENOSYS) {
+		mkdir("/sys/fs/cgroup/unified/ruri", S_IRUSR | S_IWUSR);
+		open_and_write("/sys/fs/cgroup/unified/cgroup.subtree_control", "+io\n");
+		open_and_write("/sys/fs/cgroup/unified/ruri/cgroup.subtree_control", "+io\n");
+		cg_env->io.prefix = "/sys/fs/cgroup/unified/ruri/";
+		cg_env->io.type = RURI_CGROUP_V2;
+	}
 }
 static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 {
@@ -160,6 +168,11 @@ static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 		mkdir("/sys/fs/cgroup/pids/ruri", S_IRUSR | S_IWUSR);
 		cg_env->pids.prefix = "/sys/fs/cgroup/pids/ruri/";
 		cg_env->pids.type = RURI_CGROUP_V1;
+	}
+	if (access("/sys/fs/cgroup/blkio/blkio.throttle.read_bps_device", F_OK) == 0 && cg_env->io.type == RURI_CGROUP_ENOSYS) {
+		mkdir("/sys/fs/cgroup/blkio/ruri", S_IRUSR | S_IWUSR);
+		cg_env->io.prefix = "/sys/fs/cgroup/blkio/ruri/";
+		cg_env->io.type = RURI_CGROUP_V1;
 	}
 	// For some Android devices, they mount cgroup v1 controllers in /dev.
 	if (access("/dev/memcg/memory.limit_in_bytes", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
@@ -190,6 +203,7 @@ static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+cpu\n");
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+cpuset\n");
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+pids\n");
+	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+io\n");
 	if (!open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+memory\n")) {
 		cg_env->memory.type = RURI_CGROUP_V2;
 		cg_env->memory.prefix = "/sys/fs/cgroup/ruri/";
@@ -206,6 +220,10 @@ static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->pids.type = RURI_CGROUP_V2;
 		cg_env->pids.prefix = "/sys/fs/cgroup/ruri/";
 	}
+	if (!open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+io\n")) {
+		cg_env->io.type = RURI_CGROUP_V2;
+		cg_env->io.prefix = "/sys/fs/cgroup/ruri/";
+	}
 }
 static void ruri_detect_cgroup_env(struct RURI_CGROUP_ENV *cg_env)
 {
@@ -219,6 +237,8 @@ static void ruri_detect_cgroup_env(struct RURI_CGROUP_ENV *cg_env)
 	cg_env->cpupercent.type = RURI_CGROUP_ENOSYS;
 	cg_env->pids.prefix = NULL;
 	cg_env->pids.type = RURI_CGROUP_ENOSYS;
+	cg_env->io.prefix = NULL;
+	cg_env->io.type = RURI_CGROUP_ENOSYS;
 	detect_cgroup_v2(cg_env);
 	detect_cgroup_unified(cg_env);
 	detect_cgroup_v1_fallback(cg_env);
@@ -247,6 +267,11 @@ static void ruri_dump_cg_env(struct RURI_CGROUP_ENV *cg_env)
 		ruri_log("{base}  PIDs controller: %s (type: %s)\n", cg_env->pids.prefix, cg_env->pids.type == RURI_CGROUP_V2 ? "v2" : "v1");
 	} else {
 		ruri_log("{base}  PIDs controller: not supported\n");
+	}
+	if (cg_env->io.type != RURI_CGROUP_ENOSYS) {
+		ruri_log("{base}  I/O controller: %s (type: %s)\n", cg_env->io.prefix, cg_env->io.type == RURI_CGROUP_V2 ? "v2" : "v1");
+	} else {
+		ruri_log("{base}  I/O controller: not supported\n");
 	}
 	// NOLINTEND
 }
@@ -536,6 +561,124 @@ static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const
 		return;
 	}
 }
+static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
+{
+	// Set I/O bandwidth limit for the container.
+	//
+	// Join cgroup, this option will be enforced even if no I/O limit is set.
+	// Because for the same container, we will only setup cgroup once.
+	if (cg_env->io.type == RURI_CGROUP_V2) {
+		char cgroup_io_path[PATH_MAX] = "";
+		sprintf(cgroup_io_path, "%s%d/", cg_env->io.prefix, container->container_id);
+		mkdir(cgroup_io_path, S_IRUSR | S_IWUSR);
+		char cgroup_procs_path[PATH_MAX] = "";
+		sprintf(cgroup_procs_path, "%scgroup.procs", cgroup_io_path);
+		char buf[256] = "";
+		sprintf(buf, "%d", getpid());
+		if (open_and_write(cgroup_procs_path, buf)) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			return;
+		}
+	} else if (cg_env->io.type == RURI_CGROUP_V1) {
+		char cgroup_io_path[PATH_MAX] = "";
+		sprintf(cgroup_io_path, "%s%d/", cg_env->io.prefix, container->container_id);
+		mkdir(cgroup_io_path, S_IRUSR | S_IWUSR);
+		char cgroup_procs_path[PATH_MAX] = "";
+		sprintf(cgroup_procs_path, "%scgroup.procs", cgroup_io_path);
+		char buf[256] = "";
+		sprintf(buf, "%d\n", getpid());
+		if (open_and_write(cgroup_procs_path, buf)) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
+			return;
+		}
+	} else {
+		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No I/O cgroup support detected\n");
+		return;
+	}
+	// If I/O limit is not set, just join the cgroup without setting I/O limit.
+	if ((container->io_rbps == NULL && container->io_wbps == NULL) || container->io_device == NULL) {
+		return;
+	}
+	// Set I/O limit for our cgroup.
+	if (cg_env->io.type == RURI_CGROUP_V2) {
+		char cgroup_io_max_path[PATH_MAX] = "";
+		sprintf(cgroup_io_max_path, "%s%d/io.max", cg_env->io.prefix, container->container_id);
+		char buf[1024] = "";
+		// Format: "major:minor rbps=xxx wbps=xxx"
+		sprintf(buf, "%s", container->io_device);
+		if (container->io_rbps != NULL) {
+			ssize_t rbps = humansize_to_bytes(container->io_rbps);
+			// NOLINTBEGIN
+			switch (rbps) {
+			case -1:
+				ruri_error("I/O rbps format error, only ^[1-9]+[kKmMgG]$ is supported\n");
+			case -2:
+				ruri_error("I/O rbps value too big to current platform\n");
+			}
+			// NOLINTEND
+			sprintf(buf + strlen(buf), " rbps=%zd", rbps);
+		}
+		if (container->io_wbps != NULL) {
+			ssize_t wbps = humansize_to_bytes(container->io_wbps);
+			// NOLINTBEGIN
+			switch (wbps) {
+			case -1:
+				ruri_error("I/O wbps format error, only ^[1-9]+[kKmMgG]$ is supported\n");
+			case -2:
+				ruri_error("I/O wbps value too big to current platform\n");
+			}
+			// NOLINTEND
+			sprintf(buf + strlen(buf), " wbps=%zd", wbps);
+		}
+		sprintf(buf + strlen(buf), "\n");
+		if (open_and_write(cgroup_io_max_path, buf)) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to set cgroup v2 I/O limit for %s\n", cgroup_io_max_path);
+			return;
+		}
+	} else if (cg_env->io.type == RURI_CGROUP_V1) {
+		if (container->io_rbps != NULL) {
+			char cgroup_blkio_read_path[PATH_MAX] = "";
+			sprintf(cgroup_blkio_read_path, "%s%d/blkio.throttle.read_bps_device", cg_env->io.prefix, container->container_id);
+			ssize_t rbps = humansize_to_bytes(container->io_rbps);
+			// NOLINTBEGIN
+			switch (rbps) {
+			case -1:
+				ruri_error("I/O rbps format error, only ^[1-9]+[kKmMgG]$ is supported\n");
+			case -2:
+				ruri_error("I/O rbps value too big to current platform\n");
+			}
+			// NOLINTEND
+			char buf[1024] = "";
+			sprintf(buf, "%s %zd\n", container->io_device, rbps);
+			if (open_and_write(cgroup_blkio_read_path, buf)) {
+				ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to set cgroup v1 I/O read limit for %s\n", cgroup_blkio_read_path);
+				return;
+			}
+		}
+		if (container->io_wbps != NULL) {
+			char cgroup_blkio_write_path[PATH_MAX] = "";
+			sprintf(cgroup_blkio_write_path, "%s%d/blkio.throttle.write_bps_device", cg_env->io.prefix, container->container_id);
+			ssize_t wbps = humansize_to_bytes(container->io_wbps);
+			// NOLINTBEGIN
+			switch (wbps) {
+			case -1:
+				ruri_error("I/O wbps format error, only ^[1-9]+[kKmMgG]$ is supported\n");
+			case -2:
+				ruri_error("I/O wbps value too big to current platform\n");
+			}
+			// NOLINTEND
+			char buf[1024] = "";
+			sprintf(buf, "%s %zd\n", container->io_device, wbps);
+			if (open_and_write(cgroup_blkio_write_path, buf)) {
+				ruri_warn_on_error(1, 0, !container->no_warnings, "{red}Failed to set cgroup v1 I/O write limit for %s\n", cgroup_blkio_write_path);
+				return;
+			}
+		}
+	} else {
+		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No I/O cgroup support detected\n");
+		return;
+	}
+}
 void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
@@ -549,6 +692,7 @@ void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 	ruri_set_cpuset(container, &cg_env);
 	ruri_set_cpupercent(container, &cg_env);
 	ruri_set_pids(container, &cg_env);
+	ruri_set_io(container, &cg_env);
 }
 static bool is_cgroup_v2_mounted()
 {
@@ -617,6 +761,10 @@ bool ruri_pid_in_cgroup(pid_t pid, int container_id)
 		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.pids.prefix, container_id);
 	} else if (cg_env.pids.type == RURI_CGROUP_V1) {
 		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.pids.prefix, container_id);
+	} else if (cg_env.io.type == RURI_CGROUP_V2) {
+		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.io.prefix, container_id);
+	} else if (cg_env.io.type == RURI_CGROUP_V1) {
+		sprintf(cgroup_procs_path, "%s%d/cgroup.procs", cg_env.io.prefix, container_id);
 	} else {
 		return false;
 	}
