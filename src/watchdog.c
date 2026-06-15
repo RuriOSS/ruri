@@ -82,6 +82,24 @@ void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg)
 		return;
 	}
 	write(ruri_pid_file_fd(-1), buf, strlen(buf));
+	// For terminal states (exited/signaled/unknown/panic), give the pid_file
+	// daemon time to flush the value to the pid file before we exit()/close
+	// the write end. Without this, the parent process (e.g. test_pid_file)
+	// can observe the stale RURI_INIT_* value the daemon wrote at startup,
+	// because the daemon is a double-forked orphan that may not have been
+	// scheduled to read() the socket yet.
+	switch (req) {
+	case RURI_PID_FILE_EXITED:
+	case RURI_PID_FILE_SIGNALED:
+	case RURI_PID_FILE_UNKNOWN:
+	case RURI_PID_FILE_PANIC_EXEC:
+	case RURI_PID_FILE_PANIC_INTERNAL:
+	case RURI_PID_FILE_PANIC_TIMEOUT:
+		usleep(100000); // 0.1s
+		break;
+	default:
+		break;
+	}
 }
 void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container)
 {
