@@ -75,7 +75,14 @@ void ruri_clear_env(char *const *_Nonnull argv)
 	 * - Clear the environment variables.
 	 * - Re-exec the ruri binary from the memfd.
 	 */
-	char *envp[] = { "ruri_rexec=1", NULL };
+	// Save $PATH.
+	char *path_env_cont = getenv("PATH");
+	char *path_env = NULL;
+	if (path_env_cont) {
+		path_env = malloc(strlen(path_env_cont) + 16);
+		snprintf(path_env, strlen(path_env_cont) + 16, "PATH=%s", path_env_cont);
+	}
+	char *envp[] = { "ruri_rexec=1", path_env, NULL };
 	if (getenv("ruri_rexec") == NULL) {
 		// Use memfd to store ruri binary.
 		// This is to prevent ruri binary from being modified by the container.
@@ -106,6 +113,7 @@ void ruri_clear_env(char *const *_Nonnull argv)
 			execve("/proc/self/exe", argv, envp);
 		}
 	} else {
+		free(path_env);
 		return;
 	}
 }

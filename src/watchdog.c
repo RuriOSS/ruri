@@ -167,16 +167,43 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 	ruri_pid_file_fd(pid_pipe[1]);
 	signal(SIGPIPE, SIG_IGN);
 	// fork() twice then watch pid_file_fd, and write content to pidfile.
+	// Get a pipe sync for grandchild process.
+	int sync_pipe[2] = { -1, -1 };
+	if (pipe2(sync_pipe, O_CLOEXEC) < 0) {
+		ruri_warning("{red}Warning: failed to create pipe for pid file daemon sync, pid file may be updated late QwQ\n");
+	}
 	pid_t pid1 = fork();
 	if (pid1 > 0) {
+		// Close the write end, we read sync pipe for grandchild ok signal.
+		close(sync_pipe[1]);
 		// Parent process, wait for child to exit.
 		waitpid(pid1, NULL, 0);
+		// Get ok signal.
+		char buf[16] = { 0 };
+		ssize_t n = read(sync_pipe[0], buf, sizeof(buf) - 1);
+		if (n > 0) {
+			buf[n] = '\0';
+			if (strcmp(buf, "OK") != 0) {
+				ruri_error("{red}Failed to get sync signal from pid file daemon.\n");
+			}
+			close(sync_pipe[0]);
+		} else {
+			ruri_warn_on_error(0, 1, true, "{red}Warning: failed to read sync signal from pid file daemon, pid file may be updated late QwQ\n");
+			// Just ignore it, the daemon may still work.
+			// But if we got error, just return, the daemon will not work.
+			if (n < 0) {
+				return -1;
+			}
+			close(sync_pipe[0]);
+		}
 	} else {
 		// First child process, fork again.
 		pid_t pid2 = fork();
 		if (pid2 > 0) {
 			exit(EXIT_SUCCESS);
 		} else {
+			// Close the read end of sync pipe, we only write to it.
+			close(sync_pipe[0]);
 			ruri_proc_mark(RURI_DAEMON);
 			// Redirect output to /dev/null.
 			int dev_null_fd = open("/dev/null", O_RDWR | O_CLOEXEC);
@@ -200,6 +227,17 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			}
 			ftruncate(file_fd, 0);
 			lseek(file_fd, 0, SEEK_SET);
+			// Try to add a F_WRLCK to the pid file, so we can lock it when writing to it.
+			struct flock fl;
+			fl.l_type = F_WRLCK;
+			fl.l_whence = SEEK_SET;
+			fl.l_start = 0;
+			fl.l_len = 0;
+			if (container->pid_file != NULL) {
+				if (fcntl(file_fd, F_SETLK, &fl) < 0) {
+					exit(EXIT_FAILURE);
+				}
+			}
 			char buf[256] = { 0 };
 			// Write current time to pid file, so we can detect if the container is running by checking if the pid file is updated.
 			// Get current time in ns.
@@ -208,6 +246,9 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			long long now_ns = (ts.tv_sec * 1000000000LL) + ts.tv_nsec;
 			snprintf(buf, sizeof(buf), "RURI_INIT_%lld\n", now_ns);
 			write(file_fd, buf, strlen(buf));
+			// Write ok signal to sync pipe, so the parent process can continue.
+			write(sync_pipe[1], "OK", 2);
+			close(sync_pipe[1]);
 			while (1) {
 read_again:
 				memset(buf, 0, sizeof(buf));
@@ -227,6 +268,9 @@ read_again:
 					fsync(file_fd);
 					// If we got RURI_PANIC_*, exit now.
 					if (strncmp(buf, "RURI_PANIC_", strlen("RURI_PANIC_")) == 0) {
+						// release the lock on pid file.
+						fl.l_type = F_UNLCK;
+						fcntl(file_fd, F_SETLK, &fl);
 						// For timeout panic, just exit.
 						if (strncmp(buf, "RURI_PANIC_TIMEOUT", strlen("RURI_PANIC_TIMEOUT")) == 0) {
 							exit(EXIT_FAILURE);
@@ -239,6 +283,9 @@ read_again:
 						exit(EXIT_FAILURE);
 					}
 				} else if (n == 0) {
+					// release the lock on pid file.
+					fl.l_type = F_UNLCK;
+					fcntl(file_fd, F_SETLK, &fl);
 					// EOF, the other side has closed the connection, exit.
 					if (container->auto_umount) {
 						// Sleep 0.5s.
@@ -252,6 +299,9 @@ read_again:
 						continue;
 					}
 					// Other errors, exit.
+					// release the lock on pid file.
+					fl.l_type = F_UNLCK;
+					fcntl(file_fd, F_SETLK, &fl);
 					if (container->auto_umount) {
 						// Sleep 0.5s.
 						usleep(500000);

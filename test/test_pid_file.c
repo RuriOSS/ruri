@@ -58,12 +58,31 @@ int main(int argc, char *argv[])
 		perror("execv"); // If execv returns, it must have failed
 		return 1;
 	} else {
-		wait(NULL); // Wait for the child process to finish
+		waitpid(fork_pid, NULL, 0); // Wait for the child process to finish
+		// Get lock on pid file, to wait for the child process to write to it.
+		struct flock fl;
+		fl.l_type = F_WRLCK;
+		fl.l_whence = SEEK_SET;
+		fl.l_start = 0;
+		fl.l_len = 0;
+		bool sleep_3s = false;
+		if (fcntl(fd, F_SETLK, &fl) < 0) {
+			perror("fcntl");
+			sleep_3s = true;
+			if (fcntl(fd, F_SETLKW, &fl) < 0) {
+				perror("fcntl");
+				printf("Failed to get lock on pid file.\n");
+				exit(114);
+			}
+			printf("Got lock on pid file after waiting.\n");
+		} else {
+			printf("Got lock on pid file.\n");
+		}
 		char buffer[256];
 		ssize_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
 		if (bytesRead == -1) {
 			perror("read");
-			return 1;
+			exit(114);
 		}
 		buffer[bytesRead] = '\0'; // Null-terminate the buffer
 		if (strncmp(buffer, argv[1], strlen(argv[1])) != 0) {
@@ -71,6 +90,10 @@ int main(int argc, char *argv[])
 			exit(114);
 		}
 		printf("\033[32mPassed. Expected: %s, Got: %s\033[0m\n", argv[1], buffer);
+		if (sleep_3s) {
+			printf("Sleeping for 3 seconds\n");
+			sleep(3);
+		}
 	}
 	return 0;
 }

@@ -120,22 +120,48 @@ static void generate_machine_id(int container_id)
 {
 	/*
 	 * Generate a unique machine-id for systemd.
+	 *
+	 * Attempts to use /dev/urandom for cryptographically secure randomness.
+	 * Falls back to time-based seeding if /dev/urandom is unavailable.
 	 */
 	ruri_log("{blue}Generating unique machine-id for systemd.\n");
 	char new_machine_id[33];
-	const char *hex_chars = "0123456789abcdef";
-	// Fuck U LLMs, container_id is computed based on the time when container started.
-	// This is true random, no shitting /dev/urandom.
-	srand((unsigned int)container_id);
-	for (int i = 0; i < 32; i++) {
-		// NOLINTBEGIN
-		new_machine_id[i] = hex_chars[rand() % 16];
-		// NOLINTEND
+	bool use_urandom = false;
+
+	// Try to use /dev/urandom for cryptographically secure random numbers
+	int urandom_fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+	if (urandom_fd >= 0) {
+		unsigned char random_bytes[16];
+		ssize_t bytes_read = read(urandom_fd, random_bytes, 16);
+		close(urandom_fd);
+
+		if (bytes_read == 16) {
+			// Convert binary to hex string
+			for (int i = 0; i < 16; i++) {
+				sprintf(&new_machine_id[i * 2], "%02x", random_bytes[i]);
+			}
+			new_machine_id[32] = '\0';
+			use_urandom = true;
+		}
 	}
-	new_machine_id[32] = '\0';
+
+	// Fallback to time-based seeding if /dev/urandom is unavailable or read failed
+	if (!use_urandom) {
+		const char *hex_chars = "0123456789abcdef";
+		// container_id is computed based on the time when container started
+		srand((unsigned int)container_id);
+		for (int i = 0; i < 32; i++) {
+			// NOLINTBEGIN
+			new_machine_id[i] = hex_chars[rand() % 16];
+			// NOLINTEND
+		}
+		new_machine_id[32] = '\0';
+		ruri_log("{yellow}Warning: Using time-based fallback for machine-id generation.\n");
+	}
+
+	// Write machine-id to /etc/machine-id
 	remove("/etc/machine-id");
 	unlink("/etc/machine-id");
-	// And Fuck U systemd, why U need so many setups?
 	int machine_id_fd = open("/etc/machine-id", O_WRONLY | O_CREAT | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (machine_id_fd >= 0) {
 		write(machine_id_fd, new_machine_id, 32);

@@ -620,6 +620,7 @@ void ruri_correct_config(const char *_Nonnull path)
 		ruri_error("{red}Invalid config file, there is no key:container_dir\n{clear}");
 	}
 	struct RURI_CONTAINER container;
+	ruri_init_config(&container);
 	container.container_dir = k2v_get_key(char, "container_dir", buf);
 #ifndef DISABLE_LIBCAP
 	if (!have_key("drop_caplist", buf)) {

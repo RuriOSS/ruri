@@ -29,10 +29,10 @@
 # About:
 &emsp;Not "Why not docker", but "When cannot docker".    
 &emsp;ruri is pronounced as `lyoli`, or you can call it `[瑠璃/琉璃]` ~~(るり)~~ in Chinese or Japanese as well.    
-&emsp;ruri is acronym to Lightweight, User-friendly Linux-container Implementation, as better chroot.    
+&emsp;ruri is acronym to Lightweight, User-friendly Linux-container Implementation, as "better chroot", or "super chroot".    
 &emsp;ruri is a powerful container implementation that runs on almost any Linux device, even with incomplete kernel configurations or minimal storage space.    
 # Features:
-- Aimed to be the most compatible `better chroot`.
+- Aimed to be the most compatible "better chroot".
 - Default configuration works on every device with chroot support.
 - Simple usage, just `ruri /path/to/rootfs [command...]` to run a container.
 - Shell script friendly, all operations can be done with simple command line options.

@@ -61,6 +61,23 @@ int main(int argc, char *argv[])
 		return 1;
 	} else {
 		wait(NULL); // Wait for the child process to finish
+		// Get lock on pid file, to wait for the child process to write to it.
+		struct flock fl;
+		fl.l_type = F_WRLCK;
+		fl.l_whence = SEEK_SET;
+		fl.l_start = 0;
+		fl.l_len = 0;
+		if (fcntl(fd, F_SETLK, &fl) < 0) {
+			perror("fcntl");
+			if (fcntl(fd, F_SETLKW, &fl) < 0) {
+				perror("fcntl");
+				printf("Failed to get lock on pid file.\n");
+				exit(114);
+			}
+			printf("Got lock on pid file after waiting.\n");
+		} else {
+			printf("Got lock on pid file.\n");
+		}
 		char buffer[256];
 		ssize_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
 		if (bytesRead == -1) {

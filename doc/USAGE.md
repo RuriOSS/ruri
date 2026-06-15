@@ -489,8 +489,7 @@ This option will only work with cmdline args, and will not be recorded in the co
 | Option | Description |
 |--------|-------------|
 | `--pid-file [file]` | Write the PID of the container to the specified file |
-
-WARNING: experimental and might not work as expected.      
+    
 This option allows you to write the PID of the container to a specified file.       
 pid file format:
 - RURI_INIT_{TIME} (e.g. `RURI_INIT_114514`), which is the time when the container is initialized, in nanoseconds for clock_gettime(CLOCK_MONOTONIC).
@@ -502,6 +501,7 @@ pid file format:
 
 This option will only affect cmdline args, and will not be recorded in the config file.      
 Using the same pid file for multiple containers is not recommended, and will cause undefined behavior. You should use memfd (see `test/pid_memfd.c`), mktemp or atleast runtime-generated unique file name for the pid file.      
+*NOTE*: The pidfile is asynchronously updated by another process, so you should wait for a while to read it after the container is exited, or get the F_WRLCK lock on the pid file to make sure it is updated. See `test/test_pid_file.c` for example usage.      
 
 
 ---
@@ -521,6 +521,7 @@ This option will only affect cmdline args, and will not be recorded in the confi
 WARNING: This option is dangerous, use it only if you know what you are doing.        
 Only trigger auto-umount when ruri panics, and will not affect the behavior when the container exits etither normally or by signal.     
 This option will only affect cmdline args, and will not be recorded in the config file.      
+WARNING: experimental and might not work as expected.    
 
 ---
 | Option | Description |

@@ -222,8 +222,6 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	/*
 	 * Fully kang moby's default seccomp profile.
 	 * See: https://github.com/moby/profiles/blob/main/seccomp/default.json
-	 * TODO: value should be converted to macro like SOCK_STREAM, O_RDONLY, etc. for better readability.
-	 *
 	 */
 #ifndef DISABLE_LIBCAP
 #ifndef DISABLE_LIBSECCOMP
@@ -971,21 +969,21 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(process_vm_writev), 0);
 		ruri_check_seccomp_ret(res, container->no_warnings);
 	}
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_LT, 38));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_LT, AF_ALG));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, 39));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_NFC));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_GT, 40));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_GT, AF_VSOCK));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 0));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 8));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX32));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 131072));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 131080));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26 | PER_LINUX32));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 4294967295U));
+	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 0xffffffff));
 	ruri_check_seccomp_ret(res, container->no_warnings);
 	if (seccomp_arch_native() == SCMP_ARCH_PPC64LE) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sync_file_range2), 0);
@@ -1086,11 +1084,11 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		ruri_check_seccomp_ret(res, container->no_warnings);
 	}
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_SYS_ADMIN) && !(seccomp_arch_native() == SCMP_ARCH_S390 || seccomp_arch_native() == SCMP_ARCH_S390X)) {
-		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, 2114060288));
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER));
 		ruri_check_seccomp_ret(res, container->no_warnings);
 	}
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_SYS_ADMIN) && (seccomp_arch_native() == SCMP_ARCH_S390 || seccomp_arch_native() == SCMP_ARCH_S390X)) {
-		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, 2114060288));
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER));
 		ruri_check_seccomp_ret(res, container->no_warnings);
 	}
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_SYS_ADMIN)) {
