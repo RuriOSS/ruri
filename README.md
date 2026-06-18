@@ -22,6 +22,7 @@
 * I am not responsible for anything that may happen to your device by using this program.
 * You do it at your own risk and take the responsibility upon yourself.
 * This project is open source, you can make your own fork/rewrite but not to blame the author.
+* The tail can never wag the cat.
 * This program has no Super Cow Powers.
 ```
 

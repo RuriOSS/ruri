@@ -882,6 +882,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	 * It will run container as the config in CONTAINER struct.
 	 */
 	ruri_proc_mark(RURI_CHROOT);
+	ruri_check_container_dir(container->container_dir);
 	// Set hostname.
 	set_hostname(container);
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.

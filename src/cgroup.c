@@ -45,7 +45,6 @@ struct RURI_CGROUP_NODE {
 	enum RURI_CGROUP_TYPE type;
 };
 struct RURI_CGROUP_ENV {
-	// TODO: add more cgroup controllers if needed.
 	struct RURI_CGROUP_NODE memory;
 	struct RURI_CGROUP_NODE cpuset;
 	struct RURI_CGROUP_NODE cpupercent;

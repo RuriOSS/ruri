@@ -97,6 +97,10 @@ void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container
 		// Parent process, wait for child to exit.
 		waitpid(timeout_pid1, NULL, 0);
 	} else {
+		// Ignore SIGTTIN and SIGTTOU.
+		signal(SIGTTIN, SIG_IGN);
+		signal(SIGTTOU, SIG_IGN);
+		ruri_proc_mark(RURI_DAEMON);
 		pid_t timeout_pid = fork();
 		if (timeout_pid < 0) {
 			ruri_error("{red}Failed to fork for timeout watchdog QwQ\n");
@@ -146,7 +150,7 @@ void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container
 				exit(EXIT_FAILURE);
 			}
 			// Sleep 1/10 of timeout.
-			usleep((useconds_t)((container->timeout * 100000) / 10));
+			usleep((useconds_t)((container->timeout * 1000000) / 10));
 		}
 		exit(EXIT_SUCCESS);
 	}
@@ -198,6 +202,9 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 		}
 	} else {
 		// First child process, fork again.
+		// Ignore SIGTTIN and SIGTTOU.
+		signal(SIGTTIN, SIG_IGN);
+		signal(SIGTTOU, SIG_IGN);
 		pid_t pid2 = fork();
 		if (pid2 > 0) {
 			exit(EXIT_SUCCESS);
@@ -283,6 +290,21 @@ read_again:
 						exit(EXIT_FAILURE);
 					}
 				} else if (n == 0) {
+					// Read pid file,
+					// if we don't get RURI_EXIT*, RURI_SIGNALED* or RURI_PANIC*,
+					// Write a RURI_EXIT_UNKNOWN to it.
+					lseek(file_fd, 0, SEEK_SET);
+					char check_buf[256] = { 0 };
+					int check_len = read(file_fd, check_buf, sizeof(check_buf) - 1);
+					if (check_len > 0) {
+						check_buf[check_len] = '\0';
+					}
+					if (strncmp(check_buf, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(check_buf, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(check_buf, "RURI_PANIC", strlen("RURI_PANIC"))) {
+						ftruncate(file_fd, 0);
+						lseek(file_fd, 0, SEEK_SET);
+						write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
+						fsync(file_fd);
+					}
 					// release the lock on pid file.
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
@@ -294,11 +316,27 @@ read_again:
 					}
 					exit(EXIT_SUCCESS);
 				} else {
-					// Error, maybe EINTR, try again.
-					if (errno == EINTR) {
+					// Error, maybe EINTR or EAGAIN, try again.
+					if (errno == EINTR || errno == EAGAIN) {
 						continue;
 					}
 					// Other errors, exit.
+					//
+					// Read pid file,
+					// if we don't get RURI_EXIT*, RURI_SIGNALED* or RURI_PANIC*,
+					// Write a RURI_EXIT_UNKNOWN to it.
+					lseek(file_fd, 0, SEEK_SET);
+					char check_buf[256] = { 0 };
+					int check_len = read(file_fd, check_buf, sizeof(check_buf) - 1);
+					if (check_len > 0) {
+						check_buf[check_len] = '\0';
+					}
+					if (strncmp(check_buf, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(check_buf, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(check_buf, "RURI_PANIC", strlen("RURI_PANIC"))) {
+						ftruncate(file_fd, 0);
+						lseek(file_fd, 0, SEEK_SET);
+						write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
+						fsync(file_fd);
+					}
 					// release the lock on pid file.
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
@@ -386,6 +424,8 @@ void ruri_fork_as_init(void)
 		}
 		return;
 	}
+	signal(SIGTTIN, SIG_IGN);
+	signal(SIGTTOU, SIG_IGN);
 	close(ruri_pid_file_fd(-1));
 	for (int i = 3; i < 10; i++) {
 		close(i);

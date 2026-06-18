@@ -40,7 +40,7 @@ struct RURI_ELF_MAGIC *ruri_get_magic(const char *_Nonnull cross_arch)
 	/*
 	 * I know that this seems to be a little bit stupid,
 	 * but we have no other ways to match the architecture to its ELF magic.
-	 * TODO: Support more architecture aliases.
+	 *
 	 */
 	struct RURI_ELF_MAGIC *ret = (struct RURI_ELF_MAGIC *)malloc(sizeof(struct RURI_ELF_MAGIC));
 	// Avoid to simulate the same architecture as host.

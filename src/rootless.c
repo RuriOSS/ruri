@@ -259,6 +259,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	 * Setup namespaces and run rootless container.
 	 */
 	ruri_proc_mark(RURI_CHROOT);
+	ruri_check_container_dir(container->container_dir);
 	prctl(PR_SET_DUMPABLE, 1);
 	if (container->use_rurienv) {
 		ruri_read_info(container, container->container_dir);

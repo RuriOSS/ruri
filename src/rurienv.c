@@ -442,10 +442,6 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	// Get seccomp_denied_syscall.
 	int seccomplen = k2v3_get(char_array, "deny_syscall", cache, container->seccomp_denied_syscall, RURI_MAX_SECCOMP_DENIED_SYSCALL);
 	container->seccomp_denied_syscall[seccomplen] = NULL;
-	// Check if seccomp_denied_syscall changed.
-	//
-	// TODO
-	//
 	// Get ns_pid.
 	container->ns_pid = k2v3_get(int, "ns_pid", cache);
 	ruri_log("{base}ns_pid: %d\n", container->ns_pid);

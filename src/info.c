@@ -75,7 +75,8 @@ void ruri_show_version_info(void)
 		"%s\n",
 		"Build time .......:  ", __DATE__, __TIME__);
 	cprintf("{base}\nThere is NO WARRANTY, to the extent permitted by law\n");
-	cprintf("{base}This program has Super Neko Powers! >w<\n");
+	cprintf("{base}The tail will never wag the cat.\n");
+	cprintf("{base}But this program has Super Neko Powers! >w<\n");
 	cprintf("{clear}\n");
 }
 // For `ruri -V`.

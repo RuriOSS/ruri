@@ -227,6 +227,16 @@ static bool is_container_dir(char *dir)
 	}
 	return true;
 }
+void ruri_check_container_dir(char *dir)
+{
+	/*
+	 * Check if the container directory is valid.
+	 * If it's not valid, we will panic the container.
+	 */
+	if (!is_container_dir(dir)) {
+		ruri_error("{red}Error: container directory does not exist QwQ\n");
+	}
+}
 static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_Nonnull container)
 {
 	/*

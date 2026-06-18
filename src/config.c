@@ -438,7 +438,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_config(bool, ret, "skip_setgroups", container->skip_setgroups);
 	ret = k2v3_add_newline(ret);
 	// systemd_mode.
-	// TODO: This cannot enable --even-unstable.
+	// WARNING: This cannot enable --even-unstable.
 	ret = k2v3_add_comment(ret, "Enable systemd mode.");
 	ret = k2v3_add_comment(ret, "Also enables unshare.");
 	ret = k2v3_add_comment(ret, "Default is false.");

@@ -79,7 +79,7 @@ static void panic(int sig)
 	/*
 	 * This is very useful when bug reporting,
 	 * because we will get the cmdline that caused the error.
-	 * TODO: signal handler should only call thread-safe functions in fact.
+	 *
 	 */
 	signal(sig, SIG_DFL);
 	int clifd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);

@@ -31,10 +31,9 @@
 /*
  * This file provides functions to manage capability list.
  * But drop_caps() is in chroot.c, not here.
- * As that time I didn't learnd C well,
- * I didn't use a struct with length and capacities.
- * I used RURI_INIT_VALUE to mark the end of the list.
- * So this sentinel has been kept.
+ * RURI_INIT_VALUE is the end of caplist.
+ * RURI_CAP_LAST_CAP is large to 114 to cover future capabilities.
+ *
  */
 #ifndef DISABLE_LIBCAP
 static int get_last_cap(void)

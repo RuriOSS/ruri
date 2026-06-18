@@ -374,6 +374,7 @@ void ruri_stat(const char *pid_file);
 void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container);
 int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container);
 void ruri_fork_as_init(void);
+void ruri_check_container_dir(char *dir);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

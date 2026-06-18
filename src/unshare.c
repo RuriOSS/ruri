@@ -325,6 +325,7 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	 * If container->ns_pid is set, use setns(2) to enter existing namespaces.
 	 */
 	ruri_proc_mark(RURI_UNSHARE);
+	ruri_check_container_dir(container->container_dir);
 	pid_t unshare_pid = RURI_INIT_VALUE;
 	// unshare(2) itself into new namespaces.
 	if (container->use_rurienv) {

@@ -304,7 +304,6 @@ ruri -l memory=1M -l cpuset=1 -l cpupercent=60 /test
 
 Note: This option needs kernel support for the specified cgroup.  
 Note: This option is experimental and may not work as expected. Report issues if you find any bugs.  
-TODO: Add support for other cgroup limits like cpu, blkio.  
 For more info, refer to the man page of `cgroups(7)` and `cgroup(7)`.
 
 ---
@@ -500,8 +499,8 @@ pid file format:
 - RURI_EXIT_UNKNOWN for unknown exit status.
 
 This option will only affect cmdline args, and will not be recorded in the config file.      
-Using the same pid file for multiple containers is not recommended, and will cause undefined behavior. You should use memfd (see `test/pid_memfd.c`), mktemp or atleast runtime-generated unique file name for the pid file.      
-*NOTE*: The pidfile is asynchronously updated by another process, so you should wait for a while to read it after the container is exited, or get the F_WRLCK lock on the pid file to make sure it is updated. See `test/test_pid_file.c` for example usage.      
+Using the same pid file for multiple containers is not recommended, and will cause undefined behavior. You should use memfd (see `test/test_pid_file.c`), mktemp or atleast runtime-generated unique file name for the pid file.      
+*NOTE*: The pidfile is asynchronously updated by another process, so you should get the F_WRLCK lock on the pid file to make sure it is updated, or wait for a while (0.5s is enough) to read it after the container is exited. See `test/test_pid_file.c` for example usage.      
 
 
 ---
@@ -532,6 +531,7 @@ WARNING: experimental and might not work as expected.
 Health check process is a special process in the container, it will automatically panic if the container is not initialized, and will will automatically die after timeout.          
 `--timeout` can also use without `--health-check` option, in this case, it will automatically kill the container process after the specified time.      
 This option will only affect cmdline args, and will not be recorded in the config file.      
+*NOTE*: I didn't tested timeout with a too long time, If you need a 15min watchdog, you might need to implement with a custom script.      
 
 ---
 | Option | Description |

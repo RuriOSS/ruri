@@ -118,3 +118,5 @@ This mounts `/dev/sdb1` at `/mnt/disk` as read-only and with the `noexec` flag e
 - Source path (e.g., `/dev/sdb1`, `image.img`, etc.)
 
 The order should be: `[FLAGS]:[FSTYPE:][SOURCE]`, cannot be mixed. For example, `RDONLY:EXT4:/dev/sdb1` is valid, but `EXT4:RDONLY:/dev/sdb1` is not.
+# NOTE:
+If you have a dir called `./RDONLY:/tmp` or something like that, ruri might mount it instead of `read-only /tmp`, then you should remove your brain.      

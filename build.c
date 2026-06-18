@@ -806,7 +806,8 @@ int main(int argc, char **argv)
 	}
 	build();
 	remove_test_dot_c();
-	printf("\n\nThis program has Super Neko Powers! >w<\n");
+	printf("\n\nThe tail will never wag the cat.\n");
+	printf("But this program has Super Neko Powers! >w<\n");
 	return 0;
 }
 

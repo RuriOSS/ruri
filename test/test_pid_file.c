@@ -65,10 +65,13 @@ int main(int argc, char *argv[])
 		fl.l_whence = SEEK_SET;
 		fl.l_start = 0;
 		fl.l_len = 0;
-		bool sleep_3s = false;
+		// For catching the race condition in loop testing.
+		// Will not affect any logic for memfd usage.
+		bool sleep_3s_after_finish_all = false;
+		// Get the lock in non-blocking mode first, if failed, wait for the lock.
 		if (fcntl(fd, F_SETLK, &fl) < 0) {
 			perror("fcntl");
-			sleep_3s = true;
+			sleep_3s_after_finish_all = true;
 			if (fcntl(fd, F_SETLKW, &fl) < 0) {
 				perror("fcntl");
 				printf("Failed to get lock on pid file.\n");
@@ -78,6 +81,7 @@ int main(int argc, char *argv[])
 		} else {
 			printf("Got lock on pid file.\n");
 		}
+		// Now we can safely read the pid file, as the child process has exited and released the lock.
 		char buffer[256];
 		ssize_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
 		if (bytesRead == -1) {
@@ -90,7 +94,9 @@ int main(int argc, char *argv[])
 			exit(114);
 		}
 		printf("\033[32mPassed. Expected: %s, Got: %s\033[0m\n", argv[1], buffer);
-		if (sleep_3s) {
+		// Just to freeze the terminal to see the result.
+		// Human is too slow to read the rolling test log.
+		if (sleep_3s_after_finish_all) {
 			printf("Sleeping for 3 seconds\n");
 			sleep(3);
 		}
