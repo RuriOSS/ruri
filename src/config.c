@@ -73,6 +73,10 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->user = NULL;
 	container->hostname = NULL;
 	container->cpupercent = RURI_INIT_VALUE;
+	container->max_pids = 0;
+	container->io_rbps = NULL;
+	container->io_wbps = NULL;
+	container->io_device = NULL;
 	container->use_kvm = false;
 	container->char_devs[0] = NULL;
 	container->hidepid = RURI_INIT_VALUE;
@@ -250,6 +254,29 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_comment(ret, "For example, 1G or 1024M is valid.");
 	ret = k2v3_add_comment(ret, "Set it to empty to disable.");
 	ret = k2v3_add_config(char, ret, "memory", container->memory);
+	ret = k2v3_add_newline(ret);
+	// max_pids.
+	ret = k2v3_add_comment(ret, "Cgroup PIDs limit.");
+	ret = k2v3_add_comment(ret, "Set it to 0 to disable.");
+	ret = k2v3_add_config(int, ret, "max_pids", container->max_pids);
+	ret = k2v3_add_newline(ret);
+	// io_device.
+	ret = k2v3_add_comment(ret, "Block device for I/O limit, e.g. 8:0 for /dev/sda.");
+	ret = k2v3_add_comment(ret, "Should be set when io_rbps/io_wbps is set.");
+	ret = k2v3_add_comment(ret, "Set it to empty to disable.");
+	ret = k2v3_add_config(char, ret, "io_device", container->io_device);
+	ret = k2v3_add_newline(ret);
+	// io_rbps.
+	ret = k2v3_add_comment(ret, "Cgroup I/O read bandwidth limit.");
+	ret = k2v3_add_comment(ret, "For example, 1M is valid.");
+	ret = k2v3_add_comment(ret, "Set it to empty to disable.");
+	ret = k2v3_add_config(char, ret, "io_rbps", container->io_rbps);
+	ret = k2v3_add_newline(ret);
+	// io_wbps.
+	ret = k2v3_add_comment(ret, "Cgroup I/O write bandwidth limit.");
+	ret = k2v3_add_comment(ret, "For example, 1M is valid.");
+	ret = k2v3_add_comment(ret, "Set it to empty to disable.");
+	ret = k2v3_add_config(char, ret, "io_wbps", container->io_wbps);
 	ret = k2v3_add_newline(ret);
 	// just_chroot.
 	ret = k2v3_add_comment(ret, "Just chroot, do not create runtime dirs.");
@@ -432,7 +459,7 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 		ruri_error("{red}Failed to read config file:%s\n{clear}", path);
 	}
 	// Check if config is valid.
-	char *key_list[] = { "timens_realtime_offset", "timens_monotonic_offset", "hidepid", "char_devs", "use_kvm", "no_network", "container_dir", "user", "drop_caplist", "no_new_privs", "enable_seccomp", "rootless", "no_warnings", "cross_arch", "qemu_path", "use_rurienv", "cpuset", "memory", "cpupercent", "just_chroot", "unmask_dirs", "mount_host_runtime", "work_dir", "rootfs_source", "ro_root", "extra_mountpoint", "extra_ro_mountpoint", "env", "command", "hostname", NULL };
+	char *key_list[] = { "timens_realtime_offset", "timens_monotonic_offset", "hidepid", "char_devs", "use_kvm", "no_network", "container_dir", "user", "drop_caplist", "no_new_privs", "enable_seccomp", "rootless", "no_warnings", "cross_arch", "qemu_path", "use_rurienv", "cpuset", "memory", "cpupercent", "max_pids", "io_device", "io_rbps", "io_wbps", "just_chroot", "unmask_dirs", "mount_host_runtime", "work_dir", "rootfs_source", "ro_root", "extra_mountpoint", "extra_ro_mountpoint", "env", "command", "hostname", NULL };
 	for (int i = 0; key_list[i] != NULL; i++) {
 		if (k2v3_have_key(cache, key_list[i], K2V3_ANY) != 0) {
 			ruri_error("{red}Invalid config file, there is no key:%s\nHint:\n You can try to use `ruri -C config` to fix the config file{clear}", key_list[i]);
@@ -489,6 +516,14 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	container->memory = k2v3_get(char, "memory", cache);
 	// Get cpupercent.
 	container->cpupercent = k2v3_get(int, "cpupercent", cache);
+	// Get max_pids.
+	container->max_pids = k2v3_get(int, "max_pids", cache);
+	// Get io_device.
+	container->io_device = k2v3_get(char, "io_device", cache);
+	// Get io_rbps.
+	container->io_rbps = k2v3_get(char, "io_rbps", cache);
+	// Get io_wbps.
+	container->io_wbps = k2v3_get(char, "io_wbps", cache);
 	// Get just_chroot.
 	container->just_chroot = k2v3_get(bool, "just_chroot", cache);
 	// Get work_dir.
@@ -756,6 +791,30 @@ void ruri_correct_config(const char *_Nonnull path)
 		container.cpupercent = RURI_INIT_VALUE;
 	} else {
 		container.cpupercent = k2v_get_key(int, "cpupercent", buf);
+	}
+	if (!have_key("max_pids", buf)) {
+		ruri_warning("{green}No key max_pids found, set to 0\n{clear}");
+		container.max_pids = 0;
+	} else {
+		container.max_pids = k2v_get_key(int, "max_pids", buf);
+	}
+	if (!have_key("io_device", buf)) {
+		ruri_warning("{green}No key io_device found, set to NULL\n{clear}");
+		container.io_device = NULL;
+	} else {
+		container.io_device = k2v_get_key(char, "io_device", buf);
+	}
+	if (!have_key("io_rbps", buf)) {
+		ruri_warning("{green}No key io_rbps found, set to NULL\n{clear}");
+		container.io_rbps = NULL;
+	} else {
+		container.io_rbps = k2v_get_key(char, "io_rbps", buf);
+	}
+	if (!have_key("io_wbps", buf)) {
+		ruri_warning("{green}No key io_wbps found, set to NULL\n{clear}");
+		container.io_wbps = NULL;
+	} else {
+		container.io_wbps = k2v_get_key(char, "io_wbps", buf);
 	}
 	if (!have_key("just_chroot", buf)) {
 		ruri_warning("{green}No key just_chroot found, set to false\n{clear}");
