@@ -1827,11 +1827,11 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		ruri_check_seccomp_ret(res, container->no_warnings);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(umount2), 1, SCMP_CMP(5, SCMP_CMP_MASKED_EQ, MNT_FORCE, MNT_FORCE));
 		ruri_check_seccomp_ret(res, container->no_warnings);
-		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(keyctl), 0);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(keyctl), 0);
 		ruri_check_seccomp_ret(res, container->no_warnings);
-		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(add_key), 0);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0);
 		ruri_check_seccomp_ret(res, container->no_warnings);
-		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(request_key), 0);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0);
 		ruri_check_seccomp_ret(res, container->no_warnings);
 	}
 	// Disable no_new_privs bit by default.
