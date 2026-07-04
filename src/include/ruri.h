@@ -117,7 +117,7 @@ typedef int cap_value_t;
 #include "k2v.h"
 #include "k2v3.h"
 #include "version.h"
-#include "compact.h"
+#include "compat.h"
 #include "hostarch.h"
 // Info of a container to create.
 struct RURI_CONTAINER {

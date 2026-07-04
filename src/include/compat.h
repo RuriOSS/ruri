@@ -1,6 +1,6 @@
 /*
  * This file is part of ruri.
- * Just some compact definitions and macros.
+ * Just some compatibility definitions and macros.
  * This file contains no copyrightable information.
  */
 // Bool!!!
