@@ -64,6 +64,8 @@ After DirtyFrag and CopyFail, seccomp is more and more important for container s
 Our default seccomp profile is now ready, and will keep tracking the latest vulnerabilities.      
 You can enable it by using `--enable-seccomp` option. And if you have any suggestions/issues for the seccomp profile, please report.      
 NOTE: default seccomp profile blocks `personality()` syscall. And it will break debian reprotest, box86/wine and some other software. You can comment out this syscall in seccomp profile to make them work.      
+We also kanged moby's seccomp profile, you can use `--enable-seccomp-whitelist` option to enable it.    
+But for vulnerabilities like `bad-epoll` (CVE-2026-46242), as epoll() is too important for linux, we can do nothing for it, you have to patch your kernel or use gvisor/kvm to avoid it.    
 # About cwte:
 I just have to find a way to zip seccomp profile code, so I made a tail `:<` mark for it, and I call it "cwte".    
 See [cwte](https://github.com/rurioss/cwte) for more details about it.    
