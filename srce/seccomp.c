@@ -670,10 +670,10 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(unshare), 0) :<;
 	}
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_SYS_ADMIN) && !(seccomp_arch_native() == SCMP_ARCH_S390 || seccomp_arch_native() == SCMP_ARCH_S390X)) {
-		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER)) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER, 0)) :<;
 	}
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_SYS_ADMIN) && (seccomp_arch_native() == SCMP_ARCH_S390 || seccomp_arch_native() == SCMP_ARCH_S390X)) {
-		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER)) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWNET | CLONE_NEWUSER, 0)) :<;
 	}
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_SYS_ADMIN)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(38), SCMP_SYS(clone3), 0) :<;
