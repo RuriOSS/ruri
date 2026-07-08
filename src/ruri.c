@@ -229,6 +229,18 @@ static void parse_cgroup_settings(const char *_Nonnull str, struct RURI_CONTAINE
 		if (container->cpupercent < 1 || container->cpupercent > 100) {
 			ruri_error("{red}Error: cpupercent should be in range 1-100\n");
 		}
+	} else if (strcmp("pids", buf) == 0) {
+		container->max_pids = atoi(limit);
+		free(limit);
+		if (container->max_pids < 1) {
+			ruri_error("{red}Error: pids should be a positive number\n");
+		}
+	} else if (strcmp("io_rbps", buf) == 0) {
+		container->io_rbps = limit;
+	} else if (strcmp("io_wbps", buf) == 0) {
+		container->io_wbps = limit;
+	} else if (strcmp("io_device", buf) == 0) {
+		container->io_device = limit;
 	} else {
 		ruri_error("{red}Unknown cgroup option %s\n", str);
 	}

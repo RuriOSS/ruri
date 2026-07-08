@@ -132,7 +132,7 @@ void ruri_show_helps(void)
 	cprintf("{base}  -M, --ro-mount [dir/dev/img/file] [target] ..: Mount dir/block-device/image/file as read-only\n");
 	cprintf("{base}  -S, --host-runtime ..........................: Bind-mount /dev/, /sys/, and /proc/ from host\n");
 	cprintf("{base}  -R, --read-only .............................: Mount / as read-only\n");
-	cprintf("{base}  -l, --limit [limit=lin] .....................: Set cpuset/memory limit (*6)\n");
+	cprintf("{base}  -l, --limit [limit=lin] .....................: Set cgroup limit (cpuset/memory/cpupercent/pids/io) (*6)\n");
 	cprintf("{base}  -w, --no-warnings ...........................: Disable warnings\n");
 	cprintf("{base}  -j, --just-chroot ...........................: Just chroot, do not create the runtime dirs\n");
 	cprintf("{base}  -W, --work-dir [dir] ........................: Set the working directory in container\n");
@@ -169,7 +169,7 @@ void ruri_show_helps(void)
 	cprintf("{base}(*3)  : cap can be either a value or name (e.g., cap_chown == 0)\n");
 	cprintf("{base}(*4)  : Will not work if [COMMAND [ARGS]...] is like `/bin/su -`\n");
 	cprintf("{base}(*5)  : You can use `-m/-M [source] /` to mount another source as root\n");
-	cprintf("{base}(*6)  : Each `-l` option can only set one of the cpuset/memory/cpupercent limits\n");
+	cprintf("{base}(*6)  : Each `-l` option can only set one of the cpuset/memory/cpupercent/pids/io_device/io_rbps/io_wbps limits\n");
 	cprintf("{base}        for example: `ruri -l memory=1M -l cpupercent=60 -l cpuset=1 /test`\n");
 	cprintf("{base}(*7)  : If you use a username, please make sure it's in /etc/passwd in the container\n");
 	cprintf("{base}(*8)  : This option is only for unshare containers\n");

@@ -163,6 +163,14 @@ struct RURI_CONTAINER {
 	char *_Nullable memory;
 	// Cpulimit.
 	int cpupercent;
+	// Max PIDs.
+	int max_pids;
+	// I/O read bandwidth limit (bytes per second).
+	char *_Nullable io_rbps;
+	// I/O write bandwidth limit (bytes per second).
+	char *_Nullable io_wbps;
+	// Block device for I/O limit (e.g., "8:0" for /dev/sda).
+	char *_Nullable io_device;
 	// A number based on the time when creating container.
 	int container_id;
 	// Do not create runtime directory.
