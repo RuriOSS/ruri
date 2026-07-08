@@ -1068,6 +1068,16 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (!container->enable_unshare) {
 		ruri_pid_file_write(RURI_PID_FILE_PID, getpid());
 	}
+	if (ruri_flag("wait_before_exec")) {
+		// Wait for SIGUSR1 signal before execvp().
+		ruri_log("{base}Waiting for SIGUSR1 signal before execvp()...\n");
+		sigset_t sigset;
+		sigemptyset(&sigset);
+		sigaddset(&sigset, SIGUSR1);
+		sigprocmask(SIG_BLOCK, &sigset, NULL);
+		int sig;
+		sigwait(&sigset, &sig);
+	}
 	if (container->fork_as_init) {
 		ruri_fork_as_init();
 	}
@@ -1186,8 +1196,16 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		}
 		close(i);
 	}
-	// Fix console color.
-	cprintf("{clear}");
+	if (ruri_flag("wait_before_exec")) {
+		// Wait for SIGUSR1 signal before execvp().
+		ruri_log("{base}Waiting for SIGUSR1 signal before execvp()...\n");
+		sigset_t sigset;
+		sigemptyset(&sigset);
+		sigaddset(&sigset, SIGUSR1);
+		sigprocmask(SIG_BLOCK, &sigset, NULL);
+		int sig;
+		sigwait(&sigset, &sig);
+	}
 	if (container->fork_as_init) {
 		ruri_fork_as_init();
 	}

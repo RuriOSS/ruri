@@ -550,3 +550,6 @@ This option will erase ruri's cmdline args before running the container, so that
 | `--set-flag [flag]` | Set a feature flag |
 
 Note: This option is FULLY EXPERIMENTAL, use it only if you know what you are doing.    
+Current supported flags:    
+- `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
+- `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.

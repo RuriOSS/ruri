@@ -72,16 +72,24 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 {
 	static thread_local struct {
 		char *ban_futex_pi;
-	} flags = { .ban_futex_pi = NULL };
+		char *wait_before_exec;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
+		}
+		if (!strcmp(flag, "wait_before_exec")) {
+			return flags.wait_before_exec;
 		}
 		return "unknown";
 	}
 	if (!strcmp(flag, "ban_futex_pi")) {
 		flags.ban_futex_pi = strdup("true");
 		return flags.ban_futex_pi;
+	}
+	if (!strcmp(flag, "wait_before_exec")) {
+		flags.wait_before_exec = strdup("true");
+		return flags.wait_before_exec;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
