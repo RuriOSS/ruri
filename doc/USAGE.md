@@ -543,3 +543,10 @@ Note: This option is experimental and might not work as expected.
 This option will only affect cmdline args, and will not be recorded in the config file.      
 For unshare container with PID namespace support, this option should only be called once the container is initialized.      
 This option will erase ruri's cmdline args before running the container, so that it will not leak ruri's cmdline info to the container. You'll see a process called `-` when you ps in the container, and it is expected behavior.      
+
+---
+| Option | Description |
+|--------|-------------|
+| `--set-flag [flag]` | Set a feature flag |
+
+Note: This option is FULLY EXPERIMENTAL, use it only if you know what you are doing.    

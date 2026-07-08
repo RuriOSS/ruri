@@ -67,6 +67,36 @@ long long ruri_diff_time(void)
 	return 0;
 }
 #endif
+// Feature flags.
+char *ruri_feature_flag(int req, char *_Nonnull flag)
+{
+	static thread_local struct {
+		char *ban_futex_pi;
+	} flags = { .ban_futex_pi = NULL };
+	if (req == -1) {
+		if (!strcmp(flag, "ban_futex_pi")) {
+			return flags.ban_futex_pi;
+		}
+		return "unknown";
+	}
+	if (!strcmp(flag, "ban_futex_pi")) {
+		flags.ban_futex_pi = strdup("true");
+		return flags.ban_futex_pi;
+	}
+	ruri_error("{red}Unknown flag: %s\n", flag);
+	return "unknown";
+}
+bool ruri_flag(char *_Nonnull flag)
+{
+	char *value = ruri_feature_flag(-1, flag);
+	if (value == NULL) {
+		return false;
+	}
+	if (!strcmp(value, "true")) {
+		return true;
+	}
+	return false;
+}
 // Clear environment variables.
 void ruri_clear_env(char *const *_Nonnull argv)
 {
@@ -824,6 +854,15 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		// --fork-as-init.
 		else if (strcmp(argv[index], "--fork-as-init") == 0) {
 			container->fork_as_init = true;
+		}
+		// Feature flags.
+		else if (strcmp(argv[index], "--set-flag") == 0) {
+			index++;
+			if (index == argc - 1) {
+				ruri_error("{red}Please specify a flag\n{clear}");
+			}
+			char *flag = argv[index];
+			ruri_feature_flag(0, flag);
 		}
 		// Timeout.
 		else if (strcmp(argv[index], "--timeout") == 0) {

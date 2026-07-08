@@ -13,6 +13,7 @@
   * Add `--health-check` option for health check process.
   * Add `--timeout` option to automatically kill the process after the specified time.
   * Experimentally support `--fork-as-init` option to make ruri fork() as init process before exec() in container.
+  * Add `--set-flag` for developers to enable feature flags.
   * Rewrite default seccomp profile, make it more useable, and act for recent 0day vulnerabilities.
   * Kang moby's whitelist seccomp profile for `--enable-seccomp-whitelist`.
   * Migrate libk2v to libk2v3.

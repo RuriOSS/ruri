@@ -161,6 +161,7 @@ void ruri_show_helps(void)
 	cprintf("{base}      --health-check ..........................: Run as health check process in the container\n");
 	cprintf("{base}      --timeout [seconds] .....................: Automatically kill the process after the specified time\n");
 	cprintf("{base}      --fork-as-init ..........................: Make ruri fork as init process before exec() in container\n");
+	cprintf("{base}      --set-flag [flag] .......................: Set a feature flag (*16)\n");
 	cprintf("\n");
 	cprintf("{base}Note:\n");
 	cprintf("{base}(*1)  : Will not work for unshare containers without PID ns support\n");
@@ -179,6 +180,7 @@ void ruri_show_helps(void)
 	cprintf("{base}(*13) : The value is in the range of -1000 to 1000, but setting a negative value might cause security issues\n");
 	cprintf("{base}(*14) : This enables systemd support, mounting /run and /tmp as tmpfs, and setting up cgroup v2.\n");
 	cprintf("{base}(*15) : ruri will ignore SIGTTIN and SIGTTOU by default, enable this option to allow TTY signals in the container\n");
+	cprintf("{base}(*16) : Fully experimental feature, set it only if you know what you are doing\n");
 	cprintf("\n{base}Note:\n");
 	cprintf("{base}BSD style usage is partially supported now. For example, you can use `-pW /root`, but `-W/root` is not allowed.\n");
 	cprintf("{base}{clear}\n");

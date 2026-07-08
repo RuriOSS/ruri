@@ -239,6 +239,20 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 			ruri_check_seccomp_ret(res, container->no_warnings);
 		}
 	}
+	if (ruri_flag("ban_futex_pi")) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EBUSY), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EBUSY), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI2));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EBUSY), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_TRYLOCK_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EBUSY), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_UNLOCK_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EBUSY), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_WAIT_REQUEUE_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EBUSY), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_CMP_REQUEUE_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+	}
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept), 0);
 	ruri_check_seccomp_ret(res, container->no_warnings);
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept4), 0);
@@ -1832,6 +1846,20 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0);
 		ruri_check_seccomp_ret(res, container->no_warnings);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0);
+		ruri_check_seccomp_ret(res, container->no_warnings);
+	}
+	if (ruri_flag("ban_futex_pi")) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI2));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_TRYLOCK_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_UNLOCK_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_WAIT_REQUEUE_PI));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_CMP_REQUEUE_PI));
 		ruri_check_seccomp_ret(res, container->no_warnings);
 	}
 	// Disable no_new_privs bit by default.
