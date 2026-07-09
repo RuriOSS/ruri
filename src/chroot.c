@@ -986,6 +986,10 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: Failed to change to work dir `%s`\n", container->work_dir);
 		}
 	}
+	// remove /.ruri_umounted
+	unlink("/.ruri_umounted");
+	remove("/.ruri_umounted");
+	rmdir("/.ruri_umounted");
 	// Mount/create system runtime dir/files.
 	if (!container->just_chroot) {
 		init_container(container);
@@ -1154,6 +1158,10 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: Failed to change to work dir `%s`\n", container->work_dir);
 		}
 	}
+	// remove /.ruri_umounted
+	unlink("/.ruri_umounted");
+	remove("/.ruri_umounted");
+	rmdir("/.ruri_umounted");
 	// Fix /etc/mtab.
 	if (!container->just_chroot) {
 		remove("/etc/mtab");
