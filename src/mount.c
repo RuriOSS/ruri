@@ -172,8 +172,13 @@ static char *losetup(const char *_Nonnull img)
 		sprintf(loopfile, "/dev/block/loop%d", devnr);
 		loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 		if (loopfd < 0) {
-			free(loopfile);
-			return NULL;
+			// Just create one.
+			mknod(loopfile, S_IFBLK | 0660, makedev(7, devnr));
+			loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
+			if (loopfd < 0) {
+				free(loopfile);
+				return NULL;
+			}
 		}
 	}
 	// It takes the same efferct as `losetup` command.
