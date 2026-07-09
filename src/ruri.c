@@ -200,6 +200,11 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 		ruri_error("{red}Error: --systemd should not run with --mount-host-runtime QwQ\n");
 	}
 	// If container_dir/.rurienv and container_dir/.ruri_umounted both exists, panic.
+	// Get current working directory.
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)) == NULL) {
+		ruri_error("{red}Error: getcwd() failed QwQ\n");
+	}
 	if (chdir(container->container_dir) != 0) {
 		ruri_error("{red}Error: chdir() failed QwQ\n");
 	}
@@ -209,6 +214,10 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 	remove("./.ruri_umounted");
 	unlink("./.ruri_umounted");
 	rmdir("./.ruri_umounted");
+	// chdir() back.
+	if (chdir(cwd) != 0) {
+		ruri_error("{red}Error: chdir() failed QwQ\n");
+	}
 }
 static void parse_cgroup_settings(const char *_Nonnull str, struct RURI_CONTAINER *_Nonnull container)
 {

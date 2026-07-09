@@ -13,8 +13,6 @@ cd ..
 mkdir ${TMPDIR}
 check_if_succeed $?
 export TMPDIR=$(realpath ${TMPDIR})
-autoreconf -fi
-./configure --enable-debug --enable-dev
 check_if_succeed $?
 cc build.c
 ./a.out -d -f
@@ -39,9 +37,7 @@ pass_subtest
 export SUBTEST_NO=3
 export SUBTEST_DESCRIPTION="Get rootfs.tar.xz"
 show_subtest_description
-git clone https://github.com/moe-hacker/rootfstool
-check_if_succeed $?
-rootfstool/rootfstool d -d alpine -v edge
+${TEST_ROOT}/rootfstool d -d alpine -v edge
 check_if_succeed $?
 pass_subtest
 
@@ -105,7 +101,7 @@ show_subtest_description
 mkdir aarch64
 check_if_succeed $?
 rm rootfs.tar.xz || true
-rootfstool/rootfstool d -d alpine -v edge -a arm64
+${TEST_ROOT}/rootfstool d -d alpine -v edge -a arm64
 check_if_succeed $?
 tar -xf rootfs.tar.xz -C aarch64
 check_if_succeed $?
@@ -117,7 +113,7 @@ show_subtest_description
 mkdir armhf
 check_if_succeed $?
 rm rootfs.tar.xz || true
-rootfstool/rootfstool d -d alpine -v edge -a armhf
+${TEST_ROOT}/rootfstool d -d alpine -v edge -a armhf
 check_if_succeed $?
 tar -xf rootfs.tar.xz -C armhf
 check_if_succeed $?

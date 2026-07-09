@@ -89,12 +89,21 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 	if (test == NULL) {
 		ruri_error("{red}Error: container directory does not exist QwQ\n");
 	}
+	free(test);
+	// Get current working directory.
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)) == NULL) {
+		ruri_error("{red}Error: getcwd() failed QwQ\n");
+	}
 	chdir(container_dir);
 	// If .ruri_umounted and .rurienv both exists, panic.
 	if (access(".ruri_umounted", F_OK) == 0 && access(".rurienv", F_OK) == 0) {
 		ruri_error("{red}Error: .ruri_umounted and .rurienv both exists, this can only happen when ruri has a bug or container is hacked QwQ\n");
 	}
-	free(test);
+	// chdir() back.
+	if (chdir(cwd) != 0) {
+		ruri_error("{red}Error: chdir() failed QwQ\n");
+	}
 	struct RURI_CONTAINER *container = ruri_read_info(NULL, container_dir);
 	container->container_dir = strdup(container_dir);
 	// Kill ns_pid.
