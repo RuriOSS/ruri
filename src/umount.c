@@ -89,6 +89,11 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 	if (test == NULL) {
 		ruri_error("{red}Error: container directory does not exist QwQ\n");
 	}
+	chdir(container_dir);
+	// If .ruri_umounted and .rurienv both exists, panic.
+	if (access(".ruri_umounted", F_OK) == 0 && access(".rurienv", F_OK) == 0) {
+		ruri_error("{red}Error: .ruri_umounted and .rurienv both exists, this can only happen when ruri has a bug or container is hacked QwQ\n");
+	}
 	free(test);
 	struct RURI_CONTAINER *container = ruri_read_info(NULL, container_dir);
 	container->container_dir = strdup(container_dir);
@@ -121,6 +126,12 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 	} else {
 		ruri_warning("{yellow}Warning: .rurienv does not exist\n");
 	}
+	// Create a `.ruri_umounted` file.
+	char umounted_file[PATH_MAX] = { '\0' };
+	if (snprintf(umounted_file, sizeof(umounted_file), "%s/.ruri_umounted", container_dir) >= (int)sizeof(umounted_file)) {
+		ruri_error("{red}Error: container directory path is too long QwQ\n");
+	}
+	close(open(umounted_file, O_CREAT | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH));
 	// Get path to umount.
 	char sys_dir[PATH_MAX];
 	char proc_dir[PATH_MAX];

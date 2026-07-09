@@ -199,6 +199,16 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 	if (container->systemd_mode && container->mount_host_runtime) {
 		ruri_error("{red}Error: --systemd should not run with --mount-host-runtime QwQ\n");
 	}
+	// If container_dir/.rurienv and container_dir/.ruri_umounted both exists, panic.
+	if (chdir(container->container_dir) != 0) {
+		ruri_error("{red}Error: chdir() failed QwQ\n");
+	}
+	if (access(".rurienv", F_OK) == 0 && access(".ruri_umounted", F_OK) == 0) {
+		ruri_error("{red}Error: .ruri_umounted and .rurienv both exists, this can only happen when ruri has a bug or container is hacked QwQ\n");
+	}
+	remove("./.ruri_umounted");
+	unlink("./.ruri_umounted");
+	rmdir("./.ruri_umounted");
 }
 static void parse_cgroup_settings(const char *_Nonnull str, struct RURI_CONTAINER *_Nonnull container)
 {
