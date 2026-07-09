@@ -34,16 +34,6 @@
  * I know code here is too shit, but it works,
  * maybe I will rewrite it one day, I hope.
  */
-// Force panic bit.
-bool ruri_force_panic(int req)
-{
-	static thread_local bool ret = false;
-	if (req == -1) {
-		return ret;
-	}
-	ret = !!req;
-	return ret;
-}
 // For profiling.
 #ifdef RURI_PROFILING
 long long ruri_diff_time(void)
@@ -74,7 +64,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *ban_futex_pi;
 		char *wait_before_exec;
 		char *allow_personality;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL };
+		char *force_panic;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -84,6 +75,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "allow_personality")) {
 			return flags.allow_personality;
+		}
+		if (!strcmp(flag, "force_panic")) {
+			return flags.force_panic;
 		}
 		return "unknown";
 	}
@@ -98,6 +92,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "allow_personality")) {
 		flags.allow_personality = strdup("true");
 		return flags.allow_personality;
+	}
+	if (!strcmp(flag, "force_panic")) {
+		flags.force_panic = strdup("true");
+		return flags.force_panic;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -851,8 +849,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Force panic on error, for security.
 		else if (strcmp(argv[index], "--strict-mode") == 0) {
-			ruri_force_panic(1);
-			container->auto_umount_on_panic = true;
+			ruri_feature_flag(1, "force_panic");
 		}
 		// Pid file.
 		else if (strcmp(argv[index], "--pid-file") == 0) {
@@ -869,7 +866,6 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		// Auto umount on panic.
 		else if (strcmp(argv[index], "--umount-on-panic") == 0) {
 			container->auto_umount_on_panic = true;
-			ruri_force_panic(1);
 		}
 		// Is health check process.
 		else if (strcmp(argv[index], "--health-check") == 0) {

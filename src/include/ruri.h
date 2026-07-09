@@ -256,7 +256,7 @@ struct RURI_CONTAINER {
 #define ruri_warn_on_error(ret__, expect__, show__, format__, ...)                         \
 	do {                                                                               \
 		if (ret__ != expect__) {                                                   \
-			if (ruri_force_panic(-1)) {                                        \
+			if (ruri_flag("force_panic")) {                                    \
 				ruri_warning(format__, ##__VA_ARGS__);                     \
 				ruri_error("{red}Force panic is enabled, exiting now.\n"); \
 			} else {                                                           \
@@ -323,7 +323,6 @@ struct RURI_ELF_MAGIC {
 	char *_Nonnull magic;
 	char *_Nonnull mask;
 };
-bool ruri_force_panic(int req);
 int ruri_pid_file_fd(int req);
 void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg);
 char *ruri_get_proc_type(void);

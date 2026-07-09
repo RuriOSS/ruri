@@ -481,8 +481,8 @@ This option allows you to run systemd as init in the container. It will set up s
 | `--strict-mode` | Enable strict mode |
 
 This option will enable strict mode, ruri will treat most important warning as error, and panic immediately when any setup is failed.      
-This option will also automatically enable `--umount-on-panic` option, so the container will be automatically umounted when it exits.      
-This option will only work with cmdline args, and will not be recorded in the config file.
+This option will only work with cmdline args, and will not be recorded in the config file.    
+WARNING: experimental and might not work as expected.    
 
 ---
 | Option | Description |
@@ -555,5 +555,6 @@ Current supported flags:
 - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
 - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
 - `allow_personality`: Allow personality() syscall, for compatibility with some software like debian reprotest, box86/wine, etc.    
+- `force_panic`: The internal implementation of `--strict-mode`, will force ruri to panic on any error.    
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/bba879b78d02f3e992549e87229182f14c4fd870) to write your own hooks.    
