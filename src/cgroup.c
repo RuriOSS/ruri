@@ -324,7 +324,9 @@ static void ruri_set_memory_limit(const struct RURI_CONTAINER *_Nonnull containe
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No memory cgroup support detected\n");
+		if (container->memory || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No memory cgroup support detected\n");
+		}
 		return;
 	}
 	// If memory limit is not set, just join the cgroup without setting memory limit.
@@ -383,7 +385,9 @@ static void ruri_set_memory_limit(const struct RURI_CONTAINER *_Nonnull containe
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No memory cgroup support detected\n");
+		if (container->memory || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No memory cgroup support detected\n");
+		}
 	}
 }
 static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
@@ -418,7 +422,9 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpuset cgroup support detected\n");
+		if (container->cpuset || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpuset cgroup support detected\n");
+		}
 		return;
 	}
 	// If cpuset is not set, just join the cgroup without setting cpuset.cpus.
@@ -453,7 +459,9 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpuset cgroup support detected\n");
+		if (container->cpuset || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpuset cgroup support detected\n");
+		}
 		return;
 	}
 }
@@ -488,7 +496,9 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpu cgroup support detected\n");
+		if (container->cpupercent > 0 || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpu cgroup support detected\n");
+		}
 		return;
 	}
 	// If cpu percent limit is not set, just join the cgroup without setting cpu percent limit.
@@ -522,7 +532,9 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpu cgroup support detected\n");
+		if (container->cpupercent > 0 || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No cpu cgroup support detected\n");
+		}
 		return;
 	}
 }
@@ -557,7 +569,9 @@ static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No PIDs cgroup support detected\n");
+		if (container->max_pids > 0 || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No PIDs cgroup support detected\n");
+		}
 		return;
 	}
 	// If PIDs limit is not set, just join the cgroup without setting PIDs limit.
@@ -575,7 +589,9 @@ static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No PIDs cgroup support detected\n");
+		if (container->max_pids > 0 || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No PIDs cgroup support detected\n");
+		}
 		return;
 	}
 }
@@ -610,7 +626,9 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 			return;
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No I/O cgroup support detected\n");
+		if (container->io_rbps != NULL || container->io_wbps != NULL || container->io_device != NULL || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No I/O cgroup support detected\n");
+		}
 		return;
 	}
 	// If I/O limit is not set, just join the cgroup without setting I/O limit.
@@ -693,7 +711,9 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 			}
 		}
 	} else {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No I/O cgroup support detected\n");
+		if (container->io_rbps != NULL || container->io_wbps != NULL || container->io_device != NULL || ruri_flag("force_panic")) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{red}No I/O cgroup support detected\n");
+		}
 		return;
 	}
 }
