@@ -1,4 +1,13 @@
-# v3.9.4:
+# v3.9.5:
+  * Add `--set-flag` for developers to enable feature flags.
+  * Add a `.ruri_umounted` file to indicate that the container has been unmounted.
+  * Fix a race condition when udev didn't create /dev/loopx device before ruri tries to mount it.
+  * Support new feature flags:
+    - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
+    - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
+    - `allow_personality`: Allow personality() syscall, for compatibility with some software like debian reprotest, box86/wine, etc.    
+    - `force_panic`: The internal implementation of `--strict-mode`, will force ruri to panic on any error.    
+# v3.9.4 (no release):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.
   * Auto add `cap_` prefix for capability name in `--cap-drop` and `--cap-add` option.
@@ -13,7 +22,6 @@
   * Add `--health-check` option for health check process.
   * Add `--timeout` option to automatically kill the process after the specified time.
   * Experimentally support `--fork-as-init` option to make ruri fork() as init process before exec() in container.
-  * Add `--set-flag` for developers to enable feature flags.
   * Rewrite default seccomp profile, make it more useable, and act for recent 0day vulnerabilities.
   * Kang moby's whitelist seccomp profile for `--enable-seccomp-whitelist`.
   * Migrate libk2v to libk2v3.
