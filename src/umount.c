@@ -96,9 +96,9 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 		ruri_error("{red}Error: getcwd() failed QwQ\n");
 	}
 	chdir(container_dir);
-	// If .ruri_umounted and .rurienv both exists, panic.
+	// If .ruri_umounted and .rurienv both exists.
 	if (access(".ruri_umounted", F_OK) == 0 && access(".rurienv", F_OK) == 0) {
-		ruri_error("{red}Error: .ruri_umounted and .rurienv both exists, this can only happen when ruri has a bug or container is hacked QwQ\n");
+		ruri_warning("{red}Error: .ruri_umounted and .rurienv both exists, this can only happen when ruri has a bug or container is hacked QwQ\n");
 	}
 	// chdir() back.
 	if (chdir(cwd) != 0) {

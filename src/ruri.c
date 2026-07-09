@@ -209,7 +209,7 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 		ruri_error("{red}Error: chdir() failed QwQ\n");
 	}
 	if (access(".rurienv", F_OK) == 0 && access(".ruri_umounted", F_OK) == 0) {
-		ruri_error("{red}Error: .ruri_umounted and .rurienv both exists, this can only happen when ruri has a bug or container is hacked QwQ\n");
+		ruri_warning("{red}Error: .ruri_umounted and .rurienv both exists, this can only happen when ruri has a bug or container is hacked QwQ\n");
 	}
 	remove("./.ruri_umounted");
 	unlink("./.ruri_umounted");
