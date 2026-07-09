@@ -615,11 +615,15 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_LT, AF_ALG)) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_NFC)) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_GT, AF_VSOCK)) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX)) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX32)) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26)) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26 | PER_LINUX32)) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 0xffffffff)) :<;
+	if (ruri_flag("allow_personality")) {
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 0) :<;
+	} else {
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX)) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX32)) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26)) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26 | PER_LINUX32)) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 0xffffffff)) :<;
+	}
 	if (seccomp_arch_native() == SCMP_ARCH_PPC64LE) {
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sync_file_range2), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(swapcontext), 0) :<;
@@ -977,7 +981,9 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	}
 	// Wine/box86 needs personality syscall.
 	// But, we cannot SCMP_ACT_ALLOW it, so just ban.
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL)) :<;
+	if (!ruri_flag("allow_personality")) {
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL)) :<;
+	}
 	// I think I just called pivot_root() for you bro.
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(pivot_root), 0) :<;
 	// Deprecated syscall, we kill it directly.
@@ -1167,7 +1173,9 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	}
 	// wine/box86 needs personality syscall.
 	// But, we cannot SCMP_ACT_ALLOW it, so just ban.
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL)) :<;
+	if (!ruri_flag("allow_personality")) {
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL)) :<;
+	}
 	// I think I just called pivot_root() for you bro.
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(pivot_root), 0) :<;
 	// Deprecated syscall, we kill it directly.

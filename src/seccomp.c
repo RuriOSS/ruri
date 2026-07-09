@@ -989,16 +989,21 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	ruri_check_seccomp_ret(res, container->no_warnings);
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_GT, AF_VSOCK));
 	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX));
-	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX32));
-	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26));
-	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26 | PER_LINUX32));
-	ruri_check_seccomp_ret(res, container->no_warnings);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 0xffffffff));
-	ruri_check_seccomp_ret(res, container->no_warnings);
+	if (ruri_flag("allow_personality")) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 0);
+		ruri_check_seccomp_ret(res, container->no_warnings);
+	} else {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX32));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, UNAME26 | PER_LINUX32));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, 0xffffffff));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+	}
 	if (seccomp_arch_native() == SCMP_ARCH_PPC64LE) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sync_file_range2), 0);
 		ruri_check_seccomp_ret(res, container->no_warnings);
@@ -1512,8 +1517,10 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	}
 	// Wine/box86 needs personality syscall.
 	// But, we cannot SCMP_ACT_ALLOW it, so just ban.
-	res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL));
-	ruri_check_seccomp_ret(res, container->no_warnings);
+	if (!ruri_flag("allow_personality")) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+	}
 	// I think I just called pivot_root() for you bro.
 	res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(pivot_root), 0);
 	ruri_check_seccomp_ret(res, container->no_warnings);
@@ -1795,8 +1802,10 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	}
 	// wine/box86 needs personality syscall.
 	// But, we cannot SCMP_ACT_ALLOW it, so just ban.
-	res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL));
-	ruri_check_seccomp_ret(res, container->no_warnings);
+	if (!ruri_flag("allow_personality")) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL));
+		ruri_check_seccomp_ret(res, container->no_warnings);
+	}
 	// I think I just called pivot_root() for you bro.
 	res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(pivot_root), 0);
 	ruri_check_seccomp_ret(res, container->no_warnings);
