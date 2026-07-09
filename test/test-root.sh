@@ -15,15 +15,6 @@ cd ${TEST_ROOT}
 source init-root-test.sh
 check_if_succeed $?
 
-wget https://github.com/RuriOSS/ruri/releases/latest/download/x86_64.tar
-tar -xvf x86_64.tar
-mv ruri ${TMPDIR}/ruri
-cd ${TEST_ROOT}
-for i in $(ls root/*.sh); do
-    cd ${TEST_ROOT}
-    source $i
-    check_if_succeed $?
-done
 mv ${TMPDIR}/ruri-release ${TMPDIR}/ruri
 # Do all tests
 cd ${TEST_ROOT}
