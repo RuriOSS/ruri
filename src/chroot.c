@@ -970,15 +970,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		chdir("/");
 	} else {
-		if (try_pivot_root(container) == -1) {
-			if (chdir(container->container_dir) != 0) {
-				ruri_error("{red}Error: failed to change directory to container dir QwQ\n");
-			}
-			if (chroot(".") == -1) {
-				ruri_error("{red}Error: chroot(2) failed QwQ\n");
-			}
-			chdir("/");
-		}
+		try_pivot_root(container);
 	}
 	// Change to the work dir.
 	if (container->work_dir != NULL) {
