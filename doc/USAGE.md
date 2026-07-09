@@ -35,8 +35,9 @@ These options will display information.
 When you run a container, ruri mounts several necessary directories inside it. After you're done using the container, use the `-U` option to unmount it. This works for both rootless and rootful containers. For rootful containers, you must run this command with root privileges (e.g., using `sudo` or `doas`).
 
 **Behavior note:**  
-- Running `-U` will also kill any processes detected inside the container.
-- Running `-U` will automatically remove the `.rurienv` file in the container.
+- This option will also kill any processes detected inside the container.
+- This option will automatically remove the `.rurienv` file in the container.
+- This option will create a `.ruri_umounted` file in container directory, it's rw to everyone, and you can just remove it if you want.    
 
 **Warning:**  
 Always run `ruri -U /path/to/container` before deleting the container directory to prevent issues.
