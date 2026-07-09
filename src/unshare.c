@@ -86,8 +86,6 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		write(fd, buf, strlen(buf));
 		close(fd);
 	}
-	unshare_ret = unshare(CLONE_FILES);
-	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that we could not unshare file descriptors with child process QwQ{clear}\n");
 	unshare_ret = unshare(CLONE_FS);
 	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
 	// Disable network.

@@ -456,9 +456,6 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		if (unshare(CLONE_SYSVSEM) == -1) {
 			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that semaphore namespace is not supported on this device QwQ{clear}\n");
 		}
-		if (unshare(CLONE_FILES) == -1) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that we could not unshare file descriptors with child process QwQ{clear}\n");
-		}
 		if (unshare(CLONE_FS) == -1) {
 			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
 		}
