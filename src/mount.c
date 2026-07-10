@@ -86,61 +86,53 @@ static int mount_device(const char *_Nonnull source, const char *_Nonnull target
 	 * that means we got a true filesystem type to mount,
 	 * so we try to use the type we get for mount(2);
 	 */
-	int ret = 0;
+	int ret = -1;
 	// Get filesystems supported.
 	int fssfd = open("/proc/filesystems", O_RDONLY | O_CLOEXEC);
 	if (fssfd < 0) {
 		return -1;
 	}
-	char buf[4096] = { '\0' };
-	if (read(fssfd, buf, sizeof(buf)) < 0) {
+	FILE *filesystems = fdopen(fssfd, "r");
+	if (filesystems == NULL) {
 		close(fssfd);
 		return -1;
 	}
-	close(fssfd);
-	// Fuck U LLMs, and now it will never overflow.
-	char type[4096] = { '\0' };
-	char label[4096] = { '\0' };
-	char *out = label;
-	int i = 0;
-	bool nodev = false;
-	for (size_t j = 0; j < sizeof(buf); j++) {
-		// Reached the end of buf.
-		if (buf[j] == '\0') {
+	char line[PATH_MAX];
+	char first[16];
+	char type[PATH_MAX];
+	while (fgets(line, sizeof(line), filesystems) != NULL) {
+		memset(first, '\0', sizeof(first));
+		memset(type, '\0', sizeof(type));
+		int fields = sscanf(line, "%15s %4095s", first, type);
+		if (fields < 1) {
+			continue;
+		}
+		// Lines with two fields have the form "nodev <filesystem>".
+		if (fields == 2 && strcmp(first, "nodev") == 0) {
+			continue;
+		}
+		const char *fstype = fields == 2 ? type : first;
+		ret = mount(source, target, fstype, mountflags, NULL);
+		if (ret != 0) {
+			continue;
+		}
+		// MS_RDONLY is honored by the initial filesystem mount. A remount
+		// is only needed when the caller explicitly requested read-only.
+		if ((mountflags & MS_RDONLY) == 0) {
+			ret = 0;
 			break;
 		}
-		// Check for nodev flag.
-		if (buf[j] == '\t') {
-			if (strcmp(label, "nodev") == 0) {
-				nodev = true;
-			}
-			out = type;
-			i = 0;
-			memset(label, '\0', sizeof(label));
+		ret = mount(source, target, fstype, mountflags | MS_REMOUNT, NULL);
+		if (ret != 0) {
+			int saved_errno = errno;
+			umount2(target, MNT_DETACH | MNT_FORCE);
+			errno = saved_errno;
 		}
-		// The end of current line.
-		else if (buf[j] == '\n') {
-			if (!nodev) {
-				ret = mount(source, target, type, mountflags, NULL);
-				if (ret == 0) {
-					// For ro mount, we need a remount.
-					ret = mount(source, target, type, mountflags | MS_REMOUNT, NULL);
-					// mount(2) succeed.
-					return ret;
-				}
-				memset(type, '\0', sizeof(type));
-			}
-			out = label;
-			i = 0;
-			nodev = false;
-		}
-		// Read filesystems info.
-		else {
-			out[i] = buf[j];
-			out[i + 1] = '\0';
-			i++;
-		}
+		break;
 	}
+	int saved_errno = errno;
+	fclose(filesystems);
+	errno = saved_errno;
 	return ret;
 }
 // Same as `losetup` command.
@@ -267,12 +259,16 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 			return -1;
 		}
 		ret = mount(loopfile, target, fstype, mountflags, NULL);
-		mount(loopfile, target, fstype, mountflags | MS_REMOUNT, NULL);
+		if (ret == 0 && (mountflags & MS_RDONLY) != 0) {
+			ret = mount(loopfile, target, fstype, mountflags | MS_REMOUNT, NULL);
+		}
 		free(loopfile);
 		return ret;
 	}
 	ret = mount(source, target, fstype, mountflags, NULL);
-	mount(source, target, fstype, mountflags | MS_REMOUNT, NULL);
+	if (ret == 0 && (mountflags & MS_RDONLY) != 0) {
+		ret = mount(source, target, fstype, mountflags | MS_REMOUNT, NULL);
+	}
 	return ret;
 }
 static int mount_other_type(const char *_Nonnull source, const char *_Nonnull target, unsigned int mountflags)
@@ -320,7 +316,9 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 		}
 		char *tmpfs_flag = strdup(source + strlen("TMPFS:"));
 		int ret = mount("tmpfs", target, "tmpfs", mountflags, tmpfs_flag);
-		mount("tmpfs", target, "tmpfs", mountflags | MS_REMOUNT, tmpfs_flag);
+		if (ret == 0 && (mountflags & MS_RDONLY) != 0) {
+			ret = mount("tmpfs", target, "tmpfs", mountflags | MS_REMOUNT, tmpfs_flag);
+		}
 		free(tmpfs_flag);
 		return ret;
 	}
@@ -534,9 +532,12 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		if (mk_mountpoint_dir(target) != 0) {
 			return -1;
 		}
-		mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-		// For ro mount, we need a remount.
-		ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
+		ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
+		// Bind mounts apply their extra flags in a remount. A plain
+		// read-write bind mount does not need a second syscall.
+		if (ret == 0 && mountflags_new != 0) {
+			ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
+		}
 	}
 	// Block device.
 	else if (S_ISBLK(dev_stat.st_mode)) {
@@ -568,8 +569,10 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 				return -1;
 			}
 			ruri_log("{base}Bind-mounting as common file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
-			mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-			ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
+			ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
+			if (ret == 0 && mountflags_new != 0) {
+				ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
+			}
 		}
 	}
 	// For char-device/FIFO/socket, we just bind-mount it.
@@ -578,8 +581,10 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 			return -1;
 		}
 		ruri_log("{base}Bind-mounting {cyan}%s{base} to {cyan}%s{base}\n", source, target);
-		mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-		ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
+		ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
+		if (ret == 0 && mountflags_new != 0) {
+			ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
+		}
 	}
 	// We do not support to mount other type of files.
 	else {
