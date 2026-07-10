@@ -41,17 +41,16 @@
 &emsp;ruri is a powerful container implementation that runs on almost any Linux device, even with incomplete kernel configurations or minimal storage space.    
 # Features:
 - Aimed to be the most compatible "better chroot".
-- Default configuration works on every device with chroot support.
+- Default configuration works on almost every device with chroot support.
 - Simple usage, just `ruri /path/to/rootfs [command...]` to run a container.
-- Shell script friendly, all operations can be done with simple command line options.
+- CLI first, all features can be used in CLI, and config file is optional.
 - Supports chroot, unshare with pivot_root, environment/user/workdir setup, and more....
 - Umount & kill containers easily and safely.
 - Built-in binfmt_misc & QEMU for easy multi-arch containers.
 - Rootless containers, capability control, cgroups, seccomp profile, no new privileges, and more security features.
-- Flexible mount options: mount images/partitions, customizable mount flags, TMPFS and OVERLAY support.
-- Customizable extra device nodes and extra masked paths.
-- Experimental systemd init support.
-- Config file support.
+- Flexible mount options, mount images/partitions, customizable mount flags, TMPFS and OVERLAY support.
+- Extensible, many feature flags can be enabled by `--set-flag` option.
+- Lifecycle tracking, `--pid-file` will record the whole lifecycle of container.
 - Statically linked binaries for many architectures.
 - Very small binary size (even <200k with upx), yet over 40 options.
 
