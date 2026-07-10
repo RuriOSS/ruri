@@ -142,7 +142,7 @@ void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container
 					kill(to_watch, SIGKILL);
 				}
 				usleep(100000); // Sleep 0.1s to wait for the process to be killed.
-				if (container->auto_umount_on_panic) {
+				if (ruri_flag("auto_umount_on_panic")) {
 					// Sleep 0.5s.
 					usleep(500000);
 					ruri_umount_container(container->container_dir);
@@ -282,7 +282,7 @@ read_again:
 						if (strncmp(buf, "RURI_PANIC_TIMEOUT", strlen("RURI_PANIC_TIMEOUT")) == 0) {
 							exit(EXIT_FAILURE);
 						}
-						if (container->auto_umount || container->auto_umount_on_panic) {
+						if (ruri_flag("auto_umount") || ruri_flag("auto_umount_on_panic")) {
 							// Sleep 0.5s.
 							usleep(500000);
 							ruri_umount_container(container->container_dir);
@@ -309,7 +309,7 @@ read_again:
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
 					// EOF, the other side has closed the connection, exit.
-					if (container->auto_umount) {
+					if (ruri_flag("auto_umount")) {
 						// Sleep 0.5s.
 						usleep(500000);
 						ruri_umount_container(container->container_dir);
@@ -340,7 +340,7 @@ read_again:
 					// release the lock on pid file.
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
-					if (container->auto_umount) {
+					if (ruri_flag("auto_umount")) {
 						// Sleep 0.5s.
 						usleep(500000);
 						ruri_umount_container(container->container_dir);

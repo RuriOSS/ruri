@@ -209,10 +209,6 @@ struct RURI_CONTAINER {
 	bool systemd_mode;
 	// pid file.
 	char *_Nullable pid_file;
-	// Auto umount container when exit.
-	bool auto_umount;
-	// Auto umount container when panic.
-	bool auto_umount_on_panic;
 	// Is health check process.
 	bool is_health_check;
 	// Timeout for watchdog killer.

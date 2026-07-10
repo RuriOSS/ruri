@@ -94,8 +94,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->first_init = true;
 	container->systemd_mode = false;
 	container->pid_file = NULL;
-	container->auto_umount = false;
-	container->auto_umount_on_panic = false;
 	container->is_health_check = false;
 	container->timeout = -1.0F;
 	container->enable_seccomp_whitelist = false;

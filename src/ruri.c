@@ -89,7 +89,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *meow;
 		char *fork_as_init;
 		char *disable_warnings;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL };
+		char *auto_umount;
+		char *auto_umount_on_panic;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -126,6 +128,12 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "disable_warnings")) {
 			return flags.disable_warnings;
+		}
+		if (!strcmp(flag, "auto_umount")) {
+			return flags.auto_umount;
+		}
+		if (!strcmp(flag, "auto_umount_on_panic")) {
+			return flags.auto_umount_on_panic;
 		}
 		return "unknown";
 	}
@@ -176,6 +184,14 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "disable_warnings")) {
 		flags.disable_warnings = strdup("true");
 		return flags.disable_warnings;
+	}
+	if (!strcmp(flag, "auto_umount")) {
+		flags.auto_umount = strdup("true");
+		return flags.auto_umount;
+	}
+	if (!strcmp(flag, "auto_umount_on_panic")) {
+		flags.auto_umount_on_panic = strdup("true");
+		return flags.auto_umount_on_panic;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -956,11 +972,11 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Auto umount after running container.
 		else if (strcmp(argv[index], "--auto-umount") == 0) {
-			container->auto_umount = true;
+			ruri_feature_flag(1, "auto_umount");
 		}
 		// Auto umount on panic.
 		else if (strcmp(argv[index], "--umount-on-panic") == 0) {
-			container->auto_umount_on_panic = true;
+			ruri_feature_flag(1, "auto_umount_on_panic");
 		}
 		// Is health check process.
 		else if (strcmp(argv[index], "--health-check") == 0) {
