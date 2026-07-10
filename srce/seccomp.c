@@ -765,7 +765,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	 * NOTE: This profile is not fully tested.
 	 */
 	int res = 0;
-	if (!container->enable_default_seccomp && !container->seccomp_denied_syscall[0] && !container->systemd_mode) {
+	if (!container->enable_default_seccomp && !container->seccomp_denied_syscall[0] && !ruri_flag("systemd_init")) {
 		return;
 	}
 	scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ALLOW);
@@ -780,7 +780,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			seccomp_rule_add(ctx, SCMP_ACT_KILL, syscall_nr, 0) :<;
 		}
 	}
-	if (!container->enable_default_seccomp && !container->systemd_mode) {
+	if (!container->enable_default_seccomp && !ruri_flag("systemd_init")) {
 		// Disable no_new_privs bit by default.
 		seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 		// Load seccomp rules.
@@ -849,7 +849,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		// Disallow AF_PACKET.
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_PACKET)) :<;
 		// Disallow SOCKET_RAW.
-		if (!container->systemd_mode && (ruri_is_in_caplist(container->drop_caplist, CAP_AUDIT_WRITE) || not_root_user)) {
+		if (!ruri_flag("systemd_init") && (ruri_is_in_caplist(container->drop_caplist, CAP_AUDIT_WRITE) || not_root_user)) {
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(socket), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, SOCK_TYPE_MASK, SOCK_RAW)) :<;
 		}
 		// Disallow SOCKET_PACKET.
@@ -910,7 +910,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, clone_flags[i], clone_flags[i])) :<;
 			}
 		}
-		if (!container->systemd_mode) {
+		if (!ruri_flag("systemd_init")) {
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clone3), 0) :<;
 		}
 		// Why you run 8086 vm in container? Weird.
@@ -964,7 +964,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_file_load), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_load), 0) :<;
 	// As systemd eats everything, let it cook.
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(reboot), 0) :<;
 	} else {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(reboot), 0) :<;
@@ -972,7 +972,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// Deprecated syscall, we kill it directly.
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(nfsservctl), 0) :<;
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_DAC_READ_SEARCH) || not_root_user) {
-		if (!container->systemd_mode) {
+		if (!ruri_flag("systemd_init")) {
 			// open_by_handle_at(2) can be used to access files outside of their intended scope, which is very dangerous.
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0) :<;
 			// also, name_to_handle_at(2).
@@ -1053,7 +1053,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// Disallow AF_PACKET.
 	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_PACKET)) :<;
 	// Disallow SOCKET_RAW.
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(socket), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, SOCK_TYPE_MASK, SOCK_RAW)) :<;
 	}
 	// Disallow SOCKET_PACKET.
@@ -1109,7 +1109,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, clone_flags[i], clone_flags[i])) :<;
 		}
 	}
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clone3), 0) :<;
 	}
 	// Why you run 8086 vm in container? Weird.
@@ -1158,14 +1158,14 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_file_load), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_load), 0) :<;
 	// As systemd eats everything, let it cook.
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(reboot), 0) :<;
 	} else {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(reboot), 0) :<;
 	}
 	// Deprecated syscall, we kill it directly.
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(nfsservctl), 0) :<;
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		// open_by_handle_at(2) can be used to access files outside of their intended scope, which is very dangerous.
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0) :<;
 		// also, name_to_handle_at(2).
@@ -1195,7 +1195,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// But, as systemctl even tries this, we just deny it as EPERM.
 	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chroot), 0) :<;
 #endif
-	if (container->systemd_mode) {
+	if (ruri_flag("systemd_init")) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(kexec_load), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(init_module), 0) :<;

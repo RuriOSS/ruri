@@ -220,7 +220,7 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 	ret = k2v3_add_config(bool, ret, "skip_setgroups", container->skip_setgroups);
 	// Systemd mode.
 	ret = k2v3_add_comment(ret, "Systemd mode.");
-	ret = k2v3_add_config(bool, ret, "systemd_mode", container->systemd_mode);
+	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag("systemd_init"));
 	return ret;
 }
 // Store container info.
@@ -475,7 +475,9 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->env[envlen] = NULL;
 	container->env[envlen + 1] = NULL;
 	// Get systemd_mode.
-	container->systemd_mode = k2v3_get(bool, "systemd_mode", cache);
+	if (k2v3_get(bool, "systemd_mode", cache)) {
+		ruri_feature_flag(1, "systemd_init");
+	}
 	// Qemu will only be set when initializing container.
 	free(container->cross_arch);
 	free(container->qemu_path);

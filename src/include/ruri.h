@@ -206,7 +206,6 @@ struct RURI_CONTAINER {
 	bool skip_setgroups;
 	// First init.
 	bool first_init;
-	bool systemd_mode;
 	// pid file.
 	char *_Nullable pid_file;
 	// Is health check process.

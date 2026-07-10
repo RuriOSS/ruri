@@ -356,7 +356,7 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		if (container->is_health_check) {
 			ruri_error("{red}Error: health check should not run before container is initialized QwQ\n");
 		}
-		if (!container->systemd_mode) {
+		if (!ruri_flag("systemd_init")) {
 			ruri_set_limit(container);
 		} else {
 			setup_cgroup2(container->container_id);
@@ -364,7 +364,7 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		unshare_pid = init_unshare_container(container);
 	} else {
 		container->first_init = false;
-		if (!container->systemd_mode) {
+		if (!ruri_flag("systemd_init")) {
 			ruri_set_limit(container);
 		} else {
 			join_cgroup2(container->container_id);

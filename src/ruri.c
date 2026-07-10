@@ -91,7 +91,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *disable_warnings;
 		char *auto_umount;
 		char *auto_umount_on_panic;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL };
+		char *systemd_init;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -134,6 +135,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "auto_umount_on_panic")) {
 			return flags.auto_umount_on_panic;
+		}
+		if (!strcmp(flag, "systemd_init")) {
+			return flags.systemd_init;
 		}
 		return "unknown";
 	}
@@ -192,6 +196,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "auto_umount_on_panic")) {
 		flags.auto_umount_on_panic = strdup("true");
 		return flags.auto_umount_on_panic;
+	}
+	if (!strcmp(flag, "systemd_init")) {
+		flags.systemd_init = strdup("true");
+		return flags.systemd_init;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -292,7 +300,7 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: mountpoint path is too long QwQ\n");
 		}
 	}
-	if (container->systemd_mode && container->mount_host_runtime) {
+	if (ruri_flag("systemd_init") && container->mount_host_runtime) {
 		ruri_error("{red}Error: --systemd should not run with --mount-host-runtime QwQ\n");
 	}
 	// If container_dir/.rurienv and container_dir/.ruri_umounted both exists, panic.
@@ -951,7 +959,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		} else if (strcmp(argv[index], "-z") == 0 || strcmp(argv[index], "--enable-tty-signals") == 0) {
 			container->enable_tty_signals = true;
 		} else if (strcmp(argv[index], "-y") == 0 || strcmp(argv[index], "--systemd") == 0) {
-			container->systemd_mode = true;
+			ruri_feature_flag(1, "systemd_init");
 			container->enable_unshare = true;
 		}
 		// Force enable systemd, as it is very unstable and even might panic host.
@@ -1428,7 +1436,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->enable_tty_signals = true;
 					break;
 				case 'y':
-					container->systemd_mode = true;
+					ruri_feature_flag(1, "systemd_init");
 					container->enable_unshare = true;
 					break;
 				case 'O':
@@ -1520,7 +1528,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 	}
 	// Error If systemd mode is enabled but even_unstable is not enabled, for safety.
-	if (container->systemd_mode && !even_unstable) {
+	if (ruri_flag("systemd_init") && !even_unstable) {
 		ruri_error("{red}Error: systemd mode is very unstable, you must enable --even-unstable to use it, if you know what you are doing\n");
 	}
 	// Fork to background if -b is set.

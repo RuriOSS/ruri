@@ -1215,7 +1215,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	 * NOTE: This profile is not fully tested.
 	 */
 	int res = 0;
-	if (!container->enable_default_seccomp && !container->seccomp_denied_syscall[0] && !container->systemd_mode) {
+	if (!container->enable_default_seccomp && !container->seccomp_denied_syscall[0] && !ruri_flag("systemd_init")) {
 		return;
 	}
 	scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ALLOW);
@@ -1231,7 +1231,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			ruri_check_seccomp_ret(res);
 		}
 	}
-	if (!container->enable_default_seccomp && !container->systemd_mode) {
+	if (!container->enable_default_seccomp && !ruri_flag("systemd_init")) {
 		// Disable no_new_privs bit by default.
 		seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 		// Load seccomp rules.
@@ -1320,7 +1320,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_PACKET));
 		ruri_check_seccomp_ret(res);
 		// Disallow SOCKET_RAW.
-		if (!container->systemd_mode && (ruri_is_in_caplist(container->drop_caplist, CAP_AUDIT_WRITE) || not_root_user)) {
+		if (!ruri_flag("systemd_init") && (ruri_is_in_caplist(container->drop_caplist, CAP_AUDIT_WRITE) || not_root_user)) {
 			res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(socket), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, SOCK_TYPE_MASK, SOCK_RAW));
 			ruri_check_seccomp_ret(res);
 		}
@@ -1411,7 +1411,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 				ruri_check_seccomp_ret(res);
 			}
 		}
-		if (!container->systemd_mode) {
+		if (!ruri_flag("systemd_init")) {
 			res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clone3), 0);
 			ruri_check_seccomp_ret(res);
 		}
@@ -1495,7 +1495,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_load), 0);
 	ruri_check_seccomp_ret(res);
 	// As systemd eats everything, let it cook.
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(reboot), 0);
 		ruri_check_seccomp_ret(res);
 	} else {
@@ -1506,7 +1506,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(nfsservctl), 0);
 	ruri_check_seccomp_ret(res);
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_DAC_READ_SEARCH) || not_root_user) {
-		if (!container->systemd_mode) {
+		if (!ruri_flag("systemd_init")) {
 			// open_by_handle_at(2) can be used to access files outside of their intended scope, which is very dangerous.
 			res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0);
 			ruri_check_seccomp_ret(res);
@@ -1618,7 +1618,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_PACKET));
 	ruri_check_seccomp_ret(res);
 	// Disallow SOCKET_RAW.
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(socket), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, SOCK_TYPE_MASK, SOCK_RAW));
 		ruri_check_seccomp_ret(res);
 	}
@@ -1703,7 +1703,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			ruri_check_seccomp_ret(res);
 		}
 	}
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clone3), 0);
 		ruri_check_seccomp_ret(res);
 	}
@@ -1782,7 +1782,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_load), 0);
 	ruri_check_seccomp_ret(res);
 	// As systemd eats everything, let it cook.
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(reboot), 0);
 		ruri_check_seccomp_ret(res);
 	} else {
@@ -1792,7 +1792,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// Deprecated syscall, we kill it directly.
 	res = seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(nfsservctl), 0);
 	ruri_check_seccomp_ret(res);
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		// open_by_handle_at(2) can be used to access files outside of their intended scope, which is very dangerous.
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0);
 		ruri_check_seccomp_ret(res);
@@ -1833,7 +1833,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chroot), 0);
 	ruri_check_seccomp_ret(res);
 #endif
-	if (container->systemd_mode) {
+	if (ruri_flag("systemd_init")) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(kexec_load), 0);
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0);

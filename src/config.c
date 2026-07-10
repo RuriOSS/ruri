@@ -92,7 +92,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->enable_tty_signals = false;
 	container->skip_setgroups = false;
 	container->first_init = true;
-	container->systemd_mode = false;
 	container->pid_file = NULL;
 	container->is_health_check = false;
 	container->timeout = -1.0F;
@@ -438,7 +437,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_comment(ret, "Enable systemd mode.");
 	ret = k2v3_add_comment(ret, "Also enables unshare.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "systemd_mode", container->systemd_mode);
+	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag("systemd_init"));
 	ret = k2v3_add_newline(ret);
 	return ret;
 }
@@ -588,7 +587,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	int comlen = k2v3_get(char_array, "command", cache, container->command, RURI_MAX_COMMANDS);
 	container->command[comlen] = NULL;
 	// Get systemd_mode.
-	container->systemd_mode = k2v3_get(bool, "systemd_mode", cache);
+	if (k2v3_get(bool, "systemd_mode", cache)) {
+		ruri_feature_flag(1, "systemd_init");
+	}
 	free(buf);
 	k2v3_dump(cache);
 	k2v3_free_cache(&cache);
@@ -880,9 +881,10 @@ void ruri_correct_config(const char *_Nonnull path)
 	}
 	if (!have_key("systemd_mode", buf)) {
 		ruri_warning("{green}No key systemd_mode found, set to false\n{clear}");
-		container.systemd_mode = false;
 	} else {
-		container.systemd_mode = k2v_get_key(bool, "systemd_mode", buf);
+		if (k2v_get_key(bool, "systemd_mode", buf)) {
+			ruri_feature_flag(1, "systemd_init");
+		}
 	}
 	if (!have_key("enable_seccomp_whitelist", buf)) {
 		ruri_warning("{green}No key enable_seccomp_whitelist found, set to false\n{clear}");

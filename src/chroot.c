@@ -334,7 +334,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		unlink("/dev/tty");
 		symlink("/dev/null", "/dev/tty");
 		// Setup systemd runtime environment
-		if (container->systemd_mode) {
+		if (ruri_flag("systemd_init")) {
 			setup_systemd_runtime(container);
 		}
 		if (!container->unmask_dirs) {
@@ -355,7 +355,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			mount("tmpfs", "/sys/kernel/debug", "tmpfs", MS_RDONLY, NULL);
 			mount("tmpfs", "/sys/module", "tmpfs", MS_RDONLY, NULL);
 			mount("tmpfs", "/sys/class/net", "tmpfs", MS_RDONLY, NULL);
-			if (!container->systemd_mode) {
+			if (!ruri_flag("systemd_init")) {
 				mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_RDONLY, NULL);
 			}
 			// Protect some system runtime directories by mounting themselves as read-only.
@@ -1002,7 +1002,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Umount binfmt_misc apifs.
 	umount2("/proc/sys/fs/binfmt_misc", MNT_DETACH | MNT_FORCE);
-	if (container->enable_unshare && container->first_init && container->systemd_mode) {
+	if (container->enable_unshare && container->first_init && ruri_flag("systemd_init")) {
 		/*
 		 * Setup a clean cgroup v2 mount for systemd.
 		 * Let systemd create and manage its own scopes instead of pre-configuring
@@ -1040,7 +1040,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (container->no_new_privs) {
 		prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
 	}
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		// Disallow raising ambient capabilities via the prctl(2) PR_CAP_AMBIENT_RAISE operation.
 		prctl(PR_SET_SECUREBITS, SECBIT_NO_CAP_AMBIENT_RAISE);
 	}
@@ -1057,7 +1057,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Execute command in container.
 	// Use exec(3) function because system(3) may be unavailable now.
-	if (container->systemd_mode && container->first_init) {
+	if (ruri_flag("systemd_init") && container->first_init) {
 		if (getpid() != 1) {
 			ruri_error("{red}Error: systemd mode requires the container to be init process (PID 1) QwQ\n");
 		}
@@ -1184,7 +1184,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	if (container->no_new_privs) {
 		prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
 	}
-	if (!container->systemd_mode) {
+	if (!ruri_flag("systemd_init")) {
 		// Disallow raising ambient capabilities via the prctl(2) PR_CAP_AMBIENT_RAISE operation.
 		prctl(PR_SET_SECUREBITS, SECBIT_NO_CAP_AMBIENT_RAISE);
 	}
