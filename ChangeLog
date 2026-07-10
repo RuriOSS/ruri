@@ -6,7 +6,7 @@
   * Fix pipe-sync issue in unshare container.
   * Always convert mount source to absolute path.
   * Support new feature flags:
-    - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
+   - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
     - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
     - `allow_personality`: Allow personality() syscall, for compatibility with some software like debian reprotest, box86/wine, etc.    
     - `force_panic`: The internal implementation of `--strict-mode`, will force ruri to panic on any error.    
@@ -17,6 +17,14 @@
     - `no_cgroup_ns`: disable cgroup namespace.
     - `fork_as_init`: The internal implementation of `--fork-as-init`, will make ruri fork() before exec() to be the init process in the container.
     - `disable_warnings`: The internal implementation of `--no-warnings`, will disable all warnings.
+    - `auto_umount`: The internal implementation of `--auto-umount`, will automatically umount the container when it exits.
+    - `auto_umount_on_panic`: The internal implementation of `--umount-on-panic`, will automatically umount the container when it panics.
+    - `is_health_check`: The internal implementation of `--health-check`, will run as health check process in the container.
+    - `systemd_init`: The internal implementation of `--systemd`, will enable systemd init support in the container.
+    - `enable_tty_signals`: The internal implementation of `--enable-tty-signals`, will not mask SIGTTIN and SIGTTOU signals in the container.
+    - `skip_setgroups`: The internal implementation of `--skip-setgroups`, will skip setgroups() call when changing the user in the container.
+    - `make_kvm_node`: The internal implementation of `--use-kvm`, will create /dev/kvm in the container.
+    - `empty_net_ns`: The internal implementation of `--no-network`, will disable network in the container.
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.
