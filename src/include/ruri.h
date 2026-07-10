@@ -219,8 +219,6 @@ struct RURI_CONTAINER {
 	bool is_health_check;
 	// Timeout for watchdog killer.
 	float timeout;
-	// Make ruri fork as init.
-	bool fork_as_init;
 };
 // Warnings.
 #define ruri_warning(format, ...)                                                                  \

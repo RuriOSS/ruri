@@ -1076,7 +1076,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		int sig;
 		sigwait(&sigset, &sig);
 	}
-	if (container->fork_as_init) {
+	if (ruri_flag("fork_as_init")) {
 		ruri_fork_as_init();
 	}
 	if (execvp(container->command[0], container->command) == -1) {
@@ -1208,7 +1208,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		int sig;
 		sigwait(&sigset, &sig);
 	}
-	if (container->fork_as_init) {
+	if (ruri_flag("fork_as_init")) {
 		ruri_fork_as_init();
 	}
 	// Execute command in container.

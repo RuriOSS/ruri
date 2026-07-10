@@ -19,4 +19,4 @@ And, panic() will catch core signal, detect_suid_or_capability() will check if t
 The exec() is handled by a fork(), unshare/rootless container already fork()ed, and pure chroot container has a fork in ruri.c before running ruri_run_chroot_container(). This is for pidfile daemon to get the pid of the container process.    
 Pidfile daemon is a double-forked process, it will receive message from the container process, and write it to pidfile.    
 Timeout watchdog is also a double-forked process, it will wait for the container process to exit, and if it doesn't exit in time, it will kill the container process.    
-If --fork-before-exec is enabled, ruri will fork() before exec() the command in container, so that ruri will be pid 1, to avoid zombie process.     
+If --fork-as-init is enabled, ruri will fork() before exec() the command in container, so that ruri will be pid 1, to avoid zombie process.     

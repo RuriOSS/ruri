@@ -87,7 +87,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *no_pid_ns;
 		char *no_cgroup_ns;
 		char *meow;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL };
+		char *fork_as_init;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -118,6 +119,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "meow")) {
 			return flags.meow;
+		}
+		if (!strcmp(flag, "fork_as_init")) {
+			return flags.fork_as_init;
 		}
 		return "unknown";
 	}
@@ -160,6 +164,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "meow")) {
 		flags.meow = strdup("true");
 		return flags.meow;
+	}
+	if (!strcmp(flag, "fork_as_init")) {
+		flags.fork_as_init = strdup("true");
+		return flags.fork_as_init;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -956,7 +964,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// --fork-as-init.
 		else if (strcmp(argv[index], "--fork-as-init") == 0) {
-			container->fork_as_init = true;
+			ruri_feature_flag(1, "fork_as_init");
 		}
 		// Feature flags.
 		else if (strcmp(argv[index], "--set-flag") == 0) {
@@ -1637,7 +1645,7 @@ int ruri(int argc, char **argv)
 		ruri_meow();
 	}
 	// If --fork-as-init, erase argv.
-	if (container->fork_as_init) {
+	if (ruri_flag("fork_as_init")) {
 		for (int i = 0; i < argc; i++) {
 			memset(argv[i], 0, strlen(argv[i]));
 		}

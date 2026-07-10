@@ -15,6 +15,7 @@
     - `no_ipc_ns`: disable IPC namespace.
     - `no_pid_ns`: disable PID namespace.
     - `no_cgroup_ns`: disable cgroup namespace.
+    - `fork_as_init`: The internal implementation of `--fork-as-init`, will make ruri fork() before exec() to be the init process in the container.
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.

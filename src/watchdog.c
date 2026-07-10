@@ -133,7 +133,7 @@ void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container
 				// This will exit pid_file daemon.
 				ruri_pid_file_write(RURI_PID_FILE_PANIC_TIMEOUT, 0);
 				usleep(100000); // Sleep 0.1s to wait for the pid file to be updated.
-				if (!container->fork_as_init) {
+				if (!ruri_flag("fork_as_init")) {
 					kill(to_watch, SIGKILL);
 				} else {
 					kill(to_watch, SIGUSR1);
