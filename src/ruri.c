@@ -65,7 +65,12 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *wait_before_exec;
 		char *allow_personality;
 		char *force_panic;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL };
+		char *no_time_ns;
+		char *no_uts_ns;
+		char *no_ipc_ns;
+		char *no_pid_ns;
+		char *no_cgroup_ns;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -78,6 +83,21 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "force_panic")) {
 			return flags.force_panic;
+		}
+		if (!strcmp(flag, "no_time_ns")) {
+			return flags.no_time_ns;
+		}
+		if (!strcmp(flag, "no_uts_ns")) {
+			return flags.no_uts_ns;
+		}
+		if (!strcmp(flag, "no_ipc_ns")) {
+			return flags.no_ipc_ns;
+		}
+		if (!strcmp(flag, "no_pid_ns")) {
+			return flags.no_pid_ns;
+		}
+		if (!strcmp(flag, "no_cgroup_ns")) {
+			return flags.no_cgroup_ns;
 		}
 		return "unknown";
 	}
@@ -96,6 +116,26 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "force_panic")) {
 		flags.force_panic = strdup("true");
 		return flags.force_panic;
+	}
+	if (!strcmp(flag, "no_time_ns")) {
+		flags.no_time_ns = strdup("true");
+		return flags.no_time_ns;
+	}
+	if (!strcmp(flag, "no_uts_ns")) {
+		flags.no_uts_ns = strdup("true");
+		return flags.no_uts_ns;
+	}
+	if (!strcmp(flag, "no_ipc_ns")) {
+		flags.no_ipc_ns = strdup("true");
+		return flags.no_ipc_ns;
+	}
+	if (!strcmp(flag, "no_pid_ns")) {
+		flags.no_pid_ns = strdup("true");
+		return flags.no_pid_ns;
+	}
+	if (!strcmp(flag, "no_cgroup_ns")) {
+		flags.no_cgroup_ns = strdup("true");
+		return flags.no_cgroup_ns;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -277,15 +317,18 @@ static bool is_container_dir(char *dir)
 	 * It will only check if the directory exists now.
 	 */
 	if (dir == NULL) {
+		ruri_warning("{red}Error: container directory is not set or does not exist QwQ{clear}\n");
 		return false;
 	}
 	struct stat st;
 	// Directory does not exist.
 	if (stat(dir, &st) != 0) {
+		ruri_warning("{red}Error: container directory does not exist QwQ{clear}\n");
 		return false;
 	}
 	// Not a directory.
 	if (!S_ISDIR(st.st_mode)) {
+		ruri_warning("{red}Error: container directory is not a directory QwQ{clear}\n");
 		return false;
 	}
 	return true;

@@ -52,39 +52,49 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	int unshare_ret = 0;
 	unshare_ret = unshare(CLONE_NEWNS);
 	ruri_panic_on_error(unshare_ret, 0, "{red}Unshare container need at least mount ns support QwQ\n");
-	unshare_ret = unshare(CLONE_NEWUTS);
-	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
-	unshare_ret = unshare(CLONE_NEWIPC);
-	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
-	unshare_ret = unshare(CLONE_NEWPID);
-	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
-	unshare_ret = unshare(CLONE_NEWCGROUP);
-	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
-	if (unshare(CLONE_NEWTIME) == -1) {
-		if (container->timens_realtime_offset != 0 || container->timens_monotonic_offset != 0) {
-			ruri_error("{red}Failed to unshare time namespace, --timens-offset cannot be enabled QwQ\n");
-		}
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+	if (!ruri_flag("no_uts_ns")) {
+		unshare_ret = unshare(CLONE_NEWUTS);
+		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (container->timens_monotonic_offset != 0) {
-		int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
-		if (fd < 0) {
-			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
-		}
-		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
-		write(fd, buf, strlen(buf));
-		close(fd);
+	if (!ruri_flag("no_ipc_ns")) {
+		unshare_ret = unshare(CLONE_NEWIPC);
+		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (container->timens_realtime_offset != 0) {
-		int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
-		if (fd < 0) {
-			ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
+	if (!ruri_flag("no_pid_ns")) {
+		unshare_ret = unshare(CLONE_NEWPID);
+		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
+	}
+	if (!ruri_flag("no_cgroup_ns")) {
+		unshare_ret = unshare(CLONE_NEWCGROUP);
+		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+	}
+	if (!ruri_flag("no_time_ns")) {
+		if (unshare(CLONE_NEWTIME) == -1) {
+			if (container->timens_realtime_offset != 0 || container->timens_monotonic_offset != 0) {
+				ruri_error("{red}Failed to unshare time namespace, --timens-offset cannot be enabled QwQ\n");
+			}
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 		}
-		char buf[1024] = { '\0' };
-		sprintf(buf, _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
-		write(fd, buf, strlen(buf));
-		close(fd);
+		if (container->timens_monotonic_offset != 0) {
+			int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
+			if (fd < 0) {
+				ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
+			}
+			char buf[1024] = { '\0' };
+			sprintf(buf, _Generic((time_t)0, long: "monotonic %ld 0", long long: "monotonic %lld 0", default: "monotonic %ld 0"), container->timens_monotonic_offset);
+			write(fd, buf, strlen(buf));
+			close(fd);
+		}
+		if (container->timens_realtime_offset != 0) {
+			int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
+			if (fd < 0) {
+				ruri_error("{red}Error: failed to open /proc/self/timens_offsets QwQ\n");
+			}
+			char buf[1024] = { '\0' };
+			sprintf(buf, _Generic((time_t)0, long: "boottime %ld 0", long long: "boottime %lld 0", default: "boottime %ld 0"), container->timens_realtime_offset);
+			write(fd, buf, strlen(buf));
+			close(fd);
+		}
 	}
 	unshare_ret = unshare(CLONE_FS);
 	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
@@ -181,50 +191,49 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	sprintf(uts_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/uts");
 	// Enter namespaces via setns(2).
 	int ns_fd = RURI_INIT_VALUE;
-	ns_fd = open(pid_ns_file, O_RDONLY | O_CLOEXEC);
-	if (ns_fd < 0) {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
-	} else {
-		if (setns(ns_fd, CLONE_NEWPID) == -1) {
-			ruri_error("{red}Failed to setns pid namespace QwQ\n");
+	if (!ruri_flag("no_time_ns")) {
+		ns_fd = open(time_ns_file, O_RDONLY | O_CLOEXEC);
+		if (ns_fd < 0) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+		} else {
+			if (setns(ns_fd, CLONE_NEWTIME) == -1) {
+				ruri_error("{red}Failed to setns time namespace QwQ\n");
+			}
+			close(ns_fd);
 		}
-		close(ns_fd);
 	}
-	ns_fd = open(time_ns_file, O_RDONLY | O_CLOEXEC);
-	if (ns_fd < 0) {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
-	} else {
-		if (setns(ns_fd, CLONE_NEWTIME) == -1) {
-			ruri_error("{red}Failed to setns time namespace QwQ\n");
+	if (!ruri_flag("no_uts_ns")) {
+		ns_fd = open(uts_ns_file, O_RDONLY | O_CLOEXEC);
+		if (ns_fd < 0) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
+		} else {
+			if (setns(ns_fd, CLONE_NEWUTS) == -1) {
+				ruri_error("{red}Failed to setns uts namespace QwQ\n");
+			}
+			close(ns_fd);
 		}
-		close(ns_fd);
 	}
-	ns_fd = open(uts_ns_file, O_RDONLY | O_CLOEXEC);
-	if (ns_fd < 0) {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
-	} else {
-		if (setns(ns_fd, CLONE_NEWUTS) == -1) {
-			ruri_error("{red}Failed to setns uts namespace QwQ\n");
+	if (!ruri_flag("no_cgroup_ns")) {
+		ns_fd = open(cgroup_ns_file, O_RDONLY | O_CLOEXEC);
+		if (ns_fd < 0) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+		} else {
+			if (setns(ns_fd, CLONE_NEWCGROUP) == -1) {
+				ruri_error("{red}Failed to setns cgroup namespace QwQ\n");
+			}
+			close(ns_fd);
 		}
-		close(ns_fd);
 	}
-	ns_fd = open(cgroup_ns_file, O_RDONLY | O_CLOEXEC);
-	if (ns_fd < 0) {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
-	} else {
-		if (setns(ns_fd, CLONE_NEWCGROUP) == -1) {
-			ruri_error("{red}Failed to setns cgroup namespace QwQ\n");
+	if (!ruri_flag("no_ipc_ns")) {
+		ns_fd = open(ipc_ns_file, O_RDONLY | O_CLOEXEC);
+		if (ns_fd < 0) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
+		} else {
+			if (setns(ns_fd, CLONE_NEWIPC) == -1) {
+				ruri_error("{red}Failed to setns ipc namespace QwQ\n");
+			}
+			close(ns_fd);
 		}
-		close(ns_fd);
-	}
-	ns_fd = open(ipc_ns_file, O_RDONLY | O_CLOEXEC);
-	if (ns_fd < 0) {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
-	} else {
-		if (setns(ns_fd, CLONE_NEWIPC) == -1) {
-			ruri_error("{red}Failed to setns ipc namespace QwQ\n");
-		}
-		close(ns_fd);
 	}
 	// Disable network.
 	if (container->no_network) {
@@ -245,15 +254,25 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		ns_fd = open(net_ns_file, O_RDONLY | O_CLOEXEC);
 		setns(ns_fd, CLONE_NEWNET);
 	}
-	ns_fd = open(mount_ns_file, O_RDONLY | O_CLOEXEC);
-	if (ns_fd < 0) {
+	int mount_ns_fd = open(mount_ns_file, O_RDONLY | O_CLOEXEC);
+	if (mount_ns_fd < 0) {
 		ruri_error("{red}Unshare container need at least mount ns support QwQ\n");
-	} else {
-		if (setns(ns_fd, CLONE_NEWNS) == -1) {
-			ruri_error("{red}Failed to setns mount namespace QwQ\n");
-		}
-		close(ns_fd);
 	}
+	if (!ruri_flag("no_pid_ns")) {
+		ns_fd = open(pid_ns_file, O_RDONLY | O_CLOEXEC);
+		if (ns_fd < 0) {
+			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
+		} else {
+			if (setns(ns_fd, CLONE_NEWPID) == -1) {
+				ruri_error("{red}Failed to setns pid namespace QwQ\n");
+			}
+			close(ns_fd);
+		}
+	}
+	if (setns(mount_ns_fd, CLONE_NEWNS) == -1) {
+		ruri_error("{red}Failed to setns mount namespace QwQ\n");
+	}
+	close(ns_fd);
 	// Close fds after fork().
 	unshare(CLONE_FILES);
 	// Fork itself into namespace.
