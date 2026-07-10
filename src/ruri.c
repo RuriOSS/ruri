@@ -302,6 +302,9 @@ void ruri_clear_env(char *const *_Nonnull argv)
 	char *path_env = NULL;
 	if (path_env_cont) {
 		path_env = malloc(strlen(path_env_cont) + 16);
+		if (path_env == NULL) {
+			ruri_error("{red}Failed to allocate memory QwQ\n");
+		}
 		snprintf(path_env, strlen(path_env_cont) + 16, "PATH=%s", path_env_cont);
 	}
 	char *no_logs_env = getenv("ruri_no_logs");
@@ -937,8 +940,11 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 							}
 							container->char_devs[i + 1] = malloc(16);
 							container->char_devs[i + 2] = malloc(16);
-							sprintf(container->char_devs[i + 1], "%d", major(st.st_rdev));
-							sprintf(container->char_devs[i + 2], "%d", minor(st.st_rdev));
+							if (container->char_devs[i + 1] == NULL || container->char_devs[i + 2] == NULL) {
+								ruri_error("{red}Failed to allocate memory QwQ\n");
+							}
+							snprintf(container->char_devs[i + 1], 16, "%d", major(st.st_rdev));
+							snprintf(container->char_devs[i + 2], 16, "%d", minor(st.st_rdev));
 							ruri_log("{base}Auto-detected char device: %s (major: %s, minor: %s)\n", container->char_devs[i], container->char_devs[i + 1], container->char_devs[i + 2]);
 						}
 						break;
@@ -1759,6 +1765,9 @@ int ruri(int argc, char **argv)
 	}
 	// Info of container to run.
 	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)malloc(sizeof(struct RURI_CONTAINER));
+	if (container == NULL) {
+		ruri_error("{red}Failed to allocate memory for container QwQ\n");
+	}
 	// Parse arguments.
 	parse_args(argc, argv, container);
 	// An easter egg for meow flag.

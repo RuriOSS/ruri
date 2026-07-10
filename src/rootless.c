@@ -176,6 +176,9 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		devshm_options = strdup("mode=1777");
 	} else {
 		devshm_options = malloc(strlen(container->memory) + strlen("mode=1777") + 114);
+		if (devshm_options == NULL) {
+			ruri_error("{red}Error: malloc failed QwQ\n");
+		}
 		sprintf(devshm_options, "size=%s,mode=1777", container->memory);
 	}
 	mkdir("./dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
