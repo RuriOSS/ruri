@@ -1,6 +1,8 @@
 name: Run autotest
 
 on:
+  schedule:
+    - cron: '0 1,13 * * *'
   workflow_dispatch:
   push:
     branches: [ "main" ]

@@ -5,8 +5,6 @@ on:
     paths:
       - CMakeLists.txt
       - configure.ac
-  schedule:
-    - cron: '0 1,13 * * *'
 
 jobs:
   Cmake:
