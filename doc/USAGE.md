@@ -566,4 +566,4 @@ Current supported flags:
 - `no_cgroup_ns`: disable cgroup namespace.
 - `meow`: An easter egg. It will print "meow" and exit.
 
-You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/bba879b78d02f3e992549e87229182f14c4fd870) to write your own hooks.    
+You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    
