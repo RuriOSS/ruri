@@ -377,6 +377,10 @@ void ruri_stat(const char *pid_file)
 		cprintf("{yellow}Exited with unknown status\n{clear}");
 		exit(114);
 	}
+	if (strncmp(buf, "RURI_WAIT_EXEC_", 15) == 0) {
+		cprintf("{yellow}Waiting for SIGUSR1 signal before execvp(), pid: %s\n{clear}", buf + 15);
+		exit(114);
+	}
 	// Use strtol() to convert all the buf.
 	char *endptr = NULL;
 	long pid = strtol(buf, &endptr, 10);

@@ -507,11 +507,15 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "\n{base}NS PID:{green} %d\n", container->ns_pid);
 			}
 		}
-		ruri_pid_file_write(RURI_PID_FILE_PID, container->ns_pid);
-		// Write OK to pipe to signal child process to continue.
-		if (write(sync_pipe_2[1], "OK", 2) != 2) {
+		if (!ruri_flag("wait_before_exec")) {
+			ruri_pid_file_write(RURI_PID_FILE_PID, container->ns_pid);
+		}
+		// Write YOUR_PID_OUT_{PID} to the pipe.
+		char pid_text[32] = { '\0' };
+		sprintf(pid_text, "YOUR_PID_OUT_%d", container->ns_pid);
+		if (write(sync_pipe_2[1], pid_text, strlen(pid_text)) != (ssize_t)strlen(pid_text)) {
 			close(sync_pipe_2[1]);
-			ruri_error("{red}Failed to signal child process to continue\n");
+			ruri_error("{red}Failed to write to sync pipe for child process\n");
 		}
 		close(sync_pipe_2[1]);
 		// Wait for child process to exit.
@@ -532,11 +536,20 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		ruri_error("{red}Fork error QwQ?\n");
 	} else {
 		close(sync_pipe_2[1]);
-		char ready[3] = { '\0' };
-		ssize_t n = read(sync_pipe_2[0], ready, 2);
+		char pid_text[32] = { '\0' };
+		ssize_t n = read(sync_pipe_2[0], pid_text, 31);
 		close(sync_pipe_2[0]);
-		if (n != 2 || strncmp(ready, "OK", 2) != 0) {
-			ruri_error("{red}Failed to receive signal from parent process\n");
+		if (n <= 0) {
+			ruri_error("{red}Failed to read from sync pipe for child process\n");
+		}
+		pid_text[n] = '\0';
+		if (strncmp(pid_text, "YOUR_PID_OUT_", 13) != 0) {
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to read YOUR_PID_OUT from sync pipe for child process QwQ{clear}\n");
+		}
+		char *endptr = NULL;
+		container->pid_out = strtol(pid_text + 13, &endptr, 10);
+		if (*endptr != '\0') {
+			ruri_error("{red}Failed to parse PID from sync pipe for child process\n");
 		}
 		// Init rootless container.
 		if (!container->just_chroot) {

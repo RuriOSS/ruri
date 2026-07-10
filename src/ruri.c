@@ -1783,6 +1783,7 @@ int ruri(int argc, char **argv)
 			}
 			exit(EXIT_FAILURE);
 		} else if (chroot_pid == 0) {
+			container->pid_out = getpid();
 			ruri_run_chroot_container(container);
 		} else {
 			ruri_error("{red}Failed to fork for chroot container QwQ\n");

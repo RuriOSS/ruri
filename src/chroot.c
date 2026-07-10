@@ -1074,10 +1074,8 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	ruri_profile_log("run_container() to exec(): %lldns\n", ruri_diff_time());
-	if (!container->enable_unshare) {
-		ruri_pid_file_write(RURI_PID_FILE_PID, getpid());
-	}
 	if (ruri_flag("wait_before_exec")) {
+		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);
 		// Wait for SIGUSR1 signal before execvp().
 		ruri_log("{base}Waiting for SIGUSR1 signal before execvp()...\n");
 		sigset_t sigset;
@@ -1086,6 +1084,10 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		sigprocmask(SIG_BLOCK, &sigset, NULL);
 		int sig;
 		sigwait(&sigset, &sig);
+		ruri_pid_file_write(RURI_PID_FILE_PID, container->pid_out);
+	}
+	if (!container->enable_unshare) {
+		ruri_pid_file_write(RURI_PID_FILE_PID, getpid());
 	}
 	if (ruri_flag("fork_as_init")) {
 		ruri_fork_as_init();
@@ -1210,6 +1212,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		close(i);
 	}
 	if (ruri_flag("wait_before_exec")) {
+		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);
 		// Wait for SIGUSR1 signal before execvp().
 		ruri_log("{base}Waiting for SIGUSR1 signal before execvp()...\n");
 		sigset_t sigset;
@@ -1218,6 +1221,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		sigprocmask(SIG_BLOCK, &sigset, NULL);
 		int sig;
 		sigwait(&sigset, &sig);
+		ruri_pid_file_write(RURI_PID_FILE_PID, container->pid_out);
 	}
 	if (ruri_flag("fork_as_init")) {
 		ruri_fork_as_init();

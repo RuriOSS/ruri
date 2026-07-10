@@ -50,10 +50,10 @@ int main(int argc, char *argv[])
 		argv_new[0] = "ruri"; // Program name
 		argv_new[1] = "--pid-file"; // Option flag
 		argv_new[2] = proc_fs_fd_path; // Path to the memfd file descriptor
-		for (int i = 2; i < argc; i++) {
-			argv_new[i + 1] = argv[i]; // Copy original arguments
+		for (int i = 1; i < argc; i++) {
+			argv_new[i + 2] = argv[i]; // Copy original arguments
 		}
-		argv_new[argc + 1] = NULL; // Null-terminate the argument list
+		argv_new[argc + 2] = NULL; // Null-terminate the argument list
 		execv("./ruri", argv_new); // Execute the new program
 		perror("execv"); // If execv returns, it must have failed
 		return 1;
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 				pid_file_content[bytes_read] = '\0'; // Null-terminate the string
 				printf("Current pid file content: %s\n", pid_file_content);
 				// Get pid of the child process
-				pid_t child_pid = strtol(pid_file_content, NULL, 10);
+				pid_t child_pid = strtol(pid_file_content + strlen("RURI_WAIT_EXEC_"), NULL, 10);
 				if (child_pid > 0) {
 					loop++;
 					printf("Loop %d: Child PID from pid file: %d\n", loop, child_pid);

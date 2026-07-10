@@ -495,6 +495,7 @@ WARNING: experimental and might not work as expected.
 This option allows you to write the PID of the container to a specified file.       
 pid file format:
 - RURI_INIT_{TIME} (e.g. `RURI_INIT_114514`), which is the time when the container is initialized, in nanoseconds for clock_gettime(CLOCK_MONOTONIC).
+- RURI_WAIT_EXEC_{PID} (e.g. `RURI_WAIT_EXEC_114514`), which is the pid of the container when it is waiting for SIGUSR1 signal before exec().
 - container pid (e.g. `114514`).
 - RURI_PANIC_{REASON} (e.g. `RURI_PANIC_EXE` for exec failure), which is the reason for panic if the container panics.
 - RURI_EXITED_{EXIT_CODE} (e.g. `RURI_EXITED_0`), which is the exit code if the container exits normally.

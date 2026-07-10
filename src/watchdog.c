@@ -60,6 +60,9 @@ void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg)
 	case RURI_PID_FILE_PID:
 		snprintf(buf, sizeof(buf), "%lld\n", arg);
 		break;
+	case RURI_PID_FILE_WAIT_EXEC:
+		snprintf(buf, sizeof(buf), "RURI_WAIT_EXEC_%lld\n", arg);
+		break;
 	case RURI_PID_FILE_PANIC_EXEC:
 		snprintf(buf, sizeof(buf), "RURI_PANIC_EXE\n");
 		break;

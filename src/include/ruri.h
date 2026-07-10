@@ -202,6 +202,8 @@ struct RURI_CONTAINER {
 	char *_Nullable pid_file;
 	// Timeout for watchdog killer.
 	float timeout;
+	// pid_out, pid outside the container.
+	pid_t pid_out;
 };
 // Warnings.
 #define ruri_warning(format, ...)                                                                  \
@@ -281,6 +283,7 @@ enum RURI_PROC_TYPE {
 enum RURI_PID_FILE_REQ {
 	RURI_PID_FILE_INIT,
 	RURI_PID_FILE_PID,
+	RURI_PID_FILE_WAIT_EXEC,
 	RURI_PID_FILE_PANIC_EXEC,
 	RURI_PID_FILE_PANIC_INTERNAL,
 	RURI_PID_FILE_PANIC_TIMEOUT,

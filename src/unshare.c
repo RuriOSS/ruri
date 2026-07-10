@@ -121,10 +121,14 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		} else if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{base}NS PID:{green} %d\n", unshare_pid);
 		}
-		ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
-		// parent: close read end, write sync signal to child
+		if (!ruri_flag("wait_before_exec")) {
+			ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
+		}
+		// parent: close read end, write YOUR_PID_OUT_{PID} to pipe to signal child process to continue.
 		close(sync_pipe[0]);
-		write(sync_pipe[1], "OK", 2);
+		char pid_text[32] = { '\0' };
+		sprintf(pid_text, "YOUR_PID_OUT_%d", unshare_pid);
+		write(sync_pipe[1], pid_text, strlen(pid_text));
 		int stat = 0;
 		waitpid(unshare_pid, &stat, 0);
 		// Write exit status to pid_fd.
@@ -145,16 +149,20 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	} else if (unshare_pid == 0) {
 		// child: close write end, read sync signal from parent
 		close(sync_pipe[1]);
-		char buf[16] = { 0 };
-		ssize_t n = read(sync_pipe[0], buf, sizeof(buf) - 1);
-		if (n > 0) {
-			buf[n] = '\0';
-			if (strcmp(buf, "OK") != 0) {
-				ruri_error("{red}Failed to get sync signal from parent process.\n");
-			}
-			close(sync_pipe[0]);
-		} else {
-			ruri_warn_on_error(0, 1, true, "{red}Warning: failed to read sync signal from parent process, pid file may be updated late QwQ\n");
+		char ready[32] = { '\0' };
+		ssize_t n = read(sync_pipe[0], ready, sizeof(ready) - 1);
+		close(sync_pipe[0]);
+		if (n <= 0) {
+			ruri_error("{red}Failed to read from sync pipe for child process\n");
+		}
+		if (strncmp(ready, "YOUR_PID_OUT_", 13) != 0) {
+			ruri_error("{red}Invalid sync signal from parent process: %s\n", ready);
+		}
+		// Set container->pid_out to the value read from the pipe.
+		char *endptr = NULL;
+		container->pid_out = strtol(ready + 13, &endptr, 10);
+		if (*endptr != '\0') {
+			ruri_error("{red}Failed to parse PID from sync pipe for child process\n");
 		}
 	} else {
 		// fork failed
@@ -277,14 +285,24 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		ruri_error("{red}Failed to setns mount namespace QwQ\n");
 	}
 	close(ns_fd);
-	// Close fds after fork().
-	unshare(CLONE_FILES);
 	// Fork itself into namespace.
-	// This can fix `can't fork: out of memory` issue.
+	int sync_pipe[2] = { -1, -1 };
+	if (pipe2(sync_pipe, O_CLOEXEC) < 0) {
+		ruri_error("{red}pipe2 sync failed, QwQ?\n");
+	}
 	unshare_pid = fork();
-	// Fix `can't access tty` issue.
 	if (unshare_pid > 0) {
-		ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
+		if (!ruri_flag("wait_before_exec")) {
+			ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
+		}
+		// Write YOUR_PID_OUT_{PID} to the pipe.
+		close(sync_pipe[0]);
+		char pid_text[32] = { '\0' };
+		sprintf(pid_text, "YOUR_PID_OUT_%d", unshare_pid);
+		if (write(sync_pipe[1], pid_text, strlen(pid_text)) != (ssize_t)strlen(pid_text)) {
+			close(sync_pipe[1]);
+			ruri_error("{red}Failed to write to sync pipe for child process\n");
+		}
 		// Wait until current process exit.
 		int stat = 0;
 		waitpid(unshare_pid, &stat, 0);
@@ -308,6 +326,22 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	else if (unshare_pid < 0) {
 		ruri_error("{red}Fork error, QwQ?\n");
 		return 1;
+	}
+	// Get the PID of the child process from the pipe.
+	close(sync_pipe[1]);
+	char pid_text[32] = { '\0' };
+	ssize_t n = read(sync_pipe[0], pid_text, sizeof(pid_text) - 1);
+	close(sync_pipe[0]);
+	if (n <= 0) {
+		ruri_error("{red}Failed to read from sync pipe for child process\n");
+	}
+	if (strncmp(pid_text, "YOUR_PID_OUT_", 13) != 0) {
+		ruri_error("{red}Invalid sync signal from parent process: %s\n", pid_text);
+	}
+	char *endptr = NULL;
+	container->pid_out = strtol(pid_text + 13, &endptr, 10);
+	if (*endptr != '\0') {
+		ruri_error("{red}Failed to parse PID from sync pipe for child process\n");
 	}
 	return unshare_pid;
 }
