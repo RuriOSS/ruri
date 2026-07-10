@@ -2,6 +2,7 @@
   * Add `--set-flag` for developers to enable feature flags.
   * Add a `.ruri_umounted` file to indicate that the container has been unmounted.
   * Fix a race condition when udev didn't create /dev/loopx device before ruri tries to mount it.
+  * Fix re-enter unshare container failed in v3.9.4.
   * Support new feature flags:
     - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
     - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.

@@ -2,6 +2,7 @@
 We recommend, but do not strictly require, using a prefix for commit messages to indicate the type of change.     
 The currently planned prefixes are:    
 - feat: Add a new feature.    
+- flg: Add a new feature flag.
 - fix: Fix a bug.   
 - sec: Security hardening.   
 - build: Build system changes.   

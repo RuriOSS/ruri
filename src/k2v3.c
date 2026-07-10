@@ -772,6 +772,7 @@ static char *k2v3_open_file_fallback(const char *_Nonnull path, off_t limit)
 char *k2v3_open_file(const char *_Nonnull path, off_t limit)
 {
 	// Try O_DIRECT first, if it fails, fallback to normal read.
+	// Maybe can mitigate page cache based attacks, but not guaranteed.
 	int fd = open(path, O_RDONLY | O_CLOEXEC | O_DIRECT);
 	if (fd < 0) {
 		return k2v3_open_file_fallback(path, limit);
