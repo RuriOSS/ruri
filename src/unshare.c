@@ -110,6 +110,8 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		ruri_error("{red}pipe2 sync failed, QwQ?\n");
 	}
 	// Fork itself into namespace.
+	// ruri_store_info() should be called before child process do pivot_root(2),
+	// as the whole filesystem will be changed after pivot_root(2).
 	unshare_pid = fork();
 	if (unshare_pid > 0) {
 		// Store container info.

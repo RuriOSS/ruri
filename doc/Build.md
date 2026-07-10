@@ -1,13 +1,14 @@
 # Dependency:
 libcap, libseccomp, libpthread.      
-# Build using build.c (experimental)
+# Build using build.c (experimental):
 We are very happy to introduce a new build system for ruri: build.c        
 It's a pure C program that does not depend on any external build system.       
 IT IS A BIG STEP BACKWARDS THE HISTORY OF COMPUTER SCIENCE!!!         
 That's great :)         
 To use it, just `cc build.c` and `./a.out`.       
-for help, see `./a.out -h`.          
-# Build using autoconf (recommended)
+For help, see `./a.out -h`.          
+Btw, I prefer to use it to build ruri, because it is faster and the cmdline is simpler.    
+# Build using autoconf (recommended):
 ```
 git clone https://github.com/rurioss/ruri
 cd ruri

@@ -10,6 +10,7 @@ Or, for Android, run https://github.com/rurioss/daijin/raw/refs/heads/main/src/s
 Systemd needs pid namespace, make sure that your kernel has full support for namespaces.       
 You can now use `ruri --systemd --even-unstable /path/to/container /sbin/init` to try booting it up.      
 Some services like `systemd-resolved` might not work, you should disable or mask them.      
+*WARNING*: systemd is not fully supported, and it might cause your Android device crash, please use it with caution.    
 # About container environment:      
 For safety, like default docker container, ruri will mask some directory in /sys and /proc, drop unnecessary capabilities, and you are not able to run command like `mknod` or `mount` by default.      
 # About capability:      
