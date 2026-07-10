@@ -173,7 +173,7 @@ void ruri_show_helps(void)
 	cprintf("{base}        for example: `ruri -l memory=1M -l cpupercent=60 -l cpuset=1 /test`\n");
 	cprintf("{base}(*7)  : If you use a username, please make sure it's in /etc/passwd in the container\n");
 	cprintf("{base}(*8)  : This option is only for unshare containers\n");
-	cprintf("{base}(*9) : This option needs net ns, and will enable unshare feature by default\n");
+	cprintf("{base}(*9)  : This option needs net ns, and will enable unshare feature by default\n");
 	cprintf("{base}(*10) : For example, `-I kvm 10 232` or `-I dri/card0 226 0`. If major is set to 0, ruri will auto-detect the major and minor number from the host\n");
 	cprintf("{base}(*11) : This feature might not work. The value is in seconds. This feature will auto-enable unshare\n");
 	cprintf("{base}(*12) : This can only be used when the `-N` option is enabled\n");

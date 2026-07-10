@@ -27,7 +27,11 @@
 ```
 
 > [!WARNING]
-> Always check the test ci status before using the latest version, if it's failed, there must be some core functions breaked, and you should not use it, and wait the author to fix it.    
+> We are currently doing many works to improve security and extensibility, and also refectoring some old unstable implementations, so the latest version may be unstable.    
+>
+> Please always check the test ci status before using the latest version, if it's failed, there must be some core functions breaked, and you should not use it, and wait the author to fix it.    
+>
+> But as we promised, we will keep backward compatibility of CLI usage and config file since v3.9.0, so don't worry for compatibility, and our CI will always make sure that core functions are working.    
 
 
 # About:
