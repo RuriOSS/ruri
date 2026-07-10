@@ -371,5 +371,7 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	// Check if we have joined the container's namespaces.
 	if (unshare_pid == 0) {
 		ruri_run_chroot_container(container);
+	} else {
+		ruri_error("{red}Error: unshare_pid is not 0, something went wrong QwQ\n");
 	}
 }
