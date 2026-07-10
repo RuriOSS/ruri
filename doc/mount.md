@@ -119,4 +119,6 @@ This mounts `/dev/sdb1` at `/mnt/disk` as read-only and with the `noexec` flag e
 
 The order should be: `[FLAGS]:[FSTYPE:][SOURCE]`, cannot be mixed. For example, `RDONLY:EXT4:/dev/sdb1` is valid, but `EXT4:RDONLY:/dev/sdb1` is not.
 # NOTE:
+It's very very recommended to use absolute paths for source and target, to avoid confusion.    
+If you write `-m RDONLY:../foo /bar`, and use it in your config file, it cannot work when your cwd does not contain `../foo`.    
 If you have a dir called `./RDONLY:/tmp` or something like that, ruri might mount it instead of `read-only /tmp`, then you should remove your brain.      

@@ -2,6 +2,8 @@
 
 BSD-style usage is partially supported now. For example, you can use `-pW /root`, but `-W/root` is not allowed.
 
+It's very recommended to use absolute paths for files and directories, to avoid confusion. Ruri might fail to find the file if you use relative paths, especially when you run with config files.    
+
 # Usage
 
 ```sh
