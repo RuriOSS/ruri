@@ -559,5 +559,10 @@ Current supported flags:
 - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
 - `allow_personality`: Allow personality() syscall, for compatibility with some software like debian reprotest, box86/wine, etc.    
 - `force_panic`: The internal implementation of `--strict-mode`, will force ruri to panic on any error.    
+- `no_time_ns`: disable time namespace.
+- `no_uts_ns`: disable UTS namespace.
+- `no_ipc_ns`: disable IPC namespace.
+- `no_pid_ns`: disable PID namespace.
+- `no_cgroup_ns`: disable cgroup namespace.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/bba879b78d02f3e992549e87229182f14c4fd870) to write your own hooks.    

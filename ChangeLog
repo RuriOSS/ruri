@@ -7,6 +7,12 @@
     - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
     - `allow_personality`: Allow personality() syscall, for compatibility with some software like debian reprotest, box86/wine, etc.    
     - `force_panic`: The internal implementation of `--strict-mode`, will force ruri to panic on any error.    
+    - `no_time_ns`: disable time namespace.
+    - `no_uts_ns`: disable UTS namespace.
+    - `no_ipc_ns`: disable IPC namespace.
+    - `no_pid_ns`: disable PID namespace.
+    - `no_cgroup_ns`: disable cgroup namespace.
+
 # v3.9.4 (no release):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.
