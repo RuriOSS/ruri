@@ -131,6 +131,20 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		close(open("./dev/kvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/kvm", "./dev/kvm", NULL, MS_BIND, NULL);
 	}
+	if (ruri_flag("create_gunyah_node")) {
+		if (!ruri_flag("disable_warnings")) {
+			ruri_warning("{green} How you made rootless container work on qcom devices? Crazy!");
+		}
+		close(open("./dev/gunyah", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/gunyah", "./dev/gunyah", NULL, MS_BIND, NULL);
+	}
+	if (ruri_flag("create_geniezone_node")) {
+		if (!ruri_flag("disable_warnings")) {
+			ruri_warning("{green} How you made rootless container work on mtk devices? Crazy!");
+		}
+		close(open("./dev/gzvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/gzvm", "./dev/gzvm", NULL, MS_BIND, NULL);
+	}
 	mkdir("./dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 	mount("devpts", "./dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
 	symlink("./dev/pts/ptmx", "./dev/ptmx");

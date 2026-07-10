@@ -574,6 +574,8 @@ Current supported flags:
 - `skip_setgroups`: The internal implementation of `--skip-setgroups`, will skip setgroups() call when changing the user in the container.
 - `make_kvm_node`: The internal implementation of `--use-kvm`, will create /dev/kvm in the container.
 - `empty_net_ns`: The internal implementation of `--no-network`, will disable network in the container.
+- `create_gunyah_node`: Will create /dev/gunyah in the container, for compatibility with Qcom gunyah hypervisor.
+- `create_geniezone_node`: Will create /dev/gzvm in the container, for compatibility with MTK geniezone hypervisor.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    

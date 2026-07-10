@@ -25,6 +25,8 @@
     - `skip_setgroups`: The internal implementation of `--skip-setgroups`, will skip setgroups() call when changing the user in the container.
     - `make_kvm_node`: The internal implementation of `--use-kvm`, will create /dev/kvm in the container.
     - `empty_net_ns`: The internal implementation of `--no-network`, will disable network in the container.
+    - `create_gunyah_node`: Will create /dev/gunyah in the container, for compatibility with Qcom gunyah hypervisor.
+    - `create_geniezone_node`: Will create /dev/gzvm in the container, for compatibility with MTK geniezone hypervisor.
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.

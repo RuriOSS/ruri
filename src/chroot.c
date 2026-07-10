@@ -319,6 +319,17 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/kvm, will continue.\n");
 			chmod("/dev/kvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
+		// Gunyah and GenieZone nodes.
+		if (ruri_flag("create_gunyah_node")) {
+			res = mknod("/dev/gunyah", S_IFCHR, makedev(10, 124));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/gunyah, will continue.\n");
+			chmod("/dev/gunyah", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+		}
+		if (ruri_flag("create_geniezone_node")) {
+			res = mknod("/dev/gzvm", S_IFCHR, makedev(10, 107));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/gzvm, will continue.\n");
+			chmod("/dev/gzvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+		}
 		// Create some system runtime link files in /dev.
 		symlink("/proc/self/fd", "/dev/fd");
 		symlink("/proc/self/fd/0", "/dev/stdin");
