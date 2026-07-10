@@ -183,8 +183,6 @@ struct RURI_CONTAINER {
 	char *_Nullable user;
 	// Hostname.
 	char *_Nullable hostname;
-	// No network.
-	bool no_network;
 	// Char devices.
 	char *_Nonnull char_devs[RURI_MAX_CHAR_DEVS];
 	// Hidepid for procfs.

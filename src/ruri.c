@@ -96,7 +96,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *enable_tty_signals;
 		char *skip_setgroups;
 		char *create_kvm_node;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL };
+		char *empty_net_ns;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -154,6 +155,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "create_kvm_node")) {
 			return flags.create_kvm_node;
+		}
+		if (!strcmp(flag, "empty_net_ns")) {
+			return flags.empty_net_ns;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -233,6 +237,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "create_kvm_node")) {
 		flags.create_kvm_node = strdup("true");
 		return flags.create_kvm_node;
+	}
+	if (!strcmp(flag, "empty_net_ns")) {
+		flags.empty_net_ns = strdup("true");
+		return flags.empty_net_ns;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -700,7 +708,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		// No network.
 		else if (strcmp(argv[index], "-x") == 0 || strcmp(argv[index], "--no-network") == 0) {
 			container->enable_unshare = true;
-			container->no_network = true;
+			ruri_feature_flag(1, "empty_net_ns");
 		}
 		// Use kvm.
 		else if (strcmp(argv[index], "-K") == 0 || strcmp(argv[index], "--use-kvm") == 0) {
@@ -1155,7 +1163,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->unmask_dirs = true;
 					break;
 				case 'x':
-					container->no_network = true;
+					ruri_feature_flag(1, "empty_net_ns");
 					break;
 				case 'K':
 					ruri_feature_flag(1, "create_kvm_node");

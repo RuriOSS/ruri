@@ -306,7 +306,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_comment(ret, "Disable network.");
 	ret = k2v3_add_comment(ret, "This also need enable_unshare to be true.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "no_network", container->no_network);
+	ret = k2v3_add_config(bool, ret, "no_network", ruri_flag("empty_net_ns"));
 	ret = k2v3_add_newline(ret);
 	// Use kvm.
 	ret = k2v3_add_comment(ret, "Use kvm");
@@ -528,7 +528,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get hostname.
 	container->hostname = k2v3_get(char, "hostname", cache);
 	// Get no_network.
-	container->no_network = k2v3_get(bool, "no_network", cache);
+	if (k2v3_get(bool, "no_network", cache)) {
+		ruri_feature_flag(1, "empty_net_ns");
+	}
 	// Get use_kvm.
 	if (k2v3_get(bool, "create_kvm_node", cache)) {
 		ruri_feature_flag(1, "create_kvm_node");
@@ -844,10 +846,9 @@ void ruri_correct_config(const char *_Nonnull path)
 	}
 	if (!have_key("no_network", buf)) {
 		ruri_warning("{green}No key no_network found, set to false\n{clear}");
-		container.no_network = false;
 	} else {
-		container.no_network = k2v_get_key(bool, "no_network", buf);
-		if (container.no_network) {
+		if (k2v_get_key(bool, "no_network", buf)) {
+			ruri_feature_flag(1, "empty_net_ns");
 			container.enable_unshare = true;
 		}
 	}

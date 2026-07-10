@@ -459,7 +459,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		if (unshare(CLONE_FS) == -1) {
 			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
 		}
-		if (container->no_network) {
+		if (ruri_flag("empty_net_ns")) {
 			if (unshare(CLONE_NEWNET) == -1) {
 				ruri_error("{red}--no-network detected, but failed to unshare network namespace QwQ\n");
 			}

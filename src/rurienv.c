@@ -177,7 +177,7 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 	ret = k2v3_add_config(bool, ret, "no_warnings", ruri_flag("disable_warnings"));
 	// no_network.
 	ret = k2v3_add_comment(ret, "Disable network.");
-	ret = k2v3_add_config(bool, ret, "no_network", container->no_network);
+	ret = k2v3_add_config(bool, ret, "no_network", ruri_flag("empty_net_ns"));
 	// rootless
 	ret = k2v3_add_comment(ret, "Run rootless container.");
 	ret = k2v3_add_config(bool, ret, "rootless", container->rootless);
@@ -469,7 +469,9 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		container->user = k2v3_get(char, "user", cache);
 	}
 	// Get no_network.
-	container->no_network = k2v3_get(bool, "no_network", cache);
+	if (k2v3_get(bool, "no_network", cache)) {
+		ruri_feature_flag(1, "empty_net_ns");
+	}
 	// Get oom_score_adj.
 	container->oom_score_adj = k2v3_get(int, "oom_score_adj", cache);
 	// Get env.

@@ -99,7 +99,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	unshare_ret = unshare(CLONE_FS);
 	ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
 	// Disable network.
-	if (container->no_network) {
+	if (ruri_flag("empty_net_ns")) {
 		if (unshare(CLONE_NEWNET) == -1) {
 			ruri_error("{red}Failed to unshare network namespace, --no-network cannot be enabled QwQ\n");
 		}
@@ -240,7 +240,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	// Disable network.
-	if (container->no_network) {
+	if (ruri_flag("empty_net_ns")) {
 		char net_ns_file[PATH_MAX] = { '\0' };
 		sprintf(net_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/net");
 		ns_fd = open(net_ns_file, O_RDONLY | O_CLOEXEC);
