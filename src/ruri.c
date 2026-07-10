@@ -57,9 +57,25 @@ long long ruri_diff_time(void)
 	return 0;
 }
 #endif
+static void ruri_meow(void)
+{
+	char *meows[] = { "(=￣ω￣=)", "(=^‥^=)", "≽^•⩊•^≼", "^•ω•^=", "₍^ >ヮ<^₎", "~(=^‥^)", "/ᐠ｡ꞈ｡ᐟ\\", "/ᐠ .ᆺ. ᐟ\\ﾉ", "₍^. .^₎⟆", "ᓚ₍⑅^..^₎♡", "/ᐠ - ˕ -マ", "^. .^₎Ⳋ", "/ᐠ ¬`‸´¬ マ", "⚞ • ⚟", "/ᐠ ˵> ˕ <˵マ", "ᗜ⩊ᗜ", "(˵◝ ⩊  ◜˵マ", "(•˕ •マ.ᐟ", NULL };
+	// NOLINTBEGIN
+	// Get a random meow
+	srand(time(NULL));
+	int random_index = rand() % (int)(sizeof(meows) / sizeof(meows[0]) - 1);
+	// NOLINTEND
+	cprintf("\n{base}  %s{clear}\n", meows[random_index]);
+	cprintf("{base}How do you meow?{clear}\n");
+	exit(EXIT_SUCCESS);
+}
 // Feature flags.
 char *ruri_feature_flag(int req, char *_Nonnull flag)
 {
+	/*
+	 * We set all value to char*,
+	 * because we will have someting like flag_foo="bar" in the future.
+	 */
 	static thread_local struct {
 		char *ban_futex_pi;
 		char *wait_before_exec;
@@ -70,7 +86,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *no_ipc_ns;
 		char *no_pid_ns;
 		char *no_cgroup_ns;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL };
+		char *meow;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -98,6 +115,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "no_cgroup_ns")) {
 			return flags.no_cgroup_ns;
+		}
+		if (!strcmp(flag, "meow")) {
+			return flags.meow;
 		}
 		return "unknown";
 	}
@@ -136,6 +156,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "no_cgroup_ns")) {
 		flags.no_cgroup_ns = strdup("true");
 		return flags.no_cgroup_ns;
+	}
+	if (!strcmp(flag, "meow")) {
+		flags.meow = strdup("true");
+		return flags.meow;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -343,6 +367,7 @@ void ruri_check_container_dir(char *dir)
 		ruri_error("{red}Error: container directory does not exist QwQ\n");
 	}
 }
+
 static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
@@ -384,15 +409,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Meow~
 		if (strcmp(argv[index], "meow") == 0) {
-			char *meows[] = { "(=￣ω￣=)", "(=^‥^=)", "≽^•⩊•^≼", "^•ω•^=", "₍^ >ヮ<^₎", "~(=^‥^)", "/ᐠ｡ꞈ｡ᐟ\\", "/ᐠ .ᆺ. ᐟ\\ﾉ", "₍^. .^₎⟆", "ᓚ₍⑅^..^₎♡", "/ᐠ - ˕ -マ", "^. .^₎Ⳋ", "/ᐠ ¬`‸´¬ マ", "⚞ • ⚟", "/ᐠ ˵> ˕ <˵マ", "ᗜ⩊ᗜ", "(˵◝ ⩊  ◜˵マ", "(•˕ •マ.ᐟ", NULL };
-			// NOLINTBEGIN
-			// Get a random meow
-			srand(time(NULL));
-			int random_index = rand() % (int)(sizeof(meows) / sizeof(meows[0]) - 1);
-			// NOLINTEND
-			cprintf("\n{base}  %s{clear}\n", meows[random_index]);
-			cprintf("{base}How do you meow?{clear}\n");
-			exit(EXIT_SUCCESS);
+			ruri_meow();
 		}
 		// Show version info.
 		if (strcmp(argv[index], "-v") == 0 || strcmp(argv[index], "--version") == 0) {
@@ -1611,6 +1628,10 @@ int ruri(int argc, char **argv)
 	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)malloc(sizeof(struct RURI_CONTAINER));
 	// Parse arguments.
 	parse_args(argc, argv, container);
+	// An easter egg for meow flag.
+	if (ruri_flag("meow")) {
+		ruri_meow();
+	}
 	// If --fork-as-init, erase argv.
 	if (container->fork_as_init) {
 		for (int i = 0; i < argc; i++) {

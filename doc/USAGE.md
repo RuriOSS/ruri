@@ -564,5 +564,6 @@ Current supported flags:
 - `no_ipc_ns`: disable IPC namespace.
 - `no_pid_ns`: disable PID namespace.
 - `no_cgroup_ns`: disable cgroup namespace.
+- `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/bba879b78d02f3e992549e87229182f14c4fd870) to write your own hooks.    
