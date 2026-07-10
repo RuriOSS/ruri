@@ -65,6 +65,7 @@ export SUBTEST_NO=5
 export SUBTEST_DESCRIPTION="Test unshare container"
 show_subtest_description
 cd ${TMPDIR}
+./ruri -U ./test
 ./ruri -u ./test dd if=/dev/zero of=/nullfile bs=1M count=1
 if [[ ! -e test/nullfile ]]; then
     error "File /nullfile does not exist!"

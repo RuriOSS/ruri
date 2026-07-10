@@ -268,12 +268,12 @@ struct RURI_CONTAINER {
 	} while (0)
 // Log system.
 #if defined(RURI_DEBUG)
-#define ruri_log(format, ...)                                                                                                         \
-	do {                                                                                                                          \
-		struct timeval tv;                                                                                                    \
-		gettimeofday(&tv, NULL);                                                                                              \
-		cfprintf(stderr, "{green}[%ld.%06ld] in %s() at %s line %d:\n", tv.tv_sec, tv.tv_usec, __func__, __FILE__, __LINE__); \
-		cfprintf(stderr, format, ##__VA_ARGS__);                                                                              \
+#define ruri_log(format, ...)                                                                                                                               \
+	do {                                                                                                                                                \
+		struct timeval tv;                                                                                                                          \
+		gettimeofday(&tv, NULL);                                                                                                                    \
+		cfprintf(stderr, "{green}[%ld.%06ld] from pid %d in %s() at %s line %d:\n", tv.tv_sec, tv.tv_usec, getpid(), __func__, __FILE__, __LINE__); \
+		cfprintf(stderr, format, ##__VA_ARGS__);                                                                                                    \
 	} while (0)
 #else
 #define ruri_log(format, ...)
