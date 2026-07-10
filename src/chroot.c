@@ -722,7 +722,7 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 	 */
 	int res = 0;
 	setgroups(0, NULL);
-	if (container->skip_setgroups) {
+	if (ruri_flag("skip_setgroups")) {
 		if (container->user != NULL) {
 			if (atoi(container->user) > 0) {
 				res = setgid((gid_t)atoi(container->user));

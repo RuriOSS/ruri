@@ -89,7 +89,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	// (86400 is the seconds of a day).
 	container->container_id = (int)(tm % 86400);
 	container->masked_path[0] = NULL;
-	container->skip_setgroups = false;
 	container->first_init = true;
 	container->pid_file = NULL;
 	container->timeout = -1.0F;
@@ -428,7 +427,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_newline(ret);
 	// skip_setgroups.
 	ret = k2v3_add_comment(ret, "Skip setgroups() call.");
-	ret = k2v3_add_config(bool, ret, "skip_setgroups", container->skip_setgroups);
+	ret = k2v3_add_config(bool, ret, "skip_setgroups", ruri_flag("skip_setgroups"));
 	ret = k2v3_add_newline(ret);
 	// systemd_mode.
 	// WARNING: This cannot enable --even-unstable.
@@ -538,7 +537,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get oom_score_adj.
 	container->oom_score_adj = k2v3_get(int, "oom_score_adj", cache);
 	// Get skip_setgroups.
-	container->skip_setgroups = k2v3_get(bool, "skip_setgroups", cache);
+	if (k2v3_get(bool, "skip_setgroups", cache)) {
+		ruri_feature_flag(1, "skip_setgroups");
+	}
 	// Get user.
 	if (container->user == NULL) {
 		container->user = k2v3_get(char, "user", cache);

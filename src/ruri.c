@@ -94,7 +94,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *systemd_init;
 		char *is_health_check;
 		char *enable_tty_signals;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL };
+		char *skip_setgroups;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -146,6 +147,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "enable_tty_signals")) {
 			return flags.enable_tty_signals;
+		}
+		if (!strcmp(flag, "skip_setgroups")) {
+			return flags.skip_setgroups;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -217,6 +221,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "enable_tty_signals")) {
 		flags.enable_tty_signals = strdup("true");
 		return flags.enable_tty_signals;
+	}
+	if (!strcmp(flag, "skip_setgroups")) {
+		flags.skip_setgroups = strdup("true");
+		return flags.skip_setgroups;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -663,7 +671,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Skip setting groups.
 		else if (strcmp(argv[index], "-g") == 0 || strcmp(argv[index], "--skip-setgroups") == 0) {
-			container->skip_setgroups = true;
+			ruri_feature_flag(1, "skip_setgroups");
 		}
 		// Do not show warnings.
 		else if (strcmp(argv[index], "-w") == 0 || strcmp(argv[index], "--no-warnings") == 0) {
@@ -1103,7 +1111,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					dump_config = true;
 					break;
 				case 'g':
-					container->skip_setgroups = true;
+					ruri_feature_flag(1, "skip_setgroups");
 					break;
 				case 'u':
 					container->enable_unshare = true;

@@ -200,8 +200,6 @@ struct RURI_CONTAINER {
 	int oom_score_adj;
 	// Masked path.
 	char *_Nonnull masked_path[RURI_MAX_MOUNTPOINTS + 2];
-	// Skip setting groups for user
-	bool skip_setgroups;
 	// First init.
 	bool first_init;
 	// pid file.

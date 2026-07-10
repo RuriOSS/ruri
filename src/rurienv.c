@@ -217,7 +217,7 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 	ret = k2v3_add_newline(ret);
 	// skip_setgroups.
 	ret = k2v3_add_comment(ret, "Skip setgroups() call.");
-	ret = k2v3_add_config(bool, ret, "skip_setgroups", container->skip_setgroups);
+	ret = k2v3_add_config(bool, ret, "skip_setgroups", ruri_flag("skip_setgroups"));
 	// Systemd mode.
 	ret = k2v3_add_comment(ret, "Systemd mode.");
 	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag("systemd_init"));
@@ -439,11 +439,13 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		}
 	}
 	// Get skip_setgroups.
-	container->skip_setgroups = k2v3_get(bool, "skip_setgroups", cache);
-	// Check if skip_setgroups changed.
-	if (backup->skip_setgroups != container->skip_setgroups) {
-		if (!ruri_flag("disable_warnings")) {
-			ruri_warning("{yellow}.rurienv detected, skip_setgroups changed{clear}\n");
+	if (k2v3_get(bool, "skip_setgroups", cache)) {
+		ruri_feature_flag(1, "skip_setgroups");
+		// Check if skip_setgroups changed.
+		if (!ruri_flag("skip_setgroups")) {
+			if (!ruri_flag("disable_warnings")) {
+				ruri_warning("{yellow}.rurienv detected, skip_setgroups changed{clear}\n");
+			}
 		}
 	}
 	// Get seccomp_denied_syscall.
