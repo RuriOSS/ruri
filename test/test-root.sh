@@ -3,6 +3,7 @@ source global.sh
 
 # This will set $TEST_ROOT
 export TEST_ROOT=$(pwd)
+export ruri_no_logs=1
 
 DESCRIPTION="This is a test script that runs all test scripts."
 echo -e "${BASE}Running $0"

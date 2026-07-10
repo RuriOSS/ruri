@@ -38,8 +38,5 @@ int main(int argc, char **argv)
 	 * Nothing here, just call ruri().
 	 * So that we can make ruri built-in into other programs easily.
 	 */
-	for (int i = 0; i < argc; i++) {
-		ruri_log("{base}argv[%d]: {cyan}%s\n", i, argv[i]);
-	}
 	return ruri(argc, argv);
 }

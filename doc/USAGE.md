@@ -578,6 +578,7 @@ Current supported flags:
 - `create_gunyah_node`: Will create /dev/gunyah in the container, for compatibility with Qcom gunyah hypervisor.
 - `create_geniezone_node`: Will create /dev/gzvm in the container, for compatibility with MTK geniezone hypervisor.
 - `no_reset_pidfile`: will keep writing to the pidfile without cleaning it. For debugging.
+- `no_logs`: ruri will auto convert `ruri_no_logs` env to this flag, and will disable all logs. For debugging.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    

@@ -101,7 +101,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *create_geniezone_node;
 		char *empty_net_ns;
 		char *no_reset_pidfile;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL, .create_geniezone_node = NULL, .create_gunyah_node = NULL, .no_reset_pidfile = NULL };
+		char *no_logs;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL, .create_geniezone_node = NULL, .create_gunyah_node = NULL, .no_reset_pidfile = NULL, .no_logs = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -171,6 +172,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "no_reset_pidfile")) {
 			return flags.no_reset_pidfile;
+		}
+		if (!strcmp(flag, "no_logs")) {
+			return flags.no_logs;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -267,6 +271,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		flags.no_reset_pidfile = strdup("true");
 		return flags.no_reset_pidfile;
 	}
+	if (!strcmp(flag, "no_logs")) {
+		flags.no_logs = strdup("true");
+		return flags.no_logs;
+	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
 }
@@ -296,7 +304,13 @@ void ruri_clear_env(char *const *_Nonnull argv)
 		path_env = malloc(strlen(path_env_cont) + 16);
 		snprintf(path_env, strlen(path_env_cont) + 16, "PATH=%s", path_env_cont);
 	}
-	char *envp[] = { "ruri_rexec=1", path_env, NULL };
+	char *no_logs_env = getenv("ruri_no_logs");
+	if (no_logs_env) {
+		no_logs_env = strdup("ruri_no_logs=1");
+	} else {
+		no_logs_env = NULL;
+	}
+	char *envp[] = { "ruri_rexec=1", path_env, no_logs_env, NULL };
 	if (getenv("ruri_rexec") == NULL) {
 		// Use memfd to store ruri binary.
 		// This is to prevent ruri binary from being modified by the container.
@@ -328,6 +342,7 @@ void ruri_clear_env(char *const *_Nonnull argv)
 		}
 	} else {
 		free(path_env);
+		free(no_logs_env);
 		return;
 	}
 }
@@ -1734,6 +1749,14 @@ int ruri(int argc, char **argv)
 	ruri_clear_env(argv);
 	// Unset ruri_rexec env.
 	unsetenv("ruri_rexec");
+	char *no_logs_env = getenv("ruri_no_logs");
+	if (no_logs_env != NULL) {
+		ruri_feature_flag(1, "no_logs");
+		unsetenv("ruri_no_logs");
+	}
+	for (int i = 0; i < argc; i++) {
+		ruri_log("{base}argv[%d]: {cyan}%s\n", i, argv[i]);
+	}
 	// Info of container to run.
 	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)malloc(sizeof(struct RURI_CONTAINER));
 	// Parse arguments.
