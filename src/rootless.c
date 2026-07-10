@@ -415,7 +415,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 			close(net_ns_fd);
 		}
 	} else {
-		if (container->is_health_check) {
+		if (ruri_flag("is_health_check")) {
 			ruri_error("{red}Health check should not run when container is not initialized QwQ\n");
 		}
 		// We need to own mount namespace.

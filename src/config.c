@@ -93,7 +93,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->skip_setgroups = false;
 	container->first_init = true;
 	container->pid_file = NULL;
-	container->is_health_check = false;
 	container->timeout = -1.0F;
 	container->enable_seccomp_whitelist = false;
 }

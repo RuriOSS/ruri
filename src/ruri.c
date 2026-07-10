@@ -92,7 +92,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *auto_umount;
 		char *auto_umount_on_panic;
 		char *systemd_init;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL };
+		char *is_health_check;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -139,6 +140,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		if (!strcmp(flag, "systemd_init")) {
 			return flags.systemd_init;
 		}
+		if (!strcmp(flag, "is_health_check")) {
+			return flags.is_health_check;
+		}
+		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
 	}
 	if (!strcmp(flag, "ban_futex_pi")) {
@@ -200,6 +205,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "systemd_init")) {
 		flags.systemd_init = strdup("true");
 		return flags.systemd_init;
+	}
+	if (!strcmp(flag, "is_health_check")) {
+		flags.is_health_check = strdup("true");
+		return flags.is_health_check;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -988,7 +997,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Is health check process.
 		else if (strcmp(argv[index], "--health-check") == 0) {
-			container->is_health_check = true;
+			ruri_feature_flag(1, "is_health_check");
 		}
 		// --enable-seccomp-whitelist
 		else if (strcmp(argv[index], "--enable-seccomp-whitelist") == 0) {

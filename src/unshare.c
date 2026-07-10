@@ -353,7 +353,7 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		container = ruri_read_info(container, container->container_dir);
 	}
 	if (container->ns_pid < 0) {
-		if (container->is_health_check) {
+		if (ruri_flag("is_health_check")) {
 			ruri_error("{red}Error: health check should not run before container is initialized QwQ\n");
 		}
 		if (!ruri_flag("systemd_init")) {

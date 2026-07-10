@@ -208,8 +208,6 @@ struct RURI_CONTAINER {
 	bool first_init;
 	// pid file.
 	char *_Nullable pid_file;
-	// Is health check process.
-	bool is_health_check;
 	// Timeout for watchdog killer.
 	float timeout;
 };
