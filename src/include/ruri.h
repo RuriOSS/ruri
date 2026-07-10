@@ -377,6 +377,8 @@ void ruri_fork_as_init(void);
 void ruri_check_container_dir(char *dir);
 char *ruri_feature_flag(int req, char *_Nonnull flag);
 bool ruri_flag(char *_Nonnull flag);
+void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container);
+void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

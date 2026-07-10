@@ -1531,6 +1531,10 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 	}
 	// Build the caplist to drop.
 	ruri_build_caplist(container->drop_caplist, privileged, drop_caplist_extra, keep_caplist_extra);
+	// Convert mountpoints to absolute path.
+	ruri_convert_mountpoints_to_absolute(container);
+	// Convert rootfs source to absolute path.
+	ruri_convert_rootfs_source_to_absolute(container);
 	// Dump config.
 	if (dump_config) {
 		// Check if container directory is given.

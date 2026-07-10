@@ -71,6 +71,202 @@ int ruri_mkdirs(const char *_Nonnull dir, mode_t mode)
 	}
 	return ret;
 }
+static char *cut_mount_flags(const char *_Nonnull source)
+{
+	/*
+	 * Cut all mount flags from source, and return the flag.
+	 * Flags:
+	 *   "RDONLY:"      -> MS_RDONLY
+	 *   "NOSUID:"      -> MS_NOSUID
+	 *   "NODEV:"       -> MS_NODEV
+	 *   "NOEXEC:"      -> MS_NOEXEC
+	 *   "NODIRATIME:"  -> MS_NODIRATIME
+	 *   "NOATIME:"     -> MS_NOATIME
+	 *   "SYNCHRONOUS:" -> MS_SYNCHRONOUS
+	 *   "DIRSYNC:"     -> MS_DIRSYNC
+	 *   "MANDLOCK:"    -> MS_MANDLOCK
+	 *   "RELATIME:"    -> MS_RELATIME
+	 *   "SLAVE:"       -> MS_SLAVE
+	 *   "SHARED:"      -> MS_SHARED
+	 *   "PRIVATE:"     -> MS_PRIVATE
+	 *   "UNBINDABLE:"  -> MS_UNBINDABLE
+	 *   "SILENT:"      -> MS_SILENT
+	 *   "POSIXACL:"    -> MS_POSIXACL
+	 *   "LAZYTIME:"    -> MS_LAZYTIME
+	 *
+	 * Fs types:
+	 *
+	 */
+	char *flags[] = { "RDONLY:", "NOSUID:", "NODEV:", "NOEXEC:", "NODIRATIME:", "NOATIME:", "SYNCHRONOUS:", "DIRSYNC:", "MANDLOCK:", "RELATIME:", "SLAVE:", "SHARED:", "PRIVATE:", "UNBINDABLE:", "SILENT:", "POSIXACL:", "LAZYTIME:" };
+	char *ret = NULL;
+	while (true) {
+		for (size_t i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
+			if (strncmp(source, flags[i], strlen(flags[i])) == 0) {
+				if (ret == NULL) {
+					ret = strdup(flags[i]);
+				} else {
+					char *tmp = malloc(strlen(ret) + strlen(flags[i]) + 1);
+					strcpy(tmp, ret);
+					strcat(tmp, flags[i]);
+					free(ret);
+					ret = tmp;
+				}
+				source += strlen(flags[i]);
+				break;
+			}
+			if (i == sizeof(flags) / sizeof(flags[0]) - 1) {
+				return ret;
+			}
+		}
+	}
+	return NULL;
+}
+static char *cut_mount_fs_type(const char *_Nonnull source)
+{
+	/*
+	 * Cut all fs type from source, and return the fs type.
+	 * Fs types:
+	 *   - "OVERLAY:" : Mounts an OverlayFS at the target using the provided options.
+	 *   - "TMPFS:"   : Mounts a tmpfs at the target using the provided options.
+	 *   - "EXT4:"    : Mounts an ext4 filesystem at the target.
+	 *   - "FAT32:"   : Mounts a FAT32 (vfat) filesystem at the target.
+	 *   - "NTFS:"    : Mounts an NTFS filesystem at the target.
+	 *   - "XFS:"     : Mounts an XFS filesystem at the target.
+	 *   - "BTRFS:"   : Mounts a Btrfs filesystem at the target.
+	 *   - "EXFAT:"   : Mounts an exFAT filesystem at the target.
+	 *   - "F2FS:"    : Mounts an F2FS filesystem at the target.
+	 *   - "EROFS:"   : Mounts an EROFS filesystem at the target.
+	 */
+	char *fstypes[] = { "OVERLAY:", "TMPFS:", "EXT4:", "FAT32:", "NTFS:", "XFS:", "BTRFS:", "EXFAT:", "F2FS:", "EROFS:" };
+	for (int i = 0; i < sizeof(fstypes) / sizeof(fstypes[0]); i++) {
+		if (strncmp(source, fstypes[i], strlen(fstypes[i])) == 0) {
+			return strdup(fstypes[i]);
+		}
+	}
+	return NULL;
+}
+void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
+{
+	/*
+	 * Convert all mountpoints to absolute path.
+	 * This is to avoid some unexpected errors.
+	 */
+	for (int i = 0; container->extra_mountpoint[i] != NULL; i += 2) {
+		char *source = container->extra_mountpoint[i];
+		char *flags = cut_mount_flags(container->extra_mountpoint[i]);
+		if (flags) {
+			if (strncmp(source, flags, strlen(flags)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_mount_flags() returned wrong flags for source %s\n", source);
+			}
+			source += strlen(flags);
+		}
+		char *fstype = cut_mount_fs_type(source);
+		if (fstype) {
+			if (strncmp(source, fstype, strlen(fstype)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_mount_fs_type() returned wrong fs type for source %s\n", source);
+			}
+			source += strlen(fstype);
+			// For OVERLAY and TMPFS, we don't need to convert to absolute path.
+			if (strcmp(fstype, "OVERLAY:") == 0 || strcmp(fstype, "TMPFS:") == 0) {
+				free(fstype);
+				free(flags);
+				continue;
+			}
+		}
+		char *abs_source = realpath(source, NULL);
+		if (!abs_source) {
+			ruri_error("{red}Error: realpath() failed for source %s\n", source);
+		}
+		char *new_source = malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		strcpy(new_source, flags ? flags : "");
+		strcat(new_source, fstype ? fstype : "");
+		strcat(new_source, abs_source);
+		free(abs_source);
+		free(container->extra_mountpoint[i]);
+		container->extra_mountpoint[i] = new_source;
+		free(fstype);
+		free(flags);
+	}
+	for (int i = 0; container->extra_ro_mountpoint[i] != NULL; i += 2) {
+		char *source = container->extra_ro_mountpoint[i];
+		char *flags = cut_mount_flags(container->extra_ro_mountpoint[i]);
+		if (flags) {
+			if (strncmp(source, flags, strlen(flags)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_mount_flags() returned wrong flags for source %s\n", source);
+			}
+			source += strlen(flags);
+		}
+		char *fstype = cut_mount_fs_type(source);
+		if (fstype) {
+			if (strncmp(source, fstype, strlen(fstype)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_mount_fs_type() returned wrong fs type for source %s\n", source);
+			}
+			source += strlen(fstype);
+			// For OVERLAY and TMPFS, we don't need to convert to absolute path.
+			if (strcmp(fstype, "OVERLAY:") == 0 || strcmp(fstype, "TMPFS:") == 0) {
+				free(fstype);
+				free(flags);
+				continue;
+			}
+		}
+		char *abs_source = realpath(source, NULL);
+		if (!abs_source) {
+			ruri_error("{red}Error: realpath() failed for source %s\n", source);
+		}
+		char *new_source = malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		strcpy(new_source, flags ? flags : "");
+		strcat(new_source, fstype ? fstype : "");
+		strcat(new_source, abs_source);
+		free(abs_source);
+		free(container->extra_ro_mountpoint[i]);
+		container->extra_ro_mountpoint[i] = new_source;
+		free(fstype);
+		free(flags);
+	}
+}
+void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container)
+{
+	/*
+	 * Convert rootfs source to absolute path.
+	 * This is to avoid some unexpected errors.
+	 */
+	if (container->rootfs_source) {
+		char *source = container->rootfs_source;
+		char *flags = cut_mount_flags(container->rootfs_source);
+		if (flags) {
+			if (strncmp(source, flags, strlen(flags)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_mount_flags() returned wrong flags for source %s\n", source);
+			}
+			source += strlen(flags);
+		}
+		char *fstype = cut_mount_fs_type(source);
+		if (fstype) {
+			if (strncmp(source, fstype, strlen(fstype)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_mount_fs_type() returned wrong fs type for source %s\n", source);
+			}
+			source += strlen(fstype);
+			// For OVERLAY and TMPFS, we don't need to convert to absolute path.
+			if (strcmp(fstype, "OVERLAY:") == 0 || strcmp(fstype, "TMPFS:") == 0) {
+				free(fstype);
+				free(flags);
+				return;
+			}
+		}
+		char *abs_source = realpath(source, NULL);
+		if (!abs_source) {
+			ruri_error("{red}Error: realpath() failed for source %s\n", source);
+		}
+		char *new_source = malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		strcpy(new_source, flags ? flags : "");
+		strcat(new_source, fstype ? fstype : "");
+		strcat(new_source, abs_source);
+		free(abs_source);
+		free(container->rootfs_source);
+		container->rootfs_source = new_source;
+		free(fstype);
+		free(flags);
+	}
+}
 // Mount disk device.
 static int mount_device(const char *_Nonnull source, const char *_Nonnull target, unsigned long mountflags)
 {
