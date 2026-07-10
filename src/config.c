@@ -76,7 +76,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->io_rbps = NULL;
 	container->io_wbps = NULL;
 	container->io_device = NULL;
-	container->use_kvm = false;
 	container->char_devs[0] = NULL;
 	container->hidepid = RURI_INIT_VALUE;
 	container->timens_realtime_offset = 0;
@@ -312,7 +311,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// Use kvm.
 	ret = k2v3_add_comment(ret, "Use kvm");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "use_kvm", container->use_kvm);
+	ret = k2v3_add_config(bool, ret, "create_kvm_node", ruri_flag("create_kvm_node"));
 	// oom_score_adj.
 	ret = k2v3_add_comment(ret, "OOM score.");
 	ret = k2v3_add_comment(ret, "Default is 0.");
@@ -451,7 +450,7 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 		ruri_error("{red}Failed to read config file:%s\n{clear}", path);
 	}
 	// Check if config is valid.
-	char *key_list[] = { "timens_realtime_offset", "timens_monotonic_offset", "hidepid", "char_devs", "use_kvm", "no_network", "container_dir", "user", "drop_caplist", "no_new_privs", "enable_seccomp", "rootless", "no_warnings", "cross_arch", "qemu_path", "use_rurienv", "just_chroot", "unmask_dirs", "mount_host_runtime", "work_dir", "rootfs_source", "ro_root", "extra_mountpoint", "extra_ro_mountpoint", "env", "command", "hostname", NULL };
+	char *key_list[] = { "timens_realtime_offset", "timens_monotonic_offset", "hidepid", "char_devs", "create_kvm_node", "no_network", "container_dir", "user", "drop_caplist", "no_new_privs", "enable_seccomp", "rootless", "no_warnings", "cross_arch", "qemu_path", "use_rurienv", "just_chroot", "unmask_dirs", "mount_host_runtime", "work_dir", "rootfs_source", "ro_root", "extra_mountpoint", "extra_ro_mountpoint", "env", "command", "hostname", NULL };
 	for (int i = 0; key_list[i] != NULL; i++) {
 		if (k2v3_have_key(cache, key_list[i], K2V3_ANY) != 0) {
 			ruri_error("{red}Invalid config file, there is no key:%s\nHint:\n You can try to use `ruri -C config` to fix the config file{clear}", key_list[i]);
@@ -531,7 +530,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get no_network.
 	container->no_network = k2v3_get(bool, "no_network", cache);
 	// Get use_kvm.
-	container->use_kvm = k2v3_get(bool, "use_kvm", cache);
+	if (k2v3_get(bool, "create_kvm_node", cache)) {
+		ruri_feature_flag(1, "create_kvm_node");
+	}
 	// Get hidepid.
 	container->hidepid = k2v3_get(int, "hidepid", cache);
 	// Get oom_score_adj.
@@ -856,11 +857,12 @@ void ruri_correct_config(const char *_Nonnull path)
 	} else {
 		container.hostname = k2v_get_key(char, "hostname", buf);
 	}
-	if (!have_key("use_kvm", buf)) {
+	if (!have_key("create_kvm_node", buf)) {
 		ruri_warning("{green}No key use_kvm found, set to false\n{clear}");
-		container.use_kvm = false;
 	} else {
-		container.use_kvm = k2v_get_key(bool, "use_kvm", buf);
+		if (k2v_get_key(bool, "create_kvm_node", buf)) {
+			ruri_feature_flag(1, "create_kvm_node");
+		}
 	}
 	if (!have_key("timens_realtime_offset", buf)) {
 		ruri_warning("{green}No key timens_realtime_offset found, set to 0\n{clear}");

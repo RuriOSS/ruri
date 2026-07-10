@@ -185,8 +185,6 @@ struct RURI_CONTAINER {
 	char *_Nullable hostname;
 	// No network.
 	bool no_network;
-	// Use kvm.
-	bool use_kvm;
 	// Char devices.
 	char *_Nonnull char_devs[RURI_MAX_CHAR_DEVS];
 	// Hidepid for procfs.

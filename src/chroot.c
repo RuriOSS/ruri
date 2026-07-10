@@ -314,7 +314,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net, will continue.\n");
 		res = mknod("/dev/net/tun", S_IFCHR, makedev(10, 200));
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net/tun, will continue.\n");
-		if (container->use_kvm) {
+		if (ruri_flag("create_kvm_node")) {
 			res = mknod("/dev/kvm", S_IFCHR, makedev(10, 232));
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/kvm, will continue.\n");
 			chmod("/dev/kvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);

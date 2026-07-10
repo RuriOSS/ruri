@@ -95,7 +95,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *is_health_check;
 		char *enable_tty_signals;
 		char *skip_setgroups;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL };
+		char *create_kvm_node;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -150,6 +151,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "skip_setgroups")) {
 			return flags.skip_setgroups;
+		}
+		if (!strcmp(flag, "create_kvm_node")) {
+			return flags.create_kvm_node;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -225,6 +229,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "skip_setgroups")) {
 		flags.skip_setgroups = strdup("true");
 		return flags.skip_setgroups;
+	}
+	if (!strcmp(flag, "create_kvm_node")) {
+		flags.create_kvm_node = strdup("true");
+		return flags.create_kvm_node;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -696,7 +704,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Use kvm.
 		else if (strcmp(argv[index], "-K") == 0 || strcmp(argv[index], "--use-kvm") == 0) {
-			container->use_kvm = true;
+			ruri_feature_flag(1, "create_kvm_node");
 		}
 		// Hidepid.
 		else if (strcmp(argv[index], "-i") == 0 || strcmp(argv[index], "--hidepid") == 0) {
@@ -1150,7 +1158,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->no_network = true;
 					break;
 				case 'K':
-					container->use_kvm = true;
+					ruri_feature_flag(1, "create_kvm_node");
 					break;
 				case 'b':
 					background = true;

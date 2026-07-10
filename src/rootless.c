@@ -127,7 +127,7 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	mount("/dev/urandom", "./dev/urandom", NULL, MS_BIND, NULL);
 	close(open("./dev/zero", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 	mount("/dev/zero", "./dev/zero", NULL, MS_BIND, NULL);
-	if (container->use_kvm) {
+	if (ruri_flag("create_kvm_node")) {
 		close(open("./dev/kvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/kvm", "./dev/kvm", NULL, MS_BIND, NULL);
 	}
