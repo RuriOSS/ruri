@@ -165,6 +165,8 @@ static char *losetup(const char *_Nonnull img)
 		loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 		if (loopfd < 0) {
 			// Just create one.
+			memset(loopfile, 0, PATH_MAX);
+			sprintf(loopfile, "/dev/loop%d", devnr);
 			mknod(loopfile, S_IFBLK | 0660, makedev(7, devnr));
 			loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 			if (loopfd < 0) {
