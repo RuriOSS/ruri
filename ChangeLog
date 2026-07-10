@@ -6,7 +6,7 @@
   * Fix pipe-sync issue in unshare container.
   * Always convert mount source to absolute path.
   * Support new feature flags:
-   - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
+    - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
     - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
     - `allow_personality`: Allow personality() syscall, for compatibility with some software like debian reprotest, box86/wine, etc.    
     - `force_panic`: The internal implementation of `--strict-mode`, will force ruri to panic on any error.    

@@ -1,3 +1,7 @@
+# Feature Flags
+It's recommended to use feature flags (`--set-feature`) for new features since v3.9.5, especially if they are not yet fully tested or if they may not be ready for production use.     
+Feature flags will be globally available in `char *ruri_feature_flag()` and `bool ruri_flag()` functions.    
+
 # Commit Messages
 We recommend, but do not strictly require, using a prefix for commit messages to indicate the type of change.     
 The currently planned prefixes are:    

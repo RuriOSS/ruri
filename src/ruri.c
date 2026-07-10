@@ -75,6 +75,7 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	/*
 	 * We set all value to char*,
 	 * because we will have someting like flag_foo="bar" in the future.
+	 * -1 for query, other value for set.
 	 */
 	static thread_local struct {
 		char *ban_futex_pi;
