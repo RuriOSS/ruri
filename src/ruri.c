@@ -333,40 +333,6 @@ static bool is_container_dir(char *dir)
 	}
 	return true;
 }
-static void resolve_mount_source(char **source)
-{
-	/*
-	 * Rootless setup changes the process working directory to the
-	 * container directory before mounting. Resolve ordinary host paths
-	 * while the original working directory is still active.
-	 * Synthetic sources such as OVERLAY:... are left untouched.
-	 */
-	if (source == NULL || *source == NULL) {
-		return;
-	}
-	char *resolved = realpath(*source, NULL);
-	if (resolved == NULL) {
-		return;
-	}
-	free(*source);
-	*source = resolved;
-}
-static void resolve_mount_sources(struct RURI_CONTAINER *_Nonnull container)
-{
-	resolve_mount_source(&container->rootfs_source);
-	for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i += 2) {
-		if (container->extra_mountpoint[i] == NULL) {
-			break;
-		}
-		resolve_mount_source(&container->extra_mountpoint[i]);
-	}
-	for (int i = 0; i < RURI_MAX_MOUNTPOINTS; i += 2) {
-		if (container->extra_ro_mountpoint[i] == NULL) {
-			break;
-		}
-		resolve_mount_source(&container->extra_ro_mountpoint[i]);
-	}
-}
 void ruri_check_container_dir(char *dir)
 {
 	/*
@@ -1645,8 +1611,6 @@ int ruri(int argc, char **argv)
 	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)malloc(sizeof(struct RURI_CONTAINER));
 	// Parse arguments.
 	parse_args(argc, argv, container);
-	// Keep host mount sources valid after rootless setup changes cwd.
-	resolve_mount_sources(container);
 	// If --fork-as-init, erase argv.
 	if (container->fork_as_init) {
 		for (int i = 0; i < argc; i++) {
