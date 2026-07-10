@@ -54,26 +54,26 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	ruri_panic_on_error(unshare_ret, 0, "{red}Unshare container need at least mount ns support QwQ\n");
 	if (!ruri_flag("no_uts_ns")) {
 		unshare_ret = unshare(CLONE_NEWUTS);
-		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
 	}
 	if (!ruri_flag("no_ipc_ns")) {
 		unshare_ret = unshare(CLONE_NEWIPC);
-		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
 	}
 	if (!ruri_flag("no_pid_ns")) {
 		unshare_ret = unshare(CLONE_NEWPID);
-		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
 	}
 	if (!ruri_flag("no_cgroup_ns")) {
 		unshare_ret = unshare(CLONE_NEWCGROUP);
-		ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
 	}
 	if (!ruri_flag("no_time_ns")) {
 		if (unshare(CLONE_NEWTIME) == -1) {
 			if (container->timens_realtime_offset != 0 || container->timens_monotonic_offset != 0) {
 				ruri_error("{red}Failed to unshare time namespace, --timens-offset cannot be enabled QwQ\n");
 			}
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 		}
 		if (container->timens_monotonic_offset != 0) {
 			int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
@@ -97,7 +97,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	unshare_ret = unshare(CLONE_FS);
-	ruri_warn_on_error(unshare_ret, 0, !container->no_warnings, "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
+	ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
 	// Disable network.
 	if (container->no_network) {
 		if (unshare(CLONE_NEWNET) == -1) {
@@ -118,7 +118,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		if (container->use_rurienv) {
 			container->ns_pid = unshare_pid;
 			ruri_store_info(container);
-		} else if (!container->no_warnings) {
+		} else if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{base}NS PID:{green} %d\n", unshare_pid);
 		}
 		ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
@@ -198,7 +198,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	if (!ruri_flag("no_time_ns")) {
 		ns_fd = open(time_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWTIME) == -1) {
 				ruri_error("{red}Failed to setns time namespace QwQ\n");
@@ -209,7 +209,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	if (!ruri_flag("no_uts_ns")) {
 		ns_fd = open(uts_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWUTS) == -1) {
 				ruri_error("{red}Failed to setns uts namespace QwQ\n");
@@ -220,7 +220,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	if (!ruri_flag("no_cgroup_ns")) {
 		ns_fd = open(cgroup_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWCGROUP) == -1) {
 				ruri_error("{red}Failed to setns cgroup namespace QwQ\n");
@@ -231,7 +231,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	if (!ruri_flag("no_ipc_ns")) {
 		ns_fd = open(ipc_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWIPC) == -1) {
 				ruri_error("{red}Failed to setns ipc namespace QwQ\n");
@@ -265,7 +265,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	if (!ruri_flag("no_pid_ns")) {
 		ns_fd = open(pid_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWPID) == -1) {
 				ruri_error("{red}Failed to setns pid namespace QwQ\n");

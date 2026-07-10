@@ -139,8 +139,6 @@ struct RURI_CONTAINER {
 	// Enable built-in seccomp profile.
 	bool enable_default_seccomp;
 	bool enable_seccomp_whitelist;
-	// Do not show warnings.
-	bool no_warnings;
 	// Unshare container.
 	bool enable_unshare;
 	// Useless rootless container support.

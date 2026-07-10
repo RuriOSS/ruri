@@ -565,6 +565,7 @@ Current supported flags:
 - `no_pid_ns`: disable PID namespace.
 - `no_cgroup_ns`: disable cgroup namespace.
 - `fork_as_init`: The internal implementation of `--fork-as-init`, will make ruri fork() before exec() to be the init process in the container.
+- `disable_warnings`: The internal implementation of `--no-warnings`, will disable all warnings.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    

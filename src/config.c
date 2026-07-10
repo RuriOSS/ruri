@@ -47,7 +47,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	ruri_build_caplist(container->drop_caplist, false, nullcaplist, nullcaplist);
 	container->enable_default_seccomp = false;
 	container->no_new_privs = false;
-	container->no_warnings = false;
 	container->enable_unshare = false;
 	container->rootless = false;
 	container->mount_host_runtime = false;
@@ -200,7 +199,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// no_warnings.
 	ret = k2v3_add_comment(ret, "Disable warnings.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "no_warnings", container->no_warnings);
+	ret = k2v3_add_config(bool, ret, "no_warnings", ruri_flag("disable_warnings"));
 	ret = k2v3_add_newline(ret);
 	// cross_arch.
 	ret = k2v3_add_comment(ret, "The arch for running cross-arch container.");
@@ -503,7 +502,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get ro_root.
 	container->ro_root = k2v3_get(bool, "ro_root", cache);
 	// Get no_warnings.
-	container->no_warnings = k2v3_get(bool, "no_warnings", cache);
+	if (k2v3_get(bool, "no_warnings", cache)) {
+		ruri_feature_flag(0, "disable_warnings");
+	}
 	// Get use_rurienv.
 	container->use_rurienv = k2v3_get(bool, "use_rurienv", cache);
 #ifdef DISABLE_RURIENV
@@ -718,9 +719,10 @@ void ruri_correct_config(const char *_Nonnull path)
 	}
 	if (!have_key("no_warnings", buf)) {
 		ruri_warning("{green}No key no_warnings found, set to false\n{clear}");
-		container.no_warnings = false;
 	} else {
-		container.no_warnings = k2v_get_key(bool, "no_warnings", buf);
+		if (k2v_get_key(bool, "no_warnings", buf)) {
+			ruri_feature_flag(0, "disable_warnings");
+		}
 	}
 	if (!have_key("enable_unshare", buf)) {
 		ruri_warning("{green}No key enable_unshare found, set to false\n{clear}");

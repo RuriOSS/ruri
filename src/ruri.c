@@ -88,7 +88,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *no_cgroup_ns;
 		char *meow;
 		char *fork_as_init;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL };
+		char *disable_warnings;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -122,6 +123,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "fork_as_init")) {
 			return flags.fork_as_init;
+		}
+		if (!strcmp(flag, "disable_warnings")) {
+			return flags.disable_warnings;
 		}
 		return "unknown";
 	}
@@ -168,6 +172,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "fork_as_init")) {
 		flags.fork_as_init = strdup("true");
 		return flags.fork_as_init;
+	}
+	if (!strcmp(flag, "disable_warnings")) {
+		flags.disable_warnings = strdup("true");
+		return flags.disable_warnings;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -618,7 +626,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Do not show warnings.
 		else if (strcmp(argv[index], "-w") == 0 || strcmp(argv[index], "--no-warnings") == 0) {
-			container->no_warnings = true;
+			ruri_feature_flag(0, "disable_warnings");
 		}
 		// Just chroot.
 		else if (strcmp(argv[index], "-j") == 0 || strcmp(argv[index], "--just-chroot") == 0) {
@@ -1078,7 +1086,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->ro_root = true;
 					break;
 				case 'w':
-					container->no_warnings = true;
+					ruri_feature_flag(0, "disable_warnings");
 					break;
 				case 'f':
 					fork_exec = true;

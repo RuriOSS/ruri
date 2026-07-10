@@ -174,7 +174,7 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 	ret = k2v3_add_config(char, ret, "work_dir", container->work_dir);
 	// no_warnings.
 	ret = k2v3_add_comment(ret, "Do not show warnings.");
-	ret = k2v3_add_config(bool, ret, "no_warnings", container->no_warnings);
+	ret = k2v3_add_config(bool, ret, "no_warnings", ruri_flag("disable_warnings"));
 	// no_network.
 	ret = k2v3_add_comment(ret, "Disable network.");
 	ret = k2v3_add_config(bool, ret, "no_network", container->no_network);
@@ -354,7 +354,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		// Unset immutable flag of .rurienv.
 		umount2(file, MNT_DETACH | MNT_FORCE);
 		int fd = open(file, O_RDONLY | O_CLOEXEC);
-		if (fd < 0 && !container->no_warnings) {
+		if (fd < 0 && !ruri_flag("disable_warnings")) {
 			ruri_warning("{yellow}Open .rurienv failed{clear}\n");
 			return container;
 		}
@@ -410,7 +410,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 #endif
 	// Check if drop_caplist changed.
 	if (memcmp(backup->drop_caplist, container->drop_caplist, sizeof(cap_value_t) * RURI_CAP_LAST_CAP) != 0) {
-		if (!container->no_warnings) {
+		if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{yellow}.rurienv detected, drop_caplist changed{clear}\n");
 		}
 	}
@@ -418,7 +418,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->no_new_privs = k2v3_get(bool, "no_new_privs", cache);
 	// Check if no_new_privs changed.
 	if (backup->no_new_privs != container->no_new_privs) {
-		if (!container->no_warnings) {
+		if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{yellow}.rurienv detected, no_new_privs changed{clear}\n");
 		}
 	}
@@ -426,7 +426,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->enable_default_seccomp = k2v3_get(bool, "enable_seccomp", cache);
 	// Check if enable_seccomp changed.
 	if (backup->enable_default_seccomp != container->enable_default_seccomp) {
-		if (!container->no_warnings) {
+		if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{yellow}.rurienv detected, enable_seccomp changed{clear}\n");
 		}
 	}
@@ -434,7 +434,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->enable_seccomp_whitelist = k2v3_get(bool, "enable_seccomp_whitelist", cache);
 	// Check if enable_seccomp_whitelist changed.
 	if (backup->enable_seccomp_whitelist != container->enable_seccomp_whitelist) {
-		if (!container->no_warnings) {
+		if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{yellow}.rurienv detected, enable_seccomp_whitelist changed{clear}\n");
 		}
 	}
@@ -442,7 +442,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->skip_setgroups = k2v3_get(bool, "skip_setgroups", cache);
 	// Check if skip_setgroups changed.
 	if (backup->skip_setgroups != container->skip_setgroups) {
-		if (!container->no_warnings) {
+		if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{yellow}.rurienv detected, skip_setgroups changed{clear}\n");
 		}
 	}
@@ -459,7 +459,9 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		container->work_dir = k2v3_get(char, "work_dir", cache);
 	}
 	// Get no_warnings.
-	container->no_warnings = k2v3_get(bool, "no_warnings", cache);
+	if (k2v3_get(bool, "no_warnings", cache)) {
+		ruri_feature_flag(0, "disable_warnings");
+	}
 	// User.
 	if (container->user == NULL) {
 		container->user = k2v3_get(char, "user", cache);

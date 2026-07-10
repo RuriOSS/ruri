@@ -40,10 +40,10 @@
  */
 // Reslove prefix for errno.
 #ifndef DISABLE_LIBSECCOMP
-static void ruri_check_seccomp_ret(int res, bool no_warnings)
+static void ruri_check_seccomp_ret(int res)
 {
 	if (res < 0 && res != -EEXIST) {
-		ruri_warn_on_error(1, 0, !no_warnings, "seccomp rule add failed: %s\n", strerror(-res));
+		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "seccomp rule add failed: %s\n", strerror(-res));
 	}
 }
 static int ruri_resolve_seccomp_errno(const char *_Nonnull syscall, scmp_filter_ctx *_Nonnull ctx)
@@ -744,7 +744,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 	// Load seccomp rules.
 	if (seccomp_load(ctx) != 0) {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
+		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
 	}
 #else
 	ruri_error("libseccomp is disabled, cannot setup seccomp whitelist filter\n");
@@ -785,7 +785,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 		// Load seccomp rules.
 		if (seccomp_load(ctx) != 0) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
 		}
 		ruri_log("{base}Seccomp filter loaded\n");
 	}
@@ -1220,7 +1220,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 	// Load seccomp rules.
 	if (seccomp_load(ctx) != 0) {
-		ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
+		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
 	}
 	ruri_log("{base}Seccomp filter loaded\n");
 #endif
