@@ -570,6 +570,7 @@ Current supported flags:
 - `auto_umount_on_panic`: The internal implementation of `--umount-on-panic`, will automatically umount the container when it panics.
 - `is_health_check`: The internal implementation of `--health-check`, will run as health check process in the container.
 - `systemd_init`: The internal implementation of `--systemd`, will enable systemd init support in the container.
+- `enable_tty_signals`: The internal implementation of `--enable-tty-signals`, will not mask SIGTTIN and SIGTTOU signals in the container.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    

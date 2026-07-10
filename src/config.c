@@ -89,7 +89,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	// (86400 is the seconds of a day).
 	container->container_id = (int)(tm % 86400);
 	container->masked_path[0] = NULL;
-	container->enable_tty_signals = false;
 	container->skip_setgroups = false;
 	container->first_init = true;
 	container->pid_file = NULL;
@@ -425,7 +424,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_newline(ret);
 	// enable_tty_signals.
 	ret = k2v3_add_comment(ret, "Enable TTY signals in the container.");
-	ret = k2v3_add_config(bool, ret, "enable_tty_signals", container->enable_tty_signals);
+	ret = k2v3_add_config(bool, ret, "enable_tty_signals", ruri_flag("enable_tty_signals"));
 	ret = k2v3_add_newline(ret);
 	// skip_setgroups.
 	ret = k2v3_add_comment(ret, "Skip setgroups() call.");
@@ -581,7 +580,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	int maskedlen = k2v3_get(char_array, "masked_path", cache, container->masked_path, RURI_MAX_MOUNTPOINTS);
 	container->masked_path[maskedlen] = NULL;
 	// Get enable_tty_signals.
-	container->enable_tty_signals = k2v3_get(bool, "enable_tty_signals", cache);
+	if (k2v3_get(bool, "enable_tty_signals", cache)) {
+		ruri_feature_flag(1, "enable_tty_signals");
+	}
 	// Get command.
 	int comlen = k2v3_get(char_array, "command", cache, container->command, RURI_MAX_COMMANDS);
 	container->command[comlen] = NULL;

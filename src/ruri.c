@@ -93,7 +93,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *auto_umount_on_panic;
 		char *systemd_init;
 		char *is_health_check;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL };
+		char *enable_tty_signals;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -142,6 +143,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "is_health_check")) {
 			return flags.is_health_check;
+		}
+		if (!strcmp(flag, "enable_tty_signals")) {
+			return flags.enable_tty_signals;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -209,6 +213,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "is_health_check")) {
 		flags.is_health_check = strdup("true");
 		return flags.is_health_check;
+	}
+	if (!strcmp(flag, "enable_tty_signals")) {
+		flags.enable_tty_signals = strdup("true");
+		return flags.enable_tty_signals;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
@@ -966,7 +974,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 				ruri_error("{red}Error: --umount should only be used without other arguments QwQ\n");
 			}
 		} else if (strcmp(argv[index], "-z") == 0 || strcmp(argv[index], "--enable-tty-signals") == 0) {
-			container->enable_tty_signals = true;
+			ruri_feature_flag(1, "enable_tty_signals");
 		} else if (strcmp(argv[index], "-y") == 0 || strcmp(argv[index], "--systemd") == 0) {
 			ruri_feature_flag(1, "systemd_init");
 			container->enable_unshare = true;
@@ -1442,7 +1450,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					}
 					break;
 				case 'z':
-					container->enable_tty_signals = true;
+					ruri_feature_flag(1, "enable_tty_signals");
 					break;
 				case 'y':
 					ruri_feature_flag(1, "systemd_init");

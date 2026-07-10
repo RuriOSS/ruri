@@ -888,7 +888,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Set hostname.
 	set_hostname(container);
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
-	if (!container->enable_tty_signals) {
+	if (ruri_flag("enable_tty_signals")) {
 		sigset_t sigs;
 		sigemptyset(&sigs);
 		sigaddset(&sigs, SIGTTIN);
@@ -1096,7 +1096,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	 * This function is modified from ruri_run_chroot_container().
 	 */
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
-	if (!container->enable_tty_signals) {
+	if (!ruri_flag("enable_tty_signals")) {
 		sigset_t sigs;
 		sigemptyset(&sigs);
 		sigaddset(&sigs, SIGTTIN);
