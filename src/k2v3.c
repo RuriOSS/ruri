@@ -725,7 +725,7 @@ void k2v3_dump(k2v3_cache cache)
 		cache = cache->next;
 	}
 }
-char *k2v3_open_file(const char *_Nonnull path, off_t limit)
+static char *k2v3_open_file_fallback(const char *_Nonnull path, off_t limit)
 {
 	if (!path) {
 		return NULL;
@@ -760,8 +760,60 @@ char *k2v3_open_file(const char *_Nonnull path, off_t limit)
 		return NULL;
 	}
 	buf[read_size] = '\0';
+	if (strlen(buf) != (size_t)read_size) {
+		k2v3_warning("File size changed during read. This file will be ignored.");
+		free(buf);
+		close(fd);
+		return NULL;
+	}
 	close(fd);
 	return buf;
+}
+char *k2v3_open_file(const char *_Nonnull path, off_t limit)
+{
+	// Try O_DIRECT first, if it fails, fallback to normal read.
+	int fd = open(path, O_RDONLY | O_CLOEXEC | O_DIRECT);
+	if (fd < 0) {
+		return k2v3_open_file_fallback(path, limit);
+	}
+	void *buf = NULL;
+	// 4k alignment for O_DIRECT.
+	// Get file size.
+	struct stat st;
+	if (fstat(fd, &st) < 0) {
+		close(fd);
+		return k2v3_open_file_fallback(path, limit);
+	}
+	if (st.st_size == 0) {
+		close(fd);
+		return NULL;
+	}
+	if (st.st_size > limit) {
+		close(fd);
+		k2v3_warning("File size exceeds the specified limit. This file will be ignored.");
+		return NULL;
+	}
+	size_t read_size = (size_t)st.st_size;
+	size_t aligned_size = read_size / 4096 * 4096 + 4096; // Round up to the next multiple of 4096
+	if (posix_memalign(&buf, 4096, aligned_size) != 0) {
+		close(fd);
+		return k2v3_open_file_fallback(path, limit);
+	}
+	ssize_t ret = read(fd, buf, aligned_size);
+	if (ret < 0) {
+		free(buf);
+		close(fd);
+		return k2v3_open_file_fallback(path, limit);
+	}
+	((char *)buf)[read_size] = '\0';
+	if (strlen(buf) != (size_t)read_size) {
+		k2v3_warning("File size changed during read. This file will be ignored.");
+		free(buf);
+		close(fd);
+		return NULL;
+	}
+	close(fd);
+	return (char *)buf;
 }
 int k2v3_have_key(k2v3_cache cache, const char *const _Nonnull key, enum K2V3_TYPE type)
 {

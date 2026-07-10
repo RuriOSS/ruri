@@ -272,8 +272,15 @@ void ruri_store_info(const struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Creat .rurienv file and open it.
 	fd = open(file, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IWUSR | S_IRUSR);
+	if (fd < 0) {
+		free(info);
+		ruri_error("{red}Error: failed to open .rurienv file QwQ\n");
+	}
 	// Write info to .rurienv file.
-	write(fd, info, strlen(info));
+	if (write(fd, info, strlen(info)) < 0) {
+		free(info);
+		ruri_error("{red}Error: failed to write to .rurienv file QwQ\n");
+	}
 	// Set immutable flag on .rurienv file.
 	attr = 0;
 	ioctl(fd, FS_IOC_GETFLAGS, &attr);
