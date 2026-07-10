@@ -15,8 +15,7 @@
     - `no_ipc_ns`: disable IPC namespace.
     - `no_pid_ns`: disable PID namespace.
     - `no_cgroup_ns`: disable cgroup namespace.
-
-# v3.9.4 (no release):
+# v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.
   * Auto add `cap_` prefix for capability name in `--cap-drop` and `--cap-add` option.
