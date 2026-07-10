@@ -120,17 +120,11 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_warning("{base}NS PID:{green} %d\n", unshare_pid);
 		}
 		ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
-		// parent: close write end, wait for child sync signal first
-		close(sync_pipe[1]);
-		char ready = 0;
-		ssize_t n = read(sync_pipe[0], &ready, 1);
+		// parent: close read end, write sync signal to child
 		close(sync_pipe[0]);
-		if (n < 0) {
-			ruri_warn_on_error(1, 0, !container->no_warnings, "{yellow}sync pipe read failed{clear}\n");
-		}
+		write(sync_pipe[1], "OK", 2);
 		int stat = 0;
 		waitpid(unshare_pid, &stat, 0);
-		// Write exit status to pid_fd.
 		// Write exit status to pid_fd.
 		if (WIFEXITED(stat)) {
 			ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));
@@ -147,11 +141,19 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		exit(EXIT_FAILURE);
 	} else if (unshare_pid == 0) {
-		// child: close read end and notify parent we reached child path
-		close(sync_pipe[0]);
-		char ready = 1;
-		(void)write(sync_pipe[1], &ready, 1);
+		// child: close write end, read sync signal from parent
 		close(sync_pipe[1]);
+		char buf[16] = { 0 };
+		ssize_t n = read(sync_pipe[0], buf, sizeof(buf) - 1);
+		if (n > 0) {
+			buf[n] = '\0';
+			if (strcmp(buf, "OK") != 0) {
+				ruri_error("{red}Failed to get sync signal from parent process.\n");
+			}
+			close(sync_pipe[0]);
+		} else {
+			ruri_warn_on_error(0, 1, true, "{red}Warning: failed to read sync signal from parent process, pid file may be updated late QwQ\n");
+		}
 	} else {
 		// fork failed
 		close(sync_pipe[0]);
