@@ -100,7 +100,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *create_gunyah_node;
 		char *create_geniezone_node;
 		char *empty_net_ns;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL, .create_geniezone_node = NULL, .create_gunyah_node = NULL };
+		char *no_reset_pidfile;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL, .create_geniezone_node = NULL, .create_gunyah_node = NULL, .no_reset_pidfile = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -167,6 +168,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "create_geniezone_node")) {
 			return flags.create_geniezone_node;
+		}
+		if (!strcmp(flag, "no_reset_pidfile")) {
+			return flags.no_reset_pidfile;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -258,6 +262,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "create_geniezone_node")) {
 		flags.create_geniezone_node = strdup("true");
 		return flags.create_geniezone_node;
+	}
+	if (!strcmp(flag, "no_reset_pidfile")) {
+		flags.no_reset_pidfile = strdup("true");
+		return flags.no_reset_pidfile;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

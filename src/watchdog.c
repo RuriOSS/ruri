@@ -235,8 +235,10 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			if (file_fd < 0) {
 				exit(EXIT_FAILURE);
 			}
-			ftruncate(file_fd, 0);
-			lseek(file_fd, 0, SEEK_SET);
+			if (!ruri_flag("no_reset_pidfile")) {
+				ftruncate(file_fd, 0);
+				lseek(file_fd, 0, SEEK_SET);
+			}
 			// Try to add a F_WRLCK to the pid file, so we can lock it when writing to it.
 			struct flock fl;
 			fl.l_type = F_WRLCK;
@@ -272,8 +274,10 @@ read_again:
 							goto read_again;
 						}
 					}
-					ftruncate(file_fd, 0);
-					lseek(file_fd, 0, SEEK_SET);
+					if (!ruri_flag("no_reset_pidfile")) {
+						ftruncate(file_fd, 0);
+						lseek(file_fd, 0, SEEK_SET);
+					}
 					write(file_fd, buf, n);
 					fsync(file_fd);
 					// If we got RURI_PANIC_*, exit now.
@@ -303,10 +307,12 @@ read_again:
 						check_buf[check_len] = '\0';
 					}
 					if (strncmp(check_buf, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(check_buf, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(check_buf, "RURI_PANIC", strlen("RURI_PANIC"))) {
-						ftruncate(file_fd, 0);
-						lseek(file_fd, 0, SEEK_SET);
-						write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
-						fsync(file_fd);
+						if (!ruri_flag("no_reset_pidfile")) {
+							ftruncate(file_fd, 0);
+							lseek(file_fd, 0, SEEK_SET);
+							write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
+							fsync(file_fd);
+						}
 					}
 					// release the lock on pid file.
 					fl.l_type = F_UNLCK;
@@ -335,10 +341,12 @@ read_again:
 						check_buf[check_len] = '\0';
 					}
 					if (strncmp(check_buf, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(check_buf, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(check_buf, "RURI_PANIC", strlen("RURI_PANIC"))) {
-						ftruncate(file_fd, 0);
-						lseek(file_fd, 0, SEEK_SET);
-						write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
-						fsync(file_fd);
+						if (!ruri_flag("no_reset_pidfile")) {
+							ftruncate(file_fd, 0);
+							lseek(file_fd, 0, SEEK_SET);
+							write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
+							fsync(file_fd);
+						}
 					}
 					// release the lock on pid file.
 					fl.l_type = F_UNLCK;
