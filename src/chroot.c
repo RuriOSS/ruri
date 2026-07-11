@@ -518,7 +518,7 @@ static void drop_caps(const struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	// Clear CapInh.
-	// hrdp and datap are two pointers, so we malloc_or_panic() to apply the memory for it first.
+	// hrdp and datap are two pointers, so we malloc() to apply the memory for it first.
 	cap_user_header_t hrdp = (cap_user_header_t)malloc_or_panic(sizeof(*hrdp));
 	cap_user_data_t datap = (cap_user_data_t)malloc_or_panic(sizeof(*datap) * 10);
 	hrdp->pid = getpid();
@@ -636,9 +636,6 @@ static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)
 		}
 		// Set the mountpoint to mount.
 		mountpoint_dir = (char *)malloc_or_panic(strlen(container->extra_ro_mountpoint[i + 1]) + strlen(container->container_dir) + 2);
-		if (mountpoint_dir == NULL) {
-			ruri_error("{red}Error: malloc_or_panic() failed QwQ\n");
-		}
 		strcpy(mountpoint_dir, container->container_dir);
 		strcat(mountpoint_dir, container->extra_ro_mountpoint[i + 1]);
 		if (ruri_trymount(container->extra_ro_mountpoint[i], mountpoint_dir, MS_RDONLY) != 0) {

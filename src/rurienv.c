@@ -306,7 +306,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	 * Get runtime info of container.
 	 * And return the container struct back.
 	 * For ruri_umount_container() and ruri_container_ps(), it will accept a NULL struct,
-	 * and return a struct with malloc_or_paniced memory.
+	 * and return a struct with malloc()ed memory.
 	 */
 	k2v3_stop_at_warning(1);
 	char file[PATH_MAX] = { '\0' };
@@ -316,7 +316,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	// Read .rurienv file.
 	char *buf = k2v3_open_file(file, 65536);
 	if (buf == NULL) {
-		// Return a malloc_or_paniced struct for ruri_umount_container() and ruri_container_ps().
+		// Return a malloc()ed struct for ruri_umount_container() and ruri_container_ps().
 		if (container == NULL) {
 			container = (struct RURI_CONTAINER *)malloc_or_panic(sizeof(struct RURI_CONTAINER));
 			ruri_init_config(container);
