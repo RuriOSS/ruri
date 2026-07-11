@@ -45,7 +45,7 @@ static char *line_get_username(const char *_Nonnull p)
 	 * Get username by line.
 	 * free() after use.
 	 */
-	char *ret = malloc(LOGIN_NAME_MAX * 4);
+	char *ret = malloc_or_panic(LOGIN_NAME_MAX * 4);
 	ret[0] = '\0';
 	// /etc/passwd format:
 	// name:password:uid:gid:comment:home directory:login shell
@@ -149,7 +149,7 @@ static char *get_username(uid_t uid)
 		close(fd);
 		ruri_error("{red}The /etc/passwd file is too large, please check it.\n");
 	}
-	char *buf = malloc((size_t)size + 1);
+	char *buf = malloc_or_panic((size_t)size + 1);
 	read(fd, buf, (size_t)size);
 	buf[size] = '\0';
 	close(fd);
@@ -273,7 +273,7 @@ static void get_uid_map(char *_Nonnull user, struct RURI_ID_MAP *_Nonnull id_map
 		close(fd);
 		ruri_error("{red}The /etc/subuid file is too large, please check it.\n");
 	}
-	char *buf = malloc((size_t)size + 1);
+	char *buf = malloc_or_panic((size_t)size + 1);
 	read(fd, buf, (size_t)size);
 	buf[size] = '\0';
 	close(fd);
@@ -282,7 +282,7 @@ static void get_uid_map(char *_Nonnull user, struct RURI_ID_MAP *_Nonnull id_map
 		return;
 	}
 	// Find username in /etc/subuid.
-	char *str_to_find = malloc(strlen(user) + 4);
+	char *str_to_find = malloc_or_panic(strlen(user) + 4);
 	strcpy(str_to_find, user);
 	strcat(str_to_find, ":");
 	char *map = NULL;
@@ -386,7 +386,7 @@ static void get_gid_map(const char *_Nonnull user, struct RURI_ID_MAP *_Nonnull 
 		close(fd);
 		ruri_error("{red}The /etc/subgid file is too large, please check it.\n");
 	}
-	char *buf = malloc((size_t)size + 1);
+	char *buf = malloc_or_panic((size_t)size + 1);
 	read(fd, buf, (size_t)size);
 	buf[size] = '\0';
 	close(fd);
@@ -394,7 +394,7 @@ static void get_gid_map(const char *_Nonnull user, struct RURI_ID_MAP *_Nonnull 
 		free(buf);
 		return;
 	}
-	char *str_to_find = malloc(strlen(user) + 4);
+	char *str_to_find = malloc_or_panic(strlen(user) + 4);
 	strcpy(str_to_find, user);
 	strcat(str_to_find, ":");
 	char *map = NULL;
@@ -465,7 +465,7 @@ bool ruri_user_exist(const char *_Nonnull username)
 		close(fd);
 		ruri_error("{red}The /etc/passwd file is too large, please check it.\n");
 	}
-	char *buf = malloc((size_t)size + 1);
+	char *buf = malloc_or_panic((size_t)size + 1);
 	read(fd, buf, (size_t)size);
 	buf[size] = '\0';
 	close(fd);
@@ -515,7 +515,7 @@ uid_t ruri_get_user_uid(const char *_Nonnull username)
 		close(fd);
 		ruri_error("{red}The /etc/passwd file is too large, please check it.\n");
 	}
-	char *buf = malloc((size_t)size + 1);
+	char *buf = malloc_or_panic((size_t)size + 1);
 	read(fd, buf, (size_t)size);
 	buf[size] = '\0';
 	close(fd);
@@ -570,7 +570,7 @@ gid_t ruri_get_user_gid(const char *_Nonnull username)
 		close(fd);
 		ruri_error("{red}The /etc/passwd file is too large, please check it.\n");
 	}
-	char *buf = malloc((size_t)size + 1);
+	char *buf = malloc_or_panic((size_t)size + 1);
 	read(fd, buf, (size_t)size);
 	buf[size] = '\0';
 	close(fd);
@@ -670,7 +670,7 @@ static bool groups_line_have_user(const char *p, const char *username)
 		return false;
 	}
 	// Read the users until we meet the next colon.
-	char *users = malloc(strlen(p) + 1);
+	char *users = malloc_or_panic(strlen(p) + 1);
 	strcpy(users, p);
 	if (strchr(users, '\n') != NULL) {
 		*strchr(users, '\n') = '\0';
@@ -717,7 +717,7 @@ int ruri_get_groups(uid_t uid, gid_t groups[])
 		free(username);
 		ruri_error("{red}The /etc/group file is too large, please check it.\n");
 	}
-	char *buf = malloc((size_t)size + 1);
+	char *buf = malloc_or_panic((size_t)size + 1);
 	read(fd, buf, (size_t)size);
 	buf[size] = '\0';
 	close(fd);

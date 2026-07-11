@@ -273,6 +273,14 @@ struct RURI_CONTAINER {
 #else
 #define ruri_profile_log(format, ...)
 #endif
+#define malloc_or_panic(size)                                                                                                   \
+	({                                                                                                                      \
+		void *ruri_ptr__ = malloc(size);                                                                                \
+		if (!ruri_ptr__) {                                                                                              \
+			write(STDERR_FILENO, "Internal error: malloc() failed\n", sizeof("Internal error: malloc() failed\n")); \
+		}                                                                                                               \
+		ruri_ptr__;                                                                                                     \
+	})
 extern int RURI_PWD_ERRNO;
 enum RURI_PROC_TYPE {
 	RURI_QUERY,
