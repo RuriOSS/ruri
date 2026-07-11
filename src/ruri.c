@@ -133,6 +133,7 @@ void ruri_clear_env(char *const *_Nonnull argv)
 	} else {
 		free(path_env);
 		free(no_logs_env);
+		free(ruri_path_env);
 		return;
 	}
 }
