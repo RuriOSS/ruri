@@ -73,62 +73,101 @@ enum RURI_PROC_TYPE ruri_proc_mark(enum RURI_PROC_TYPE mark)
 	ret = mark;
 	return ret;
 }
-// Show some extra info when segfault.
+static void sig_write_str(const char *s)
+{
+	if (s == NULL)
+		return;
+	size_t len = 0;
+	while (s[len] != '\0')
+		len++;
+	write(STDERR_FILENO, s, len);
+}
+static void sig_write_int(int val)
+{
+	char tmp[16];
+	int i = 0;
+	unsigned int uval;
+	if (val < 0) {
+		write(STDERR_FILENO, "-", 1);
+		uval = (unsigned int)(-(val + 1)) + 1u;
+	} else {
+		uval = (unsigned int)val;
+	}
+	if (uval == 0) {
+		write(STDERR_FILENO, "0", 1);
+		return;
+	}
+	while (uval > 0) {
+		tmp[i++] = '0' + (char)(uval % 10);
+		uval /= 10;
+	}
+	while (--i >= 0)
+		write(STDERR_FILENO, &tmp[i], 1);
+}
+static void sig_write_uint(unsigned int val)
+{
+	sig_write_int((int)val);
+}
+// Show some extra info when segfault (async-signal-safe).
 static void panic(int sig)
 {
-	/*
-	 * This is very useful when bug reporting,
-	 * because we will get the cmdline that caused the error.
-	 *
-	 */
-	signal(sig, SIG_DFL);
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = SIG_DFL;
+	sigaction(sig, &sa, NULL);
+
 	int clifd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
 	char buf[1024];
-	ssize_t bufsize = read(clifd, buf, sizeof(buf));
-	close(clifd);
-	cfprintf(stderr, "{base}");
-	cfprintf(stderr, "{base}%s\n", "  .^.   .^.");
-	cfprintf(stderr, "{base}%s\n", "  /⋀\\_ﾉ_/⋀\\");
-	cfprintf(stderr, "{base}%s\n", " /ﾉｿﾉ\\ﾉｿ丶メ");
-	cfprintf(stderr, "{base}%s\n", " ﾙﾘﾘ >  x )ﾘ");
-	cfprintf(stderr, "{base}%s\n", "ﾉノ㇏  ^  ﾉﾉ");
-	cfprintf(stderr, "{base}%s\n", "      ⠁⠁");
-	cfprintf(stderr, "{base}%s\n", "RURI ERROR MESSAGE");
-	cfprintf(stderr, "{base}Seems that it's time to abort.\n");
-	cfprintf(stderr, "{base}SIG: %d\n", sig);
-	cfprintf(stderr, "{base}UID: %u\n", getuid());
-	cfprintf(stderr, "{base}PID: %d\n", getpid());
-	cfprintf(stderr, "{base}PROCESS: %s\n", ruri_get_proc_type());
-	cfprintf(stderr, "{base}CLI: ");
-	for (ssize_t i = 0; i < bufsize - 1; i++) {
+	ssize_t bufsize = 0;
+	if (clifd >= 0) {
+		bufsize = read(clifd, buf, sizeof(buf));
+		close(clifd);
+	}
+	sig_write_str("  .^.   .^.\n");
+	sig_write_str("  /⋀\\_ﾉ_/⋀\\\n");
+	sig_write_str(" /ﾉｿﾉ\\ﾉｿ丶メ\n");
+	sig_write_str(" ﾙﾘﾘ >  x )ﾘ\n");
+	sig_write_str("ﾉノ㇏  ^  ﾉﾉ\n");
+	sig_write_str("      ⠁⠁\n");
+	sig_write_str("RURI ERROR MESSAGE\n");
+	sig_write_str("Seems that it's time to abort.\n");
+	sig_write_str("SIG: ");
+	sig_write_int(sig);
+	sig_write_str("\nUID: ");
+	sig_write_uint(getuid());
+	sig_write_str("\nPID: ");
+	sig_write_int(getpid());
+	sig_write_str("\nPROCESS: ");
+	sig_write_str(ruri_get_proc_type());
+	sig_write_str("\nCLI: ");
+	for (ssize_t i = 0; i < bufsize; i++) {
 		if (buf[i] == '\0') {
-			fputc(' ', stderr);
+			write(STDERR_FILENO, " ", 1);
 		} else {
-			fputc(buf[i], stderr);
+			write(STDERR_FILENO, &buf[i], 1);
 		}
 	}
-	// I'm afraid to have bugs written by myself,
-	// but I'm more afraid that no one will report them.
-	cfprintf(stderr, "{base}\nThis message might caused by an internal error.\n");
-	cfprintf(stderr, "{base}If you think something is wrong, please report at:\n");
-	cfprintf(stderr, "\033[4m{base}%s{clear}\n\n", "https://github.com/rurioss/ruri/issues");
-	exit(114);
+	sig_write_str("\nThis message might caused by an internal error.\n");
+	sig_write_str("If you think something is wrong, please report at:\n");
+	sig_write_str("https://github.com/rurioss/ruri/issues\n\n");
+	_exit(114);
 }
 // Catch coredump signal.
 void ruri_register_signal(void)
 {
-	/*
-	 * Only SIGSEGV means segmentation fault,
-	 * but we catch all signals that might cause coredump.
-	 */
-	signal(SIGABRT, panic);
-	signal(SIGBUS, panic);
-	signal(SIGFPE, panic);
-	signal(SIGILL, panic);
-	signal(SIGQUIT, panic);
-	signal(SIGSEGV, panic);
-	signal(SIGSYS, panic);
-	signal(SIGTRAP, panic);
-	signal(SIGXCPU, panic);
-	signal(SIGXFSZ, panic);
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = panic;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESETHAND;
+	sigaction(SIGABRT, &sa, NULL);
+	sigaction(SIGBUS, &sa, NULL);
+	sigaction(SIGFPE, &sa, NULL);
+	sigaction(SIGILL, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGSEGV, &sa, NULL);
+	sigaction(SIGSYS, &sa, NULL);
+	sigaction(SIGTRAP, &sa, NULL);
+	sigaction(SIGXCPU, &sa, NULL);
+	sigaction(SIGXFSZ, &sa, NULL);
 }

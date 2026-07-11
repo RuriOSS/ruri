@@ -436,7 +436,7 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 		char cgroup_cpuset_cpus_path[PATH_MAX] = "";
 		sprintf(cgroup_cpuset_cpus_path, "%s%d/cpuset.cpus", cg_env->cpuset.prefix, container->container_id);
 		char buf[256] = "";
-		sprintf(buf, "%s\n", container->cpuset);
+		snprintf(buf, sizeof(buf), "%s\n", container->cpuset);
 		if (open_and_write(cgroup_cpuset_cpus_path, buf)) {
 			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v2 cpuset limit for %s\n", cgroup_cpuset_cpus_path);
 			return;
@@ -453,7 +453,7 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 		char cgroup_cpuset_cpus_path[PATH_MAX] = "";
 		sprintf(cgroup_cpuset_cpus_path, "%s%d/cpuset.cpus", cg_env->cpuset.prefix, container->container_id);
 		char buf[256] = "";
-		sprintf(buf, "%s\n", container->cpuset);
+		snprintf(buf, sizeof(buf), "%s\n", container->cpuset);
 		if (open_and_write(cgroup_cpuset_cpus_path, buf)) {
 			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 cpuset limit for %s\n", cgroup_cpuset_cpus_path);
 			return;
@@ -638,10 +638,11 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 	// Set I/O limit for our cgroup.
 	if (cg_env->io.type == RURI_CGROUP_V2) {
 		char cgroup_io_max_path[PATH_MAX] = "";
-		sprintf(cgroup_io_max_path, "%s%d/io.max", cg_env->io.prefix, container->container_id);
+		snprintf(cgroup_io_max_path, sizeof(cgroup_io_max_path), "%s%d/io.max", cg_env->io.prefix, container->container_id);
 		char buf[1024] = "";
+		size_t buf_off = 0;
 		// Format: "major:minor rbps=xxx wbps=xxx"
-		sprintf(buf, "%s", container->io_device);
+		buf_off += (size_t)snprintf(buf, sizeof(buf), "%s", container->io_device);
 		if (container->io_rbps != NULL) {
 			ssize_t rbps = humansize_to_bytes(container->io_rbps);
 			// NOLINTBEGIN
@@ -652,7 +653,9 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 				ruri_error("I/O rbps value too big to current platform\n");
 			}
 			// NOLINTEND
-			sprintf(buf + strlen(buf), " rbps=%zd", rbps);
+			if (buf_off < sizeof(buf)) {
+				buf_off += (size_t)snprintf(buf + buf_off, sizeof(buf) - buf_off, " rbps=%zd", rbps);
+			}
 		}
 		if (container->io_wbps != NULL) {
 			ssize_t wbps = humansize_to_bytes(container->io_wbps);
@@ -664,9 +667,13 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 				ruri_error("I/O wbps value too big to current platform\n");
 			}
 			// NOLINTEND
-			sprintf(buf + strlen(buf), " wbps=%zd", wbps);
+			if (buf_off < sizeof(buf)) {
+				buf_off += (size_t)snprintf(buf + buf_off, sizeof(buf) - buf_off, " wbps=%zd", wbps);
+			}
 		}
-		sprintf(buf + strlen(buf), "\n");
+		if (buf_off < sizeof(buf)) {
+			snprintf(buf + buf_off, sizeof(buf) - buf_off, "\n");
+		}
 		if (open_and_write(cgroup_io_max_path, buf)) {
 			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v2 I/O limit for %s\n", cgroup_io_max_path);
 			return;
@@ -685,7 +692,7 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 			}
 			// NOLINTEND
 			char buf[1024] = "";
-			sprintf(buf, "%s %zd\n", container->io_device, rbps);
+			snprintf(buf, sizeof(buf), "%s %zd\n", container->io_device, rbps);
 			if (open_and_write(cgroup_blkio_read_path, buf)) {
 				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 I/O read limit for %s\n", cgroup_blkio_read_path);
 				return;
@@ -704,7 +711,7 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 			}
 			// NOLINTEND
 			char buf[1024] = "";
-			sprintf(buf, "%s %zd\n", container->io_device, wbps);
+			snprintf(buf, sizeof(buf), "%s %zd\n", container->io_device, wbps);
 			if (open_and_write(cgroup_blkio_write_path, buf)) {
 				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 I/O write limit for %s\n", cgroup_blkio_write_path);
 				return;
