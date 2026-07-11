@@ -34,7 +34,7 @@
  *
  *   .^.   .^.
  *   /⋀\_ﾉ_/⋀\
- *  /ﾉｿﾉ\ﾉｿ丶メ    This is Ruri Hakozaki.
+ *  /ﾉｿﾉ\ﾉｿ丶メ    This is Hakozaki Ruri.
  *  ﾙﾘﾘ >  x )ﾘ   If you see her, blame your cmdline and the author.
  * ﾉノ㇏  ^  ﾉﾉ
  *       ⠁⠁
@@ -75,15 +75,23 @@ enum RURI_PROC_TYPE ruri_proc_mark(enum RURI_PROC_TYPE mark)
 }
 static void sig_write_str(const char *s)
 {
-	if (s == NULL)
+	/*
+	 * Write string to stderr in async-signal-safe way.
+	 */
+	if (s == NULL) {
 		return;
+	}
 	size_t len = 0;
-	while (s[len] != '\0')
+	while (s[len] != '\0') {
 		len++;
+	}
 	write(STDERR_FILENO, s, len);
 }
 static void sig_write_int(int val)
 {
+	/*
+	 * Write integer to stderr in async-signal-safe way.
+	 */
 	char tmp[16];
 	int i = 0;
 	unsigned int uval;
@@ -101,21 +109,23 @@ static void sig_write_int(int val)
 		tmp[i++] = '0' + (char)(uval % 10);
 		uval /= 10;
 	}
-	while (--i >= 0)
+	while (--i >= 0) {
 		write(STDERR_FILENO, &tmp[i], 1);
+	}
 }
 static void sig_write_uint(unsigned int val)
 {
+	/*
+	 * Write unsigned integer to stderr in async-signal-safe way.
+	 */
 	sig_write_int((int)val);
 }
 // Show some extra info when segfault (async-signal-safe).
-static void panic(int sig)
+void ruri_panic(int sig)
 {
-	struct sigaction sa;
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = SIG_DFL;
-	sigaction(sig, &sa, NULL);
-
+	/*
+	 * Ruri internal error, show some extra info for debugging.
+	 */
 	int clifd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
 	char buf[1024];
 	ssize_t bufsize = 0;
@@ -123,6 +133,7 @@ static void panic(int sig)
 		bufsize = read(clifd, buf, sizeof(buf));
 		close(clifd);
 	}
+	sig_write_str("\n");
 	sig_write_str("  .^.   .^.\n");
 	sig_write_str("  /⋀\\_ﾉ_/⋀\\\n");
 	sig_write_str(" /ﾉｿﾉ\\ﾉｿ丶メ\n");
@@ -131,6 +142,7 @@ static void panic(int sig)
 	sig_write_str("      ⠁⠁\n");
 	sig_write_str("RURI ERROR MESSAGE\n");
 	sig_write_str("Seems that it's time to abort.\n");
+	sig_write_str("Btw, why my body turn monochrome?\n");
 	sig_write_str("SIG: ");
 	sig_write_int(sig);
 	sig_write_str("\nUID: ");
@@ -150,14 +162,19 @@ static void panic(int sig)
 	sig_write_str("\nThis message might caused by an internal error.\n");
 	sig_write_str("If you think something is wrong, please report at:\n");
 	sig_write_str("https://github.com/rurioss/ruri/issues\n\n");
+	ruri_pid_file_write(RURI_PID_FILE_PANIC_INTERNAL, 0);
 	_exit(114);
 }
-// Catch coredump signal.
 void ruri_register_signal(void)
 {
+	/*
+	 * Register signal handlers for various fatal signals.
+	 * This allows the program to catch signals like SIGSEGV, SIGABRT, etc
+	 * and provide a more informative error message before exiting.
+	 */
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = panic;
+	sa.sa_handler = ruri_panic;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESETHAND;
 	sigaction(SIGABRT, &sa, NULL);
