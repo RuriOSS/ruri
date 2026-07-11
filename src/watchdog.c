@@ -261,6 +261,7 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			// Write ok signal to sync pipe, so the parent process can continue.
 			write(sync_pipe[1], "OK", 2);
 			close(sync_pipe[1]);
+			char *last_msg = NULL;
 			while (1) {
 read_again:
 				memset(buf, 0, sizeof(buf));
@@ -274,6 +275,8 @@ read_again:
 							goto read_again;
 						}
 					}
+					free(last_msg);
+					last_msg = strdup(buf);
 					if (!ruri_flag("no_reset_pidfile")) {
 						ftruncate(file_fd, 0);
 						lseek(file_fd, 0, SEEK_SET);
@@ -285,6 +288,8 @@ read_again:
 						// release the lock on pid file.
 						fl.l_type = F_UNLCK;
 						fcntl(file_fd, F_SETLK, &fl);
+						free(last_msg);
+						last_msg = NULL;
 						// For timeout panic, just exit.
 						if (strncmp(buf, "RURI_PANIC_TIMEOUT", strlen("RURI_PANIC_TIMEOUT")) == 0) {
 							exit(EXIT_FAILURE);
@@ -300,20 +305,19 @@ read_again:
 					// Read pid file,
 					// if we don't get RURI_EXIT*, RURI_SIGNALED* or RURI_PANIC*,
 					// Write a RURI_EXIT_UNKNOWN to it.
-					lseek(file_fd, 0, SEEK_SET);
-					char check_buf[256] = { 0 };
-					int check_len = read(file_fd, check_buf, sizeof(check_buf) - 1);
-					if (check_len > 0) {
-						check_buf[check_len] = '\0';
+					if (!last_msg) {
+						last_msg = strdup("RURI_INTERNAL_VOID");
 					}
-					if (strncmp(check_buf, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(check_buf, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(check_buf, "RURI_PANIC", strlen("RURI_PANIC"))) {
+					if (strncmp(last_msg, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(last_msg, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(last_msg, "RURI_PANIC", strlen("RURI_PANIC"))) {
 						if (!ruri_flag("no_reset_pidfile")) {
 							ftruncate(file_fd, 0);
 							lseek(file_fd, 0, SEEK_SET);
-							write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
-							fsync(file_fd);
 						}
+						write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
+						fsync(file_fd);
 					}
+					free(last_msg);
+					last_msg = NULL;
 					// release the lock on pid file.
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
@@ -334,20 +338,19 @@ read_again:
 					// Read pid file,
 					// if we don't get RURI_EXIT*, RURI_SIGNALED* or RURI_PANIC*,
 					// Write a RURI_EXIT_UNKNOWN to it.
-					lseek(file_fd, 0, SEEK_SET);
-					char check_buf[256] = { 0 };
-					int check_len = read(file_fd, check_buf, sizeof(check_buf) - 1);
-					if (check_len > 0) {
-						check_buf[check_len] = '\0';
+					if (!last_msg) {
+						last_msg = strdup("RURI_INTERNAL_VOID");
 					}
-					if (strncmp(check_buf, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(check_buf, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(check_buf, "RURI_PANIC", strlen("RURI_PANIC"))) {
+					if (strncmp(last_msg, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(last_msg, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(last_msg, "RURI_PANIC", strlen("RURI_PANIC"))) {
 						if (!ruri_flag("no_reset_pidfile")) {
 							ftruncate(file_fd, 0);
 							lseek(file_fd, 0, SEEK_SET);
-							write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
-							fsync(file_fd);
 						}
+						write(file_fd, "RURI_EXIT_UNKNOWN\n", strlen("RURI_EXIT_UNKNOWN\n"));
+						fsync(file_fd);
 					}
+					free(last_msg);
+					last_msg = NULL;
 					// release the lock on pid file.
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
