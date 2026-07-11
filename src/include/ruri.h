@@ -277,7 +277,7 @@ struct RURI_CONTAINER {
 	({                                       \
 		void *ruri_ptr__ = malloc(size); \
 		if (!ruri_ptr__) {               \
-			ruri_panic(-1);          \
+			ruri_panic(-114);        \
 		}                                \
 		ruri_ptr__;                      \
 	})

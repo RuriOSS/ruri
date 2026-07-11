@@ -106,10 +106,6 @@ static char *cut_mount_flags(const char *_Nonnull source)
 					ret = strdup(flags[i]);
 				} else {
 					char *tmp = malloc_or_panic(strlen(ret) + strlen(flags[i]) + 1);
-					if (tmp == NULL) {
-						free(ret);
-						return NULL;
-					}
 					strcpy(tmp, ret);
 					strcat(tmp, flags[i]);
 					free(ret);
@@ -355,9 +351,6 @@ static char *losetup(const char *_Nonnull img)
 	int devnr = ioctl(loopctlfd, LOOP_CTL_GET_FREE);
 	close(loopctlfd);
 	char *loopfile = malloc_or_panic(PATH_MAX);
-	if (loopfile == NULL) {
-		return NULL;
-	}
 	memset(loopfile, 0, PATH_MAX);
 	sprintf(loopfile, "/dev/loop%d", devnr);
 	int loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
