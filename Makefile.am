@@ -25,6 +25,7 @@ ruri_SOURCES = \
 	src/signal.c \
 	src/umount.c \
 	src/unshare.c \
+	src/flags.c \
 	src/easteregg/action.c \
 	src/easteregg/layer.c \
 	src/easteregg/nekofeng.c \
