@@ -116,6 +116,7 @@ format:
 	@chmod 777 test/*.sh
 	@chmod 777 test/root/*
 	@clang-format -i test/*.c
+	@clang-format -i test/src/*.c
 	@sed -i "s/U '/U'/g" src/easteregg/*.c
 	@sed -i "s/U \"/U\"/g" src/easteregg/*.c
 
