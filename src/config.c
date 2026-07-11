@@ -156,7 +156,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 		}
 		cap_tmp = cap_to_name(container->drop_caplist[i]);
 		if (cap_tmp == NULL) {
-			drop_caplist[i] = malloc_or_panic(114);
+			drop_caplist[i] = ruri_malloc(114);
 			sprintf(drop_caplist[i], "%d", container->drop_caplist[i]);
 		} else {
 			drop_caplist[i] = strdup(cap_tmp);

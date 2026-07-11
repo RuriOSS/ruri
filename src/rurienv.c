@@ -48,7 +48,7 @@ static bool is_ruri_pid(pid_t pid)
 	snprintf(pid_ns_mnt, sizeof(pid_ns_mnt), "/proc/%d/ns/mnt", pid);
 	// Allocate PATH_MAX + 1 to guarantee room for the null terminator
 	// even when readlink fills the entire buffer.
-	char *pid_ns_mnt_realpath = malloc_or_panic(PATH_MAX + 1);
+	char *pid_ns_mnt_realpath = ruri_malloc(PATH_MAX + 1);
 	if (pid_ns_mnt_realpath == NULL) {
 		return false;
 	}
@@ -58,7 +58,7 @@ static bool is_ruri_pid(pid_t pid)
 		return false;
 	}
 	pid_ns_mnt_realpath[len] = '\0';
-	char *self_ns_mnt_realpath = malloc_or_panic(PATH_MAX + 1);
+	char *self_ns_mnt_realpath = ruri_malloc(PATH_MAX + 1);
 	if (self_ns_mnt_realpath == NULL) {
 		free(pid_ns_mnt_realpath);
 		return false;
@@ -135,7 +135,7 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 		}
 		cap_tmp = cap_to_name(container->drop_caplist[i]);
 		if (cap_tmp == NULL) {
-			drop_caplist[i] = malloc_or_panic(114);
+			drop_caplist[i] = ruri_malloc(114);
 			sprintf(drop_caplist[i], "%d", container->drop_caplist[i]);
 		} else {
 			drop_caplist[i] = strdup(cap_tmp);
@@ -318,7 +318,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	if (buf == NULL) {
 		// Return a malloc()ed struct for ruri_umount_container() and ruri_container_ps().
 		if (container == NULL) {
-			container = (struct RURI_CONTAINER *)malloc_or_panic(sizeof(struct RURI_CONTAINER));
+			container = (struct RURI_CONTAINER *)ruri_malloc(sizeof(struct RURI_CONTAINER));
 			ruri_init_config(container);
 			container->extra_mountpoint[0] = NULL;
 			container->extra_ro_mountpoint[0] = NULL;
@@ -331,7 +331,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	// We only need to get part of container info when container is NULL.
 	if (container == NULL) {
 		// For ruri_umount_container().
-		container = (struct RURI_CONTAINER *)malloc_or_panic(sizeof(struct RURI_CONTAINER));
+		container = (struct RURI_CONTAINER *)ruri_malloc(sizeof(struct RURI_CONTAINER));
 		ruri_init_config(container);
 		int mlen = k2v3_get(char_array, "extra_mountpoint", cache, container->extra_mountpoint, RURI_MAX_MOUNTPOINTS);
 		container->extra_mountpoint[mlen] = NULL;
@@ -392,7 +392,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		return container;
 	}
 	// Backup container config.
-	struct RURI_CONTAINER *backup = (struct RURI_CONTAINER *)malloc_or_panic(sizeof(struct RURI_CONTAINER));
+	struct RURI_CONTAINER *backup = (struct RURI_CONTAINER *)ruri_malloc(sizeof(struct RURI_CONTAINER));
 	memcpy(backup, container, sizeof(struct RURI_CONTAINER));
 #ifndef DISABLE_LIBCAP
 	// Get capabilities to drop.

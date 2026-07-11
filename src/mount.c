@@ -105,7 +105,7 @@ static char *cut_mount_flags(const char *_Nonnull source)
 				if (ret == NULL) {
 					ret = strdup(flags[i]);
 				} else {
-					char *tmp = malloc_or_panic(strlen(ret) + strlen(flags[i]) + 1);
+					char *tmp = ruri_malloc(strlen(ret) + strlen(flags[i]) + 1);
 					strcpy(tmp, ret);
 					strcat(tmp, flags[i]);
 					free(ret);
@@ -177,7 +177,7 @@ void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
 		if (!abs_source) {
 			ruri_error("{red}Error: realpath() failed for source %s\n", source);
 		}
-		char *new_source = malloc_or_panic(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
 		strcpy(new_source, flags ? flags : "");
 		strcat(new_source, fstype ? fstype : "");
 		strcat(new_source, abs_source);
@@ -213,7 +213,7 @@ void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
 		if (!abs_source) {
 			ruri_error("{red}Error: realpath() failed for source %s\n", source);
 		}
-		char *new_source = malloc_or_panic(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
 		strcpy(new_source, flags ? flags : "");
 		strcat(new_source, fstype ? fstype : "");
 		strcat(new_source, abs_source);
@@ -256,7 +256,7 @@ void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container)
 		if (!abs_source) {
 			ruri_error("{red}Error: realpath() failed for source %s\n", source);
 		}
-		char *new_source = malloc_or_panic(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
 		strcpy(new_source, flags ? flags : "");
 		strcat(new_source, fstype ? fstype : "");
 		strcat(new_source, abs_source);
@@ -350,7 +350,7 @@ static char *losetup(const char *_Nonnull img)
 	// It takes the same effect as `losetup -f`.
 	int devnr = ioctl(loopctlfd, LOOP_CTL_GET_FREE);
 	close(loopctlfd);
-	char *loopfile = malloc_or_panic(PATH_MAX);
+	char *loopfile = ruri_malloc(PATH_MAX);
 	memset(loopfile, 0, PATH_MAX);
 	sprintf(loopfile, "/dev/loop%d", devnr);
 	int loopfd = open(loopfile, O_RDWR | O_CLOEXEC);

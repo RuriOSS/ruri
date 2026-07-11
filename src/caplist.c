@@ -74,13 +74,13 @@ static int get_last_cap(void)
 // cap_from_name() that supports both upper and lower case.
 int ruri_cap_from_name(const char *str, cap_value_t *cap)
 {
-	char *buf = malloc_or_panic(strlen(str) + 1);
+	char *buf = ruri_malloc(strlen(str) + 1);
 	for (int i = 0; str[i] != '\0'; i++) {
 		buf[i] = (char)tolower(str[i]);
 	}
 	buf[strlen(str)] = '\0';
 	if (strlen(buf) > 4 && strncmp(buf, "cap_", 4) != 0) {
-		char *new_buf = malloc_or_panic(strlen(buf) + 5);
+		char *new_buf = ruri_malloc(strlen(buf) + 5);
 		sprintf(new_buf, "cap_%s", buf);
 		free(buf);
 		buf = new_buf;

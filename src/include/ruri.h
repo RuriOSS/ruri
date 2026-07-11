@@ -273,7 +273,7 @@ struct RURI_CONTAINER {
 #else
 #define ruri_profile_log(format, ...)
 #endif
-#define malloc_or_panic(size)                    \
+#define ruri_malloc(size)                        \
 	({                                       \
 		void *ruri_ptr__ = malloc(size); \
 		if (!ruri_ptr__) {               \

@@ -157,7 +157,7 @@ static void container_ps__(char *_Nonnull container_dir, int container_id)
 		}
 	}
 	seekdir(proc_dir, 0);
-	int *pids = malloc_or_panic((len + 11) * sizeof(int));
+	int *pids = ruri_malloc((len + 11) * sizeof(int));
 	memset(pids, 0, (len + 11) * sizeof(int));
 	int i = 0;
 	while ((file = readdir(proc_dir)) != NULL) {
@@ -256,7 +256,7 @@ void ruri_kill_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	seekdir(proc_dir, 0);
-	int *pids = malloc_or_panic((len + 11) * sizeof(int));
+	int *pids = ruri_malloc((len + 11) * sizeof(int));
 	memset(pids, 0, (len + 11) * sizeof(int));
 	int i = 0;
 	while ((file = readdir(proc_dir)) != NULL) {

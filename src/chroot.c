@@ -279,7 +279,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		if (container->memory == NULL) {
 			devshm_options = strdup("size=65536k,mode=1777");
 		} else {
-			devshm_options = malloc_or_panic(strlen(container->memory) + strlen("mode=1777") + 114);
+			devshm_options = ruri_malloc(strlen(container->memory) + strlen("mode=1777") + 114);
 			sprintf(devshm_options, "size=%s,mode=1777", container->memory);
 		}
 		res = mkdir("/dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
@@ -478,7 +478,7 @@ static void mount_host_runtime(const struct RURI_CONTAINER *_Nonnull container)
 	if (container->memory == NULL) {
 		devshm_options = strdup("mode=1777");
 	} else {
-		devshm_options = malloc_or_panic(strlen(container->memory) + strlen("mode=1777") + 114);
+		devshm_options = ruri_malloc(strlen(container->memory) + strlen("mode=1777") + 114);
 		sprintf(devshm_options, "size=%s,mode=1777", container->memory);
 	}
 	memset(buf, '\0', sizeof(buf));
@@ -519,8 +519,8 @@ static void drop_caps(const struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Clear CapInh.
 	// hrdp and datap are two pointers, so we malloc() to apply the memory for it first.
-	cap_user_header_t hrdp = (cap_user_header_t)malloc_or_panic(sizeof(*hrdp));
-	cap_user_data_t datap = (cap_user_data_t)malloc_or_panic(sizeof(*datap) * 10);
+	cap_user_header_t hrdp = (cap_user_header_t)ruri_malloc(sizeof(*hrdp));
+	cap_user_data_t datap = (cap_user_data_t)ruri_malloc(sizeof(*datap) * 10);
 	hrdp->pid = getpid();
 	hrdp->version = _LINUX_CAPABILITY_VERSION_3;
 	capget(hrdp, datap);
@@ -621,7 +621,7 @@ static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)
 			break;
 		}
 		// Set the mountpoint to mount.
-		mountpoint_dir = (char *)malloc_or_panic(strlen(container->extra_mountpoint[i + 1]) + strlen(container->container_dir) + 2);
+		mountpoint_dir = (char *)ruri_malloc(strlen(container->extra_mountpoint[i + 1]) + strlen(container->container_dir) + 2);
 		strcpy(mountpoint_dir, container->container_dir);
 		strcat(mountpoint_dir, container->extra_mountpoint[i + 1]);
 		if (ruri_trymount(container->extra_mountpoint[i], mountpoint_dir, 0) != 0) {
@@ -635,7 +635,7 @@ static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)
 			break;
 		}
 		// Set the mountpoint to mount.
-		mountpoint_dir = (char *)malloc_or_panic(strlen(container->extra_ro_mountpoint[i + 1]) + strlen(container->container_dir) + 2);
+		mountpoint_dir = (char *)ruri_malloc(strlen(container->extra_ro_mountpoint[i + 1]) + strlen(container->container_dir) + 2);
 		strcpy(mountpoint_dir, container->container_dir);
 		strcat(mountpoint_dir, container->extra_ro_mountpoint[i + 1]);
 		if (ruri_trymount(container->extra_ro_mountpoint[i], mountpoint_dir, MS_RDONLY) != 0) {
@@ -758,7 +758,7 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 	}
 	if (atoi(user) > 0) {
 		int groups_count = 0;
-		gid_t *groups = malloc_or_panic(NGROUPS_MAX * sizeof(gid_t));
+		gid_t *groups = ruri_malloc(NGROUPS_MAX * sizeof(gid_t));
 		groups_count = ruri_get_groups((uid_t)atoi(user), groups);
 		if (groups_count > 0) {
 			res = setgroups((size_t)groups_count, groups);
@@ -782,7 +782,7 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: user `%s` does not exist QwQ\n", user);
 		} else {
 			int groups_count = 0;
-			gid_t *groups = malloc_or_panic(NGROUPS_MAX * sizeof(gid_t));
+			gid_t *groups = ruri_malloc(NGROUPS_MAX * sizeof(gid_t));
 			uid_t user_uid = ruri_get_user_uid(user);
 			gid_t user_gid = ruri_get_user_gid(user);
 			if (RURI_PWD_ERRNO != 0) {
@@ -812,7 +812,7 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 	ruri_log("{base}Supplementary groups: \n");
 	int ngroups = getgroups(0, NULL);
 	if (ngroups > 0) {
-		gid_t *groups = malloc_or_panic((size_t)ngroups * sizeof(gid_t));
+		gid_t *groups = ruri_malloc((size_t)ngroups * sizeof(gid_t));
 		getgroups(ngroups, groups);
 		for (int i = 0; i < ngroups; i++) {
 			ruri_log("{base}Supplementary group: %d \n", groups[i]);

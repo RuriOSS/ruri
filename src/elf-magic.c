@@ -42,7 +42,7 @@ struct RURI_ELF_MAGIC *ruri_get_magic(const char *_Nonnull cross_arch)
 	 * but we have no other ways to match the architecture to its ELF magic.
 	 *
 	 */
-	struct RURI_ELF_MAGIC *ret = (struct RURI_ELF_MAGIC *)malloc_or_panic(sizeof(struct RURI_ELF_MAGIC));
+	struct RURI_ELF_MAGIC *ret = (struct RURI_ELF_MAGIC *)ruri_malloc(sizeof(struct RURI_ELF_MAGIC));
 	// Avoid to simulate the same architecture as host.
 	if (strcmp(cross_arch, RURI_HOST_ARCH) == 0) {
 		ruri_error("Do not simulate the same architecture as host.");
