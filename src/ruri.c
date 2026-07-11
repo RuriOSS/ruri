@@ -84,13 +84,23 @@ void ruri_clear_env(char *const *_Nonnull argv)
 		path_env = ruri_malloc(strlen(path_env_cont) + 16);
 		snprintf(path_env, strlen(path_env_cont) + 16, "PATH=%s", path_env_cont);
 	}
+	// Save ruri_path.
+	char ruri_bin_path[PATH_MAX] = { '\0' };
+	ssize_t ruri_bin_path_len = readlink("/proc/self/exe", ruri_bin_path, PATH_MAX - 1);
+	if (ruri_bin_path_len <= 0) {
+		snprintf(ruri_bin_path, sizeof(ruri_bin_path), "%s", "/usr/bin/ruri");
+	} else {
+		ruri_bin_path[ruri_bin_path_len] = '\0';
+	}
+	char *ruri_path_env = ruri_malloc(strlen(ruri_bin_path) + 16);
+	snprintf(ruri_path_env, strlen(ruri_bin_path) + 16, "ruri_path=%s", ruri_bin_path);
 	char *no_logs_env = getenv("ruri_no_logs");
 	if (no_logs_env) {
 		no_logs_env = strdup("ruri_no_logs=1");
 	} else {
 		no_logs_env = NULL;
 	}
-	char *envp[] = { "ruri_rexec=1", path_env, no_logs_env, NULL };
+	char *envp[] = { "ruri_rexec=1", path_env, ruri_path_env, no_logs_env, NULL };
 	if (getenv("ruri_rexec") == NULL) {
 		// Use memfd to store ruri binary.
 		// This is to prevent ruri binary from being modified by the container.
@@ -1541,6 +1551,7 @@ int ruri(int argc, char **argv)
 	struct RURI_CONTAINER *container = (struct RURI_CONTAINER *)ruri_malloc(sizeof(struct RURI_CONTAINER));
 	// Parse arguments.
 	parse_args(argc, argv, container);
+	unsetenv("ruri_path");
 	// An easter egg for meow flag.
 	if (ruri_flag("meow")) {
 		ruri_meow();

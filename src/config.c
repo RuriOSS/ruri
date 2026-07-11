@@ -117,12 +117,9 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	 * return the config as string.
 	 */
 	// Add the shebang.
-	char ruri_bin_path[PATH_MAX] = { '\0' };
-	ssize_t ruri_bin_path_len = readlink("/proc/self/exe", ruri_bin_path, PATH_MAX - 1);
-	if (ruri_bin_path_len <= 0) {
-		snprintf(ruri_bin_path, sizeof(ruri_bin_path), "%s", "/usr/bin/ruri");
-	} else {
-		ruri_bin_path[ruri_bin_path_len] = '\0';
+	char *ruri_bin_path = getenv("ruri_path");
+	if (!ruri_bin_path) {
+		ruri_bin_path = "ruri";
 	}
 	char shebang[PATH_MAX + 16] = { '\0' };
 	// Detect rurima.
