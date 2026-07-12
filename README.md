@@ -26,12 +26,15 @@
 * This program has no Super Cow Powers.
 ```
 
-> [!WARNING]
-> We are currently doing many works to improve security and extensibility, and also refectoring some old unstable implementations, so the latest version may be unstable.    
+>Some people are saying, "Oh, they canceled v3.9.4. They weren't ready for such a huge release." Wrong. Totally wrong.
 >
-> Please always check the test ci status before using the latest version, if it's failed, there must be some core functions breaked, and you should not use it, and wait the author to fix it.    
+>Yes, a few unstable commits made their way into the branch. It happens. But our developers and CI caught the issues immediately. Nobody catches bugs faster than we do. We found them, fixed them, and fixed them fast.
 >
-> But as we promised, we will keep backward compatibility of CLI usage and config file since v3.9.0, so don't worry for compatibility, and our CI will always make sure that core functions are working.    
+>Ability means nothing without stability. We ship quality. That's what we do.
+>
+>So instead of rushing out v3.9.4, we're bringing you something even better: a stronger, more stable v3.9.5 with better extensibility.
+>
+>v3.9.5 is coming. We're going to WIN AGAIN! [#MakeRuriGreatAgain](https://m.youtube.com/watch?v=dQw4w9WgXcQ)
 
 
 # About:
