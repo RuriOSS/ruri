@@ -26,6 +26,7 @@
 * This program has no Super Cow Powers.
 ```
 
+>[!NOTE]
 >Some people are saying, "Oh, they canceled v3.9.4. They weren't ready for such a huge release." Wrong. Totally wrong.
 >
 >Yes, a few unstable commits made their way into the branch. It happens. But our developers and CI caught the issues immediately. Nobody catches bugs faster than we do. We found them, fixed them, and fixed them fast.
