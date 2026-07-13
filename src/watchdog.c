@@ -304,11 +304,6 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			close(sync_pipe[0]);
 		} else {
 			ruri_warn_on_error(0, 1, true, "{red}Warning: failed to read sync signal from pid file daemon, pid file may be updated late QwQ\n");
-			// Just ignore it, the daemon may still work.
-			// But if we got error, just return, the daemon will not work.
-			if (n < 0) {
-				return -1;
-			}
 			close(sync_pipe[0]);
 		}
 	} else {
