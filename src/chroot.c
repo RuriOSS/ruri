@@ -1041,7 +1041,9 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		set_oom_score(container->oom_score_adj);
 	}
 	// Set up Seccomp BPF.
-	ruri_setup_seccomp(container);
+	if (!ruri_flag("no_seccomp")) {
+		ruri_setup_seccomp(container);
+	}
 	// Drop specified capabilities.
 	drop_caps(container);
 	// Set envs.
@@ -1192,7 +1194,9 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		set_oom_score(container->oom_score_adj);
 	}
 	// Set up Seccomp BPF.
-	ruri_setup_seccomp(container);
+	if (!ruri_flag("no_seccomp")) {
+		ruri_setup_seccomp(container);
+	}
 	// Drop caps.
 	drop_caps(container);
 	// Set envs.

@@ -580,8 +580,10 @@ Current supported flags:
 - `no_reset_pidfile`: will keep writing to the pidfile without cleaning it. For debugging.
 - `no_logs`: ruri will auto convert `ruri_no_logs` env to this flag, and will disable all logs. For debugging.
 - `wait_pidfile_lock`: As pidfile is updated asynchronously, this flag will make sure the pidfile is updated before exiting.    
+- `no_seccomp`: Disable all seccomp-based features.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    
 
 *NOTE*: The flags will trigger its side effects, like `meow` flag will even just exit the program and will not run the container, so use it only if you know what you are doing.    
+*NOTE*: Some flags are even conflict with other features/flags, like `no_seccomp` will disable all seccomp-based features.    
