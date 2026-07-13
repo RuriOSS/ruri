@@ -194,7 +194,7 @@ Another example is [rurima](https://github.com/RuriOSS/rurima), I made ruri buil
 See [Integration](doc/Integration.md) for a guide to integrate ruri into your projects.
 
 # Network isolation, when?
-Never. You need a netns wrapper, or use `empty_net_ns` with `wait_before_exec` flag to setup the empty netns by another process, but ruri will not do it for you, as it can and should surely be decoupled from ruri.    
+Never. You need a netns wrapper, or use `--pid-file` with `empty_net_ns` and `wait_before_exec` flag to setup the empty netns by another process, but ruri will not do it for you, as it can and should surely be decoupled from ruri.    
 # Performance
 
 On Macbook Air M4, orbstack, ubuntu 25.04:
