@@ -224,15 +224,6 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			return -1;
 		}
 		container->pidfile_lock_fd = fd;
-		// Try to add a F_WRLCK to the pid file, so we can lock it when writing to it.
-		struct flock fl;
-		fl.l_type = F_WRLCK;
-		fl.l_whence = SEEK_SET;
-		fl.l_start = 0;
-		fl.l_len = 0;
-		if (fcntl(container->pidfile_lock_fd, F_SETLK, &fl) < 0) {
-			ruri_error("{red}Failed to get lock on pid file %s, maybe another process is using it QwQ\n", container->pid_file);
-		}
 	}
 	pid_t pid1 = fork();
 	if (pid1 > 0) {
@@ -289,6 +280,17 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			}
 			if (file_fd < 0) {
 				exit(EXIT_FAILURE);
+			}
+			if (container->pid_file) {
+				// Try to add a F_WRLCK to the pid file, so we can lock it when writing to it.
+				struct flock fl;
+				fl.l_type = F_WRLCK;
+				fl.l_whence = SEEK_SET;
+				fl.l_start = 0;
+				fl.l_len = 0;
+				if (fcntl(container->pidfile_lock_fd, F_SETLK, &fl) < 0) {
+					ruri_error("{red}Failed to get lock on pid file %s, maybe another process is using it QwQ\n", container->pid_file);
+				}
 			}
 			if (!ruri_flag("no_reset_pidfile")) {
 				ftruncate(file_fd, 0);
