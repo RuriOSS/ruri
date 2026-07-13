@@ -70,7 +70,40 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *no_rurienv;
 		char *no_cgroup;
 		char *no_pidfile_daemon;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL, .create_geniezone_node = NULL, .create_gunyah_node = NULL, .no_reset_pidfile = NULL, .no_logs = NULL, .wait_pidfile_lock = NULL, .no_seccomp = NULL, .no_rurienv = NULL, .no_cgroup = NULL, .no_pidfile_daemon = NULL };
+		char *no_drop_caps;
+	} flags = { // clang-format off
+		.ban_futex_pi = NULL,
+		.wait_before_exec = NULL,
+		.allow_personality = NULL,
+		.force_panic = NULL,
+		.no_time_ns = NULL,
+		.no_uts_ns = NULL,
+		.no_ipc_ns = NULL,
+		.no_pid_ns = NULL,
+		.no_cgroup_ns = NULL,
+		.meow = NULL,
+		.fork_as_init = NULL,
+		.disable_warnings = NULL,
+		.auto_umount = NULL,
+		.auto_umount_on_panic = NULL,
+		.systemd_init = NULL,
+		.is_health_check = NULL,
+		.enable_tty_signals = NULL,
+		.skip_setgroups = NULL,
+		.create_kvm_node = NULL,
+		.empty_net_ns = NULL,
+		.create_geniezone_node = NULL,
+		.create_gunyah_node = NULL,
+		.no_reset_pidfile = NULL,
+		.no_logs = NULL,
+		.wait_pidfile_lock = NULL,
+		.no_seccomp = NULL,
+		.no_rurienv = NULL,
+		.no_cgroup = NULL,
+		.no_pidfile_daemon = NULL,
+		.no_drop_caps = NULL
+	};
+	// clang-format on
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -158,6 +191,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "no_pidfile_daemon")) {
 			return flags.no_pidfile_daemon;
+		}
+		if (!strcmp(flag, "no_drop_caps")) {
+			return flags.no_drop_caps;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -277,6 +313,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "no_pidfile_daemon")) {
 		flags.no_pidfile_daemon = strdup("true");
 		return flags.no_pidfile_daemon;
+	}
+	if (!strcmp(flag, "no_drop_caps")) {
+		flags.no_drop_caps = strdup("true");
+		return flags.no_drop_caps;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

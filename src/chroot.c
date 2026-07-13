@@ -1045,7 +1045,9 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		ruri_setup_seccomp(container);
 	}
 	// Drop specified capabilities.
-	drop_caps(container);
+	if (!ruri_flag("no_drop_caps")) {
+		drop_caps(container);
+	}
 	// Set envs.
 	set_envs(container);
 	// Set NO_NEW_PRIVS Flag.
@@ -1198,7 +1200,9 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		ruri_setup_seccomp(container);
 	}
 	// Drop caps.
-	drop_caps(container);
+	if (!ruri_flag("no_drop_caps")) {
+		drop_caps(container);
+	}
 	// Set envs.
 	set_envs(container);
 	// Set NO_NEW_PRIVS Flag.

@@ -584,6 +584,7 @@ Current supported flags:
 - `no_rurienv`: The internal implementation of `--no-rurienv`.
 - `no_cgroup`: Disable all cgroup-based features.
 - `no_pidfile_daemon`: Disable the pidfile daemon, `--auto-umount` and `--umount-on-panic` will also be disabled.
+- `no_drop_caps`: Do not really call cap_drop_bound(), only for debugging.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    
