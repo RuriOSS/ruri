@@ -962,7 +962,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Check binary used.
 	check_binary(container);
 	// Set up cgroup limit on host.
-	if (!container->enable_unshare) {
+	if (!container->enable_unshare && !ruri_flag("no_cgroup")) {
 		ruri_set_limit(container);
 	}
 	// We only need 0(stdin), 1(stdout), 2(stderr), and pid_fd
