@@ -1593,22 +1593,26 @@ int ruri(int argc, char **argv)
 			// Parent process, wait for child to exit.
 			int stat = 0;
 			waitpid(chroot_pid, &stat, 0);
+			// Write exit status to pid_fd.
+			if (WIFEXITED(stat)) {
+				ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));
+			} else if (WIFSIGNALED(stat)) {
+				ruri_pid_file_write(RURI_PID_FILE_SIGNALED, 128 + WTERMSIG(stat));
+			} else {
+				ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
+			}
 			// Wait pidfile lock.
 			if (ruri_flag("wait_pidfile_lock")) {
+				close(ruri_pid_file_fd(-1));
 				if (container->pid_file != NULL) {
 					ruri_pid_file_wait_lock(container->pidfile_lock_fd);
 				}
 			}
-			// Write exit status to pid_fd.
 			if (WIFEXITED(stat)) {
-				ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));
 				exit(WEXITSTATUS(stat));
-			} else if (WIFSIGNALED(stat)) {
-				ruri_pid_file_write(RURI_PID_FILE_SIGNALED, 128 + WTERMSIG(stat));
+			}
+			if (WIFSIGNALED(stat)) {
 				exit(128 + WTERMSIG(stat));
-			} else {
-				ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
-				exit(1);
 			}
 			exit(EXIT_FAILURE);
 		} else if (chroot_pid == 0) {

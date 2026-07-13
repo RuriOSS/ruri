@@ -521,23 +521,29 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		// Wait for child process to exit.
 		int stat = 0;
 		waitpid(pid, &stat, 0);
+		usleep(200);
+		// Write exit status to pid_fd.
+		if (WIFEXITED(stat)) {
+			ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));
+		} else if (WIFSIGNALED(stat)) {
+			ruri_pid_file_write(RURI_PID_FILE_SIGNALED, 128 + WTERMSIG(stat));
+		} else {
+			ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
+		}
 		// Wait pidfile lock.
 		if (ruri_flag("wait_pidfile_lock")) {
+			close(ruri_pid_file_fd(-1));
 			if (container->pid_file != NULL) {
 				ruri_pid_file_wait_lock(container->pidfile_lock_fd);
 			}
 		}
-		usleep(200);
 		if (WIFEXITED(stat)) {
-			ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));
 			exit(WEXITSTATUS(stat));
-		} else if (WIFSIGNALED(stat)) {
-			ruri_pid_file_write(RURI_PID_FILE_SIGNALED, 128 + WTERMSIG(stat));
-			exit(128 + WTERMSIG(stat));
-		} else {
-			ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
-			exit(1);
 		}
+		if (WIFSIGNALED(stat)) {
+			exit(128 + WTERMSIG(stat));
+		}
+		exit(EXIT_FAILURE);
 	} else if (pid < 0) {
 		ruri_error("{red}Fork error QwQ?\n");
 	} else {

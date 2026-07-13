@@ -187,13 +187,20 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 	 *
 	 * Call graph:
 	 * main process
-	 *   └─> fork pid file daemon
+	 *   └─> double fork() pid file daemon out
 	 *   |
 	 *   v
 	 *   └─> fork() to run container
 	 *   |              └─> container write pid to pidfile daemon
 	 *   v
-	 *  main process wait for container to exit, and write status to pidfile daemon.
+	 *  main process wait for container to exit,
+	 *  and write status to pidfile daemon.
+	 *   |
+	 *   v
+	 *  if wait_pidfile_lock set, main process will wait for pidfile lock to be released before exit.
+	 *   |
+	 *   v
+	 *  main process exit, pidfile daemon will exit too.
 	 *
 	 */
 	// Use SOCK_SEQPACKET to create a socket pair for pid file, so we can read the pid from it without worrying about buffering.
