@@ -164,13 +164,18 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Timeout watchdog received invalid pid: %s QwQ\n", buf);
 		}
 		pid_t to_watch = pid_got;
+		int pidfd = pidfd_open(to_watch, 0);
 		// Get current time in ns.
 		struct timespec ts;
 		clock_gettime(CLOCK_MONOTONIC, &ts);
 		long long start_ns = (ts.tv_sec * 1000000000LL) + ts.tv_nsec;
 		while (1) {
 			// If pid died, exit.
-			if (kill(to_watch, 0) < 0) {
+			if (pidfd >= 0) {
+				if (pidfd_send_signal(pidfd, 0, NULL, 0) < 0) {
+					exit(0);
+				}
+			} else if (kill(to_watch, 0) < 0) {
 				exit(0);
 			}
 			// Check for timeout.
@@ -182,12 +187,24 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container)
 				ruri_pid_file_write(RURI_PID_FILE_PANIC_TIMEOUT, 0);
 				usleep(100000); // Sleep 0.1s to wait for the pid file to be updated.
 				if (!ruri_flag("fork_as_init")) {
-					kill(to_watch, SIGKILL);
+					if (pidfd >= 0) {
+						pidfd_send_signal(pidfd, SIGKILL, NULL, 0);
+					} else {
+						kill(to_watch, SIGKILL);
+					}
 				} else {
-					kill(to_watch, SIGUSR1);
+					if (pidfd >= 0) {
+						pidfd_send_signal(pidfd, SIGUSR1, NULL, 0);
+					} else {
+						kill(to_watch, SIGUSR1);
+					}
 					// 3s timeout for waitpid() in daemon.
 					sleep(3);
-					kill(to_watch, SIGKILL);
+					if (pidfd >= 0) {
+						pidfd_send_signal(pidfd, SIGKILL, NULL, 0);
+					} else {
+						kill(to_watch, SIGKILL);
+					}
 				}
 				usleep(100000); // Sleep 0.1s to wait for the process to be killed.
 				if (ruri_flag("auto_umount_on_panic")) {

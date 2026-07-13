@@ -68,3 +68,22 @@
 #ifdef __ANDROID__
 #define memfd_create(...) syscall(SYS_memfd_create, __VA_ARGS__)
 #endif
+// Fix pidfd for older kernels.
+#ifndef SYS_pidfd_open // SYS_pidfd_open
+#define SYS_pidfd_open __NR_pidfd_open
+#endif // SYS_pidfd_open
+#ifndef pidfd_open // pidfd_open
+static inline int pidfd_open(pid_t pid, unsigned int flags)
+{
+	return syscall(SYS_pidfd_open, pid, flags);
+}
+#endif // pidfd_open
+#ifndef SYS_pidfd_send_signal // SYS_pidfd_send_signal
+#define SYS_pidfd_send_signal __NR_pidfd_send_signal
+#endif // SYS_pidfd_send_signal
+#ifndef pidfd_send_signal // pidfd_send_signal
+static inline int pidfd_send_signal(int pidfd, int sig, siginfo_t *info, unsigned int flags)
+{
+	return syscall(SYS_pidfd_send_signal, pidfd, sig, info, flags);
+}
+#endif // pidfd_send_signal
