@@ -151,8 +151,6 @@ struct RURI_CONTAINER {
 	char *_Nullable cross_arch;
 	// Path of QEMU binary.
 	char *_Nullable qemu_path;
-	// Do not store .rurienv file.
-	bool use_rurienv;
 	// Mount / as read-only.
 	bool ro_root;
 	// Cpuset.

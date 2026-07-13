@@ -930,7 +930,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			// Copy qemu binary into container.
 			copy_qemu_binary(container);
 			// Store container info.
-			if (!container->enable_unshare && !container->just_chroot && container->use_rurienv) {
+			if (!container->enable_unshare && !container->just_chroot && !ruri_flag("no_rurienv")) {
 				ruri_store_info(container);
 			}
 			// If `-S` option is set, bind-mount /dev/, /sys/ and /proc/ from host.
@@ -943,7 +943,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			}
 		} else {
 			// If container already mounted, sync the config.
-			if (container->use_rurienv) {
+			if (!ruri_flag("no_rurienv")) {
 				ruri_read_info(container, container->container_dir);
 			}
 		}

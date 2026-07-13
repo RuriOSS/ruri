@@ -57,10 +57,8 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->cross_arch = NULL;
 	container->qemu_path = NULL;
 	container->ns_pid = RURI_INIT_VALUE;
-#ifndef DISABLE_RURIENV
-	container->use_rurienv = true;
-#else
-	container->use_rurienv = false;
+#ifdef DISABLE_RURIENV
+	ruri_feature_flag(1, "no_rurienv");
 #endif
 	container->ro_root = false;
 	container->cpuset = NULL;
@@ -211,7 +209,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// use_rurienv.
 	ret = k2v3_add_comment(ret, "Enable using .rurienv file.");
 	ret = k2v3_add_comment(ret, "Default is true.");
-	ret = k2v3_add_config(bool, ret, "use_rurienv", container->use_rurienv);
+	ret = k2v3_add_config(bool, ret, "use_rurienv", !ruri_flag("no_rurienv"));
 	ret = k2v3_add_newline(ret);
 	// enable_default_seccomp.
 	ret = k2v3_add_comment(ret, "Enable built-in blacklist seccomp profile.");
@@ -499,9 +497,11 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 		ruri_feature_flag(0, "disable_warnings");
 	}
 	// Get use_rurienv.
-	container->use_rurienv = k2v3_get(bool, "use_rurienv", cache);
+	if (!k2v3_get(bool, "use_rurienv", cache)) {
+		ruri_feature_flag(0, "no_rurienv");
+	}
 #ifdef DISABLE_RURIENV
-	container->use_rurienv = false;
+	ruri_feature_flag(0, "no_rurienv");
 #endif
 	// Get cpuset.
 	container->cpuset = k2v3_get(char, "cpuset", cache);
@@ -758,10 +758,11 @@ void ruri_correct_config(const char *_Nonnull path)
 		container.cross_arch = k2v_get_key(char, "cross_arch", buf);
 	}
 	if (!have_key("use_rurienv", buf)) {
-		ruri_warning("{green}No key use_rurienv found, set to true\n{clear}");
-		container.use_rurienv = true;
+		ruri_warning("{green}No key use_rurienv found\n{clear}");
 	} else {
-		container.use_rurienv = k2v_get_key(bool, "use_rurienv", buf);
+		if (!k2v_get_key(bool, "use_rurienv", buf)) {
+			ruri_feature_flag(0, "no_rurienv");
+		}
 	}
 #ifdef DISABLE_RURIENV
 	container.use_rurienv = false;

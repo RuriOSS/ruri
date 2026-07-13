@@ -67,7 +67,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *no_logs;
 		char *wait_pidfile_lock;
 		char *no_seccomp;
-	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL, .create_geniezone_node = NULL, .create_gunyah_node = NULL, .no_reset_pidfile = NULL, .no_logs = NULL, .wait_pidfile_lock = NULL, .no_seccomp = NULL };
+		char *no_rurienv;
+	} flags = { .ban_futex_pi = NULL, .wait_before_exec = NULL, .allow_personality = NULL, .force_panic = NULL, .no_time_ns = NULL, .no_uts_ns = NULL, .no_ipc_ns = NULL, .no_pid_ns = NULL, .no_cgroup_ns = NULL, .meow = NULL, .fork_as_init = NULL, .disable_warnings = NULL, .auto_umount = NULL, .auto_umount_on_panic = NULL, .systemd_init = NULL, .is_health_check = NULL, .enable_tty_signals = NULL, .skip_setgroups = NULL, .create_kvm_node = NULL, .empty_net_ns = NULL, .create_geniezone_node = NULL, .create_gunyah_node = NULL, .no_reset_pidfile = NULL, .no_logs = NULL, .wait_pidfile_lock = NULL, .no_seccomp = NULL, .no_rurienv = NULL };
 	if (req == -1) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
@@ -146,6 +147,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "no_seccomp")) {
 			return flags.no_seccomp;
+		}
+		if (!strcmp(flag, "no_rurienv")) {
+			return flags.no_rurienv;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -253,6 +257,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "no_seccomp")) {
 		flags.no_seccomp = strdup("true");
 		return flags.no_seccomp;
+	}
+	if (!strcmp(flag, "no_rurienv")) {
+		flags.no_rurienv = strdup("true");
+		return flags.no_rurienv;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

@@ -115,7 +115,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	unshare_pid = fork();
 	if (unshare_pid > 0) {
 		// Store container info.
-		if (container->use_rurienv) {
+		if (!ruri_flag("no_rurienv")) {
 			container->ns_pid = unshare_pid;
 			ruri_store_info(container);
 		} else if (!ruri_flag("disable_warnings")) {
@@ -397,7 +397,7 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	ruri_check_container_dir(container->container_dir);
 	pid_t unshare_pid = RURI_INIT_VALUE;
 	// unshare(2) itself into new namespaces.
-	if (container->use_rurienv) {
+	if (!ruri_flag("no_rurienv")) {
 		container = ruri_read_info(container, container->container_dir);
 	}
 	if (container->ns_pid < 0) {

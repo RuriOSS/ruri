@@ -469,7 +469,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Do not store .rurienv file.
 		else if (strcmp(argv[index], "-N") == 0 || strcmp(argv[index], "--no-rurienv") == 0) {
-			container->use_rurienv = false;
+			ruri_feature_flag(1, "no_rurienv");
 		}
 		// Unmask dirs in /proc and /sys.
 		else if (strcmp(argv[index], "-A") == 0 || strcmp(argv[index], "--unmask-dirs") == 0) {
@@ -967,7 +967,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->no_new_privs = true;
 					break;
 				case 'N':
-					container->use_rurienv = false;
+					ruri_feature_flag(1, "no_rurienv");
 					break;
 				case 's':
 					container->enable_default_seccomp = true;

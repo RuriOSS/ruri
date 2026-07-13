@@ -581,6 +581,7 @@ Current supported flags:
 - `no_logs`: ruri will auto convert `ruri_no_logs` env to this flag, and will disable all logs. For debugging.
 - `wait_pidfile_lock`: As pidfile is updated asynchronously, this flag will make sure the pidfile is updated before exiting.    
 - `no_seccomp`: Disable all seccomp-based features.
+- `no_rurienv`: The internal implementation of `--no-rurienv`.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    

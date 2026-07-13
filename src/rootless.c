@@ -275,7 +275,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	ruri_proc_mark(RURI_CHROOT);
 	ruri_check_container_dir(container->container_dir);
 	prctl(PR_SET_DUMPABLE, 1);
-	if (container->use_rurienv) {
+	if (!ruri_flag("no_rurienv")) {
 		ruri_read_info(container, container->container_dir);
 	}
 	bool container_initlized = false;
@@ -500,7 +500,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 			set_id_map(uid, gid);
 		}
 		container->ns_pid = pid;
-		if (container->use_rurienv && !container_initlized && !container->just_chroot) {
+		if (!ruri_flag("no_rurienv") && !container_initlized && !container->just_chroot) {
 			ruri_store_info(container);
 		} else {
 			if (!ruri_flag("disable_warnings") && !container_initlized) {
