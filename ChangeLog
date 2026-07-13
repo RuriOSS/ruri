@@ -33,6 +33,7 @@
     - `no_seccomp`: Disable all seccomp-based features.
     - `no_rurienv`: The internal implementation of `--no-rurienv`.
     - `no_cgroup`: Disable all cgroup-based features.
+    - `no_pidfile_daemon`: Disable the pidfile daemon, `--auto-umount` and `--umount-on-panic` will also be disabled.
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.

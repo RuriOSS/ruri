@@ -1573,7 +1573,9 @@ int ruri(int argc, char **argv)
 	unsetenv("LD_PRELOAD");
 	ruri_profile_log("ruri() to run_container(): %lldns\n", ruri_diff_time());
 	// Daemon for pidfile.
-	ruri_setup_pid_file_daemon(container);
+	if (!ruri_flag("no_pidfile_daemon")) {
+		ruri_setup_pid_file_daemon(container);
+	}
 	// Timeout watchdog.
 	if (container->timeout > 0) {
 		ruri_setup_timeout_watchdog(container);

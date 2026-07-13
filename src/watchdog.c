@@ -49,7 +49,7 @@ void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg)
 	 * Write content to pid file fd,
 	 * the content is determined by req and arg.
 	 */
-	if (ruri_pid_file_fd(-1) < 0) {
+	if (ruri_flag("no_pidfile_daemon") || ruri_pid_file_fd(-1) < 0) {
 		return;
 	}
 	char buf[256] = { '\0' };
