@@ -192,6 +192,9 @@ ruri is ready to integrate into other projects, with the MIT License, it is comp
 An example is ruri's own build action , it runs containers for 9 different architectures to build itself, that shows its broad application prospects.
 Another example is [rurima](https://github.com/RuriOSS/rurima), I made ruri built-in for it, so it can be run as a subcommand.
 See [Integration](doc/Integration.md) for a guide to integrate ruri into your projects.
+
+# Network isolation, when?
+Never. You need a netns wrapper, or use `empty_net_ns` with `wait_before_exec` flag to setup the empty netns by another process, but ruri will not do it for you, as it can and should surely be decoupled from ruri.    
 # Performance
 
 On Macbook Air M4, orbstack, ubuntu 25.04:
