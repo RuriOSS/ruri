@@ -244,9 +244,7 @@ static const char *cprintf_add_fg_color(const char *_Nonnull buf, char **_Nonnul
 		}
 	} else {
 		ret = buf;
-		if (!skip) {
-			*str = cp_add_str(*str, "{");
-		}
+		*str = cp_add_str(*str, "{");
 	}
 	return ret;
 }
@@ -333,9 +331,7 @@ static const char *cprintf_add_bg_color(const char *_Nonnull buf, char **_Nonnul
 		}
 	} else {
 		ret = buf;
-		if (!skip) {
-			*str = cp_add_str(*str, "[");
-		}
+		*str = cp_add_str(*str, "[");
 	}
 	return ret;
 }
