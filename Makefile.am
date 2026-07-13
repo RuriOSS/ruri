@@ -20,7 +20,6 @@ ruri_SOURCES = \
 	src/rootless.c \
 	src/ruri.c \
 	src/rurienv.c \
-	src/rurifetch.c \
 	src/seccomp.c \
 	src/signal.c \
 	src/umount.c \
