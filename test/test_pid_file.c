@@ -77,9 +77,9 @@ int main(int argc, char *argv[])
 				printf("Failed to get lock on pid file.\n");
 				exit(114);
 			}
-			printf("Got lock on pid file after waiting.\n");
+			printf("Got lock on pid file after waiting. #2\n");
 		} else {
-			printf("Got lock on pid file.\n");
+			printf("Got lock on pid file. #1\n");
 		}
 		// Now we can safely read the pid file, as the child process has exited and released the lock.
 		char buffer[256];

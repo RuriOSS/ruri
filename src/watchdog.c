@@ -158,12 +158,43 @@ void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container
 		exit(EXIT_SUCCESS);
 	}
 }
+void ruri_pid_file_wait_lock(int pidfile_fd)
+{
+	int fd = pidfile_fd;
+	if (fd < 0) {
+		ruri_error("{red}Failed to open pid file for waiting lock QwQ\n");
+	}
+	struct flock fl;
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 0;
+	fl.l_len = 0;
+	if (fcntl(fd, F_SETLKW, &fl) < 0) {
+		ruri_error("{red}Failed to wait for lock on pid file QwQ\n");
+	}
+	// Release lock.
+	fl.l_type = F_UNLCK;
+	if (fcntl(fd, F_SETLK, &fl) < 0) {
+		ruri_error("{red}Failed to release lock on pid file QwQ\n");
+	}
+}
 int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Create a socket pipe and fork() a daemon.
 	 * The daemon will listen the pipe and update pid file on host side.
 	 * The daemon will also call auto-umount if requested.
+	 *
+	 * Call graph:
+	 * main process
+	 *   └─> fork pid file daemon
+	 *   |
+	 *   v
+	 *   └─> fork() to run container
+	 *   |              └─> container write pid to pidfile daemon
+	 *   v
+	 *  main process wait for container to exit, and write status to pidfile daemon.
+	 *
 	 */
 	// Use SOCK_SEQPACKET to create a socket pair for pid file, so we can read the pid from it without worrying about buffering.
 	int pid_pipe[2] = { -1, -1 };
@@ -178,6 +209,23 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 	int sync_pipe[2] = { -1, -1 };
 	if (pipe2(sync_pipe, O_CLOEXEC) < 0) {
 		ruri_warning("{red}Warning: failed to create pipe for pid file daemon sync, pid file may be updated late QwQ\n");
+	}
+	if (container->pid_file) {
+		int fd = open(container->pid_file, O_CREAT | O_CLOEXEC | O_RDWR, S_IRUSR | S_IWUSR);
+		if (fd < 0) {
+			ruri_warn_on_error(0, 1, true, "Failed to open pid file %s for writing QwQ\n", container->pid_file);
+			return -1;
+		}
+		container->pidfile_lock_fd = fd;
+		// Try to add a F_WRLCK to the pid file, so we can lock it when writing to it.
+		struct flock fl;
+		fl.l_type = F_WRLCK;
+		fl.l_whence = SEEK_SET;
+		fl.l_start = 0;
+		fl.l_len = 0;
+		if (fcntl(container->pidfile_lock_fd, F_SETLK, &fl) < 0) {
+			ruri_error("{red}Failed to get lock on pid file %s, maybe another process is using it QwQ\n", container->pid_file);
+		}
 	}
 	pid_t pid1 = fork();
 	if (pid1 > 0) {
@@ -230,7 +278,7 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			if (container->pid_file == NULL) {
 				file_fd = open("/dev/null", O_RDWR | O_CLOEXEC);
 			} else {
-				file_fd = open(container->pid_file, O_CREAT | O_CLOEXEC | O_RDWR, S_IRUSR | S_IWUSR);
+				file_fd = container->pidfile_lock_fd;
 			}
 			if (file_fd < 0) {
 				exit(EXIT_FAILURE);
@@ -238,17 +286,6 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			if (!ruri_flag("no_reset_pidfile")) {
 				ftruncate(file_fd, 0);
 				lseek(file_fd, 0, SEEK_SET);
-			}
-			// Try to add a F_WRLCK to the pid file, so we can lock it when writing to it.
-			struct flock fl;
-			fl.l_type = F_WRLCK;
-			fl.l_whence = SEEK_SET;
-			fl.l_start = 0;
-			fl.l_len = 0;
-			if (container->pid_file != NULL) {
-				if (fcntl(file_fd, F_SETLK, &fl) < 0) {
-					exit(EXIT_FAILURE);
-				}
 			}
 			char buf[256] = { 0 };
 			// Write current time to pid file, so we can detect if the container is running by checking if the pid file is updated.
@@ -286,6 +323,10 @@ read_again:
 					// If we got RURI_PANIC_*, exit now.
 					if (strncmp(buf, "RURI_PANIC_", strlen("RURI_PANIC_")) == 0) {
 						// release the lock on pid file.
+						struct flock fl;
+						fl.l_whence = SEEK_SET;
+						fl.l_start = 0;
+						fl.l_len = 0;
 						fl.l_type = F_UNLCK;
 						fcntl(file_fd, F_SETLK, &fl);
 						free(last_msg);
@@ -319,6 +360,10 @@ read_again:
 					free(last_msg);
 					last_msg = NULL;
 					// release the lock on pid file.
+					struct flock fl;
+					fl.l_whence = SEEK_SET;
+					fl.l_start = 0;
+					fl.l_len = 0;
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
 					// EOF, the other side has closed the connection, exit.
@@ -352,6 +397,10 @@ read_again:
 					free(last_msg);
 					last_msg = NULL;
 					// release the lock on pid file.
+					struct flock fl;
+					fl.l_whence = SEEK_SET;
+					fl.l_start = 0;
+					fl.l_len = 0;
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
 					if (ruri_flag("auto_umount")) {

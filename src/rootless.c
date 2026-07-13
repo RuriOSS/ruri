@@ -521,6 +521,12 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		// Wait for child process to exit.
 		int stat = 0;
 		waitpid(pid, &stat, 0);
+		// Wait pidfile lock.
+		if (ruri_flag("wait_pidfile_lock")) {
+			if (container->pid_file != NULL) {
+				ruri_pid_file_wait_lock(container->pidfile_lock_fd);
+			}
+		}
 		usleep(200);
 		if (WIFEXITED(stat)) {
 			ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));

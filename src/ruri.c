@@ -1593,6 +1593,12 @@ int ruri(int argc, char **argv)
 			// Parent process, wait for child to exit.
 			int stat = 0;
 			waitpid(chroot_pid, &stat, 0);
+			// Wait pidfile lock.
+			if (ruri_flag("wait_pidfile_lock")) {
+				if (container->pid_file != NULL) {
+					ruri_pid_file_wait_lock(container->pidfile_lock_fd);
+				}
+			}
 			// Write exit status to pid_fd.
 			if (WIFEXITED(stat)) {
 				ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));

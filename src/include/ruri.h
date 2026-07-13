@@ -204,6 +204,8 @@ struct RURI_CONTAINER {
 	float timeout;
 	// pid_out, pid outside the container.
 	pid_t pid_out;
+	// pidfile_fd, fd of pidfile.
+	int pidfile_lock_fd;
 };
 // Warnings.
 #define ruri_warning(format, ...)                                                                  \
@@ -374,6 +376,7 @@ bool ruri_flag(char *_Nonnull flag);
 void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container);
 void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container);
 void ruri_panic(int sig);
+void ruri_pid_file_wait_lock(int pidfile_fd);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

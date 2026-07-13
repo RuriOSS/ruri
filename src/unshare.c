@@ -131,6 +131,12 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		write(sync_pipe[1], pid_text, strlen(pid_text));
 		int stat = 0;
 		waitpid(unshare_pid, &stat, 0);
+		// Wait pidfile lock.
+		if (ruri_flag("wait_pidfile_lock")) {
+			if (container->pid_file != NULL) {
+				ruri_pid_file_wait_lock(container->pidfile_lock_fd);
+			}
+		}
 		// Write exit status to pid_fd.
 		if (WIFEXITED(stat)) {
 			ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));
@@ -306,6 +312,12 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		// Wait until current process exit.
 		int stat = 0;
 		waitpid(unshare_pid, &stat, 0);
+		// Wait pidfile lock.
+		if (ruri_flag("wait_pidfile_lock")) {
+			if (container->pid_file != NULL) {
+				ruri_pid_file_wait_lock(container->pidfile_lock_fd);
+			}
+		}
 		// Write exit status to pid_fd.
 		if (WIFEXITED(stat)) {
 			ruri_pid_file_write(RURI_PID_FILE_EXITED, WEXITSTATUS(stat));

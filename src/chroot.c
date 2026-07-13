@@ -889,6 +889,11 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	 * It will run container as the config in CONTAINER struct.
 	 */
 	ruri_proc_mark(RURI_CHROOT);
+	// Close pidfile_lock_fd.
+	if (container->pidfile_lock_fd >= 0) {
+		close(container->pidfile_lock_fd);
+		container->pidfile_lock_fd = RURI_INIT_VALUE;
+	}
 	if (!container->enable_unshare) {
 		ruri_check_container_dir(container->container_dir);
 	}
@@ -1104,6 +1109,11 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	 *
 	 * This function is modified from ruri_run_chroot_container().
 	 */
+	// Close pidfile_lock_fd.
+	if (container->pidfile_lock_fd >= 0) {
+		close(container->pidfile_lock_fd);
+		container->pidfile_lock_fd = RURI_INIT_VALUE;
+	}
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
 	if (!ruri_flag("enable_tty_signals")) {
 		sigset_t sigs;
