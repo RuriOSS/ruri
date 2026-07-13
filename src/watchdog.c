@@ -86,20 +86,44 @@ void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg)
 	}
 	write(ruri_pid_file_fd(-1), buf, strlen(buf));
 }
-void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container)
+void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Fork a timeout watchdog process.
 	 * The watchdog will kill the container process if it runs for too long.
 	 */
-	// Get pid to watch.
-	pid_t to_watch = getpid();
+	// Create a socket pair for timeout watchdog.
+	int pid_pipe[2] = { -1, -1 };
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, pid_pipe) < 0) {
+		ruri_error("{red}Failed to create socket pair for timeout watchdog QwQ\n");
+	}
+	container->timeout_pid_fd = pid_pipe[1];
+	// Create a sync pipe for timeout watchdog.
+	int sync_pipe[2] = { -1, -1 };
+	if (pipe2(sync_pipe, O_CLOEXEC) < 0) {
+		ruri_error("{red}Failed to create sync pipe for timeout watchdog QwQ\n");
+	}
 	// fork() twice.
 	pid_t timeout_pid1 = fork();
 	if (timeout_pid1 > 0) {
+		close(pid_pipe[0]);
+		close(sync_pipe[1]);
+		// Wait OK signal from child.
+		char buf[16] = { '\0' };
+		ssize_t bytes_read = read(sync_pipe[0], buf, sizeof(buf) - 1);
+		if (bytes_read <= 0) {
+			ruri_error("{red}Failed to read OK signal from timeout watchdog QwQ\n");
+		}
+		buf[bytes_read] = '\0';
+		if (strcmp(buf, "OK") != 0) {
+			ruri_error("{red}Timeout watchdog failed to start QwQ\n");
+		}
+		close(sync_pipe[0]);
 		// Parent process, wait for child to exit.
 		waitpid(timeout_pid1, NULL, 0);
 	} else {
+		close(pid_pipe[1]);
+		close(sync_pipe[0]);
 		// Ignore SIGTTIN and SIGTTOU.
 		signal(SIGTTIN, SIG_IGN);
 		signal(SIGTTOU, SIG_IGN);
@@ -113,12 +137,33 @@ void ruri_setup_timeout_watchdog(const struct RURI_CONTAINER *_Nonnull container
 		}
 		// Redirect output to /dev/null.
 		int dev_null_fd = open("/dev/null", O_RDWR | O_CLOEXEC);
+#ifndef RURI_DEBUG
 		if (dev_null_fd >= 0) {
 			dup2(dev_null_fd, STDOUT_FILENO);
 			dup2(dev_null_fd, STDERR_FILENO);
 			close(dev_null_fd);
 		}
-		ruri_proc_mark(RURI_DAEMON);
+#endif
+		// Write OK signal to parent.
+		write(sync_pipe[1], "OK", 2);
+		close(sync_pipe[1]);
+		// Get pid from timeout_pid_fd.
+		pid_t pid_got = 0;
+		char buf[32] = { '\0' };
+		ssize_t bytes_read = read(pid_pipe[0], buf, sizeof(buf) - 1);
+		if (bytes_read <= 0) {
+			ruri_error("{red}Failed to read pid from timeout watchdog pipe QwQ\n");
+		}
+		buf[bytes_read] = '\0';
+		if (strncmp(buf, "RURI_PID_", strlen("RURI_PID_")) != 0) {
+			ruri_error("{red}Timeout watchdog received unexpected message: %s QwQ\n", buf);
+		}
+		char *endptr = NULL;
+		pid_got = (pid_t)strtol(buf + strlen("RURI_PID_"), &endptr, 10);
+		if (endptr == buf || *endptr != '\0') {
+			ruri_error("{red}Timeout watchdog received invalid pid: %s QwQ\n", buf);
+		}
+		pid_t to_watch = pid_got;
 		// Get current time in ns.
 		struct timespec ts;
 		clock_gettime(CLOCK_MONOTONIC, &ts);

@@ -94,6 +94,7 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->enable_seccomp_whitelist = false;
 	container->pid_out = RURI_INIT_VALUE;
 	container->pidfile_lock_fd = RURI_INIT_VALUE;
+	container->timeout_pid_fd = RURI_INIT_VALUE;
 }
 static int pmcrts(const char *s1, const char *s2)
 {

@@ -563,6 +563,13 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		if (*endptr != '\0') {
 			ruri_error("{red}Failed to parse PID from sync pipe for child process\n");
 		}
+		// Write RURI_PID_{PID} to the timeout_pid_fd.
+		if (container->timeout_pid_fd >= 0) {
+			char pid_str[64] = { 0 };
+			snprintf(pid_str, sizeof(pid_str), "RURI_PID_%d", container->pid_out);
+			write(container->timeout_pid_fd, pid_str, strlen(pid_str));
+			close(container->timeout_pid_fd);
+		}
 		// Init rootless container.
 		if (!container->just_chroot) {
 			init_rootless_container(container);

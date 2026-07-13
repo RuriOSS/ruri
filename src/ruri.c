@@ -1617,6 +1617,13 @@ int ruri(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		} else if (chroot_pid == 0) {
 			container->pid_out = getpid();
+			// Write RURI_PID_{PID} to the timeout_pid_fd.
+			if (container->timeout_pid_fd >= 0) {
+				char pid_str[64] = { 0 };
+				snprintf(pid_str, sizeof(pid_str), "RURI_PID_%d", container->pid_out);
+				write(container->timeout_pid_fd, pid_str, strlen(pid_str));
+				close(container->timeout_pid_fd);
+			}
 			ruri_run_chroot_container(container);
 		} else {
 			ruri_error("{red}Failed to fork for chroot container QwQ\n");
