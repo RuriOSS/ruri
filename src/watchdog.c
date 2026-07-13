@@ -305,6 +305,7 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 		} else {
 			ruri_warn_on_error(0, 1, true, "{red}Warning: failed to read sync signal from pid file daemon, pid file may be updated late QwQ\n");
 			close(sync_pipe[0]);
+			return -1;
 		}
 	} else {
 		// First child process, fork again.
