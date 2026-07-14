@@ -41,6 +41,7 @@
     - `no_pids_cgroup`: Disable all pids cgroup based features.
     - `no_io_cgroup`: Disable all io cgroup based features.
     - `no_freezer_cgroup`: Disable all freezer cgroup based features.
+    - `no_pidfd`: Disable all pidfd based features, for debugging.
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.

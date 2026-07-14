@@ -104,6 +104,7 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *no_pids_cgroup;
 		char *no_io_cgroup;
 		char *no_freezer_cgroup;
+		char *no_pidfd;
 	} flags = { // clang-format off
 		.ban_futex_pi = NULL,
 		.wait_before_exec = NULL,
@@ -140,7 +141,8 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		.no_cpupercent_cgroup = NULL,
 		.no_pids_cgroup = NULL,
 		.no_io_cgroup = NULL,
-		.no_freezer_cgroup = NULL
+		.no_freezer_cgroup = NULL,
+		.no_pidfd = NULL
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -251,6 +253,9 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "no_freezer_cgroup")) {
 			return flags.no_freezer_cgroup;
+		}
+		if (!strcmp(flag, "no_pidfd")) {
+			return flags.no_pidfd;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -438,6 +443,11 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		free(flags.no_freezer_cgroup);
 		flags.no_freezer_cgroup = true_or_null(flag + strlen("no_freezer_cgroup"), flag);
 		return flags.no_freezer_cgroup;
+	}
+	if (!strncmp(flag, "no_pidfd", strlen("no_pidfd"))) {
+		free(flags.no_pidfd);
+		flags.no_pidfd = true_or_null(flag + strlen("no_pidfd"), flag);
+		return flags.no_pidfd;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

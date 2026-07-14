@@ -592,6 +592,7 @@ Current supported boolean flags:
 - `no_pids_cgroup`: Disable all pids cgroup based features.
 - `no_io_cgroup`: Disable all io cgroup based features.
 - `no_freezer_cgroup`: Disable all freezer cgroup based features.
+- `no_pidfd`: Disable all pidfd based features, for debugging.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    
