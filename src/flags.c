@@ -143,7 +143,7 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		.no_freezer_cgroup = NULL
 	};
 	// clang-format on
-	if (req == -1) {
+	if (req == RURI_QUERY_FLAG) {
 		if (!strcmp(flag, "ban_futex_pi")) {
 			return flags.ban_futex_pi;
 		}
@@ -254,6 +254,10 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
+	}
+	if (req != RURI_SET_FLAG) {
+		ruri_error("{red}Unknown request: %d\nThis must be an internal error QwQ", req);
+		return NULL;
 	}
 	if (!strncmp(flag, "ban_futex_pi", strlen("ban_futex_pi"))) {
 		free(flags.ban_futex_pi);
@@ -440,7 +444,7 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 }
 bool ruri_flag(char *_Nonnull flag)
 {
-	char *value = ruri_feature_flag(-1, flag);
+	char *value = ruri_feature_flag(RURI_QUERY_FLAG, flag);
 	if (value == NULL) {
 		return false;
 	}

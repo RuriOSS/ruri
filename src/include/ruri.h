@@ -319,6 +319,10 @@ struct RURI_ELF_MAGIC {
 	char *_Nonnull magic;
 	char *_Nonnull mask;
 };
+// For ruri_feature_flag().
+#define RURI_SET_FLAG (114)
+#define RURI_QUERY_FLAG (-514)
+// Common functions.
 int ruri_pid_file_fd(int req);
 void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg);
 char *ruri_get_proc_type(void);

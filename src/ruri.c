@@ -469,7 +469,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Do not store .rurienv file.
 		else if (strcmp(argv[index], "-N") == 0 || strcmp(argv[index], "--no-rurienv") == 0) {
-			ruri_feature_flag(1, "no_rurienv");
+			ruri_feature_flag(RURI_SET_FLAG, "no_rurienv");
 		}
 		// Unmask dirs in /proc and /sys.
 		else if (strcmp(argv[index], "-A") == 0 || strcmp(argv[index], "--unmask-dirs") == 0) {
@@ -518,11 +518,11 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Skip setting groups.
 		else if (strcmp(argv[index], "-g") == 0 || strcmp(argv[index], "--skip-setgroups") == 0) {
-			ruri_feature_flag(1, "skip_setgroups");
+			ruri_feature_flag(RURI_SET_FLAG, "skip_setgroups");
 		}
 		// Do not show warnings.
 		else if (strcmp(argv[index], "-w") == 0 || strcmp(argv[index], "--no-warnings") == 0) {
-			ruri_feature_flag(0, "disable_warnings");
+			ruri_feature_flag(RURI_SET_FLAG, "disable_warnings");
 		}
 		// Just chroot.
 		else if (strcmp(argv[index], "-j") == 0 || strcmp(argv[index], "--just-chroot") == 0) {
@@ -539,11 +539,11 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		// No network.
 		else if (strcmp(argv[index], "-x") == 0 || strcmp(argv[index], "--no-network") == 0) {
 			container->enable_unshare = true;
-			ruri_feature_flag(1, "empty_net_ns");
+			ruri_feature_flag(RURI_SET_FLAG, "empty_net_ns");
 		}
 		// Use kvm.
 		else if (strcmp(argv[index], "-K") == 0 || strcmp(argv[index], "--use-kvm") == 0) {
-			ruri_feature_flag(1, "create_kvm_node");
+			ruri_feature_flag(RURI_SET_FLAG, "create_kvm_node");
 		}
 		// Hidepid.
 		else if (strcmp(argv[index], "-i") == 0 || strcmp(argv[index], "--hidepid") == 0) {
@@ -829,9 +829,9 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 				ruri_error("{red}Error: --umount should only be used without other arguments QwQ\n");
 			}
 		} else if (strcmp(argv[index], "-z") == 0 || strcmp(argv[index], "--enable-tty-signals") == 0) {
-			ruri_feature_flag(1, "enable_tty_signals");
+			ruri_feature_flag(RURI_SET_FLAG, "enable_tty_signals");
 		} else if (strcmp(argv[index], "-y") == 0 || strcmp(argv[index], "--systemd") == 0) {
-			ruri_feature_flag(1, "systemd_init");
+			ruri_feature_flag(RURI_SET_FLAG, "systemd_init");
 			container->enable_unshare = true;
 		}
 		// Force enable systemd, as it is very unstable and even might panic host.
@@ -840,7 +840,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Force panic on error, for security.
 		else if (strcmp(argv[index], "--strict-mode") == 0) {
-			ruri_feature_flag(1, "force_panic");
+			ruri_feature_flag(RURI_SET_FLAG, "force_panic");
 		}
 		// Pid file.
 		else if (strcmp(argv[index], "--pid-file") == 0) {
@@ -852,15 +852,15 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Auto umount after running container.
 		else if (strcmp(argv[index], "--auto-umount") == 0) {
-			ruri_feature_flag(1, "auto_umount");
+			ruri_feature_flag(RURI_SET_FLAG, "auto_umount");
 		}
 		// Auto umount on panic.
 		else if (strcmp(argv[index], "--umount-on-panic") == 0) {
-			ruri_feature_flag(1, "auto_umount_on_panic");
+			ruri_feature_flag(RURI_SET_FLAG, "auto_umount_on_panic");
 		}
 		// Is health check process.
 		else if (strcmp(argv[index], "--health-check") == 0) {
-			ruri_feature_flag(1, "is_health_check");
+			ruri_feature_flag(RURI_SET_FLAG, "is_health_check");
 		}
 		// --enable-seccomp-whitelist
 		else if (strcmp(argv[index], "--enable-seccomp-whitelist") == 0) {
@@ -868,7 +868,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// --fork-as-init.
 		else if (strcmp(argv[index], "--fork-as-init") == 0) {
-			ruri_feature_flag(1, "fork_as_init");
+			ruri_feature_flag(RURI_SET_FLAG, "fork_as_init");
 		}
 		// Feature flags.
 		else if (strcmp(argv[index], "--set-flag") == 0) {
@@ -877,7 +877,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 				ruri_error("{red}Please specify a flag\n{clear}");
 			}
 			char *flag = argv[index];
-			ruri_feature_flag(0, flag);
+			ruri_feature_flag(RURI_SET_FLAG, flag);
 		}
 		// Timeout.
 		else if (strcmp(argv[index], "--timeout") == 0) {
@@ -958,7 +958,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					dump_config = true;
 					break;
 				case 'g':
-					ruri_feature_flag(1, "skip_setgroups");
+					ruri_feature_flag(RURI_SET_FLAG, "skip_setgroups");
 					break;
 				case 'u':
 					container->enable_unshare = true;
@@ -967,7 +967,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->no_new_privs = true;
 					break;
 				case 'N':
-					ruri_feature_flag(1, "no_rurienv");
+					ruri_feature_flag(RURI_SET_FLAG, "no_rurienv");
 					break;
 				case 's':
 					container->enable_default_seccomp = true;
@@ -982,7 +982,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->ro_root = true;
 					break;
 				case 'w':
-					ruri_feature_flag(0, "disable_warnings");
+					ruri_feature_flag(RURI_SET_FLAG, "disable_warnings");
 					break;
 				case 'f':
 					fork_exec = true;
@@ -994,10 +994,10 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->unmask_dirs = true;
 					break;
 				case 'x':
-					ruri_feature_flag(1, "empty_net_ns");
+					ruri_feature_flag(RURI_SET_FLAG, "empty_net_ns");
 					break;
 				case 'K':
-					ruri_feature_flag(1, "create_kvm_node");
+					ruri_feature_flag(RURI_SET_FLAG, "create_kvm_node");
 					break;
 				case 'b':
 					background = true;
@@ -1305,10 +1305,10 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					}
 					break;
 				case 'z':
-					ruri_feature_flag(1, "enable_tty_signals");
+					ruri_feature_flag(RURI_SET_FLAG, "enable_tty_signals");
 					break;
 				case 'y':
-					ruri_feature_flag(1, "systemd_init");
+					ruri_feature_flag(RURI_SET_FLAG, "systemd_init");
 					container->enable_unshare = true;
 					break;
 				case 'O':
@@ -1542,7 +1542,7 @@ int ruri(int argc, char **argv)
 	unsetenv("ruri_rexec");
 	char *no_logs_env = getenv("ruri_no_logs");
 	if (no_logs_env != NULL) {
-		ruri_feature_flag(1, "no_logs");
+		ruri_feature_flag(RURI_SET_FLAG, "no_logs");
 		unsetenv("ruri_no_logs");
 	}
 	for (int i = 0; i < argc; i++) {

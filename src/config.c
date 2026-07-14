@@ -58,7 +58,7 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->qemu_path = NULL;
 	container->ns_pid = RURI_INIT_VALUE;
 #ifdef DISABLE_RURIENV
-	ruri_feature_flag(1, "no_rurienv");
+	ruri_feature_flag(RURI_SET_FLAG, "no_rurienv");
 #endif
 	container->ro_root = false;
 	container->cpuset = NULL;
@@ -494,14 +494,14 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	container->ro_root = k2v3_get(bool, "ro_root", cache);
 	// Get no_warnings.
 	if (k2v3_get(bool, "no_warnings", cache)) {
-		ruri_feature_flag(0, "disable_warnings");
+		ruri_feature_flag(RURI_SET_FLAG, "disable_warnings");
 	}
 	// Get use_rurienv.
 	if (!k2v3_get(bool, "use_rurienv", cache)) {
-		ruri_feature_flag(0, "no_rurienv");
+		ruri_feature_flag(RURI_SET_FLAG, "no_rurienv");
 	}
 #ifdef DISABLE_RURIENV
-	ruri_feature_flag(0, "no_rurienv");
+	ruri_feature_flag(RURI_SET_FLAG, "no_rurienv");
 #endif
 	// Get cpuset.
 	container->cpuset = k2v3_get(char, "cpuset", cache);
@@ -529,11 +529,11 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	container->hostname = k2v3_get(char, "hostname", cache);
 	// Get no_network.
 	if (k2v3_get(bool, "no_network", cache)) {
-		ruri_feature_flag(1, "empty_net_ns");
+		ruri_feature_flag(RURI_SET_FLAG, "empty_net_ns");
 	}
 	// Get use_kvm.
 	if (k2v3_get(bool, "create_kvm_node", cache)) {
-		ruri_feature_flag(1, "create_kvm_node");
+		ruri_feature_flag(RURI_SET_FLAG, "create_kvm_node");
 	}
 	// Get hidepid.
 	container->hidepid = k2v3_get(int, "hidepid", cache);
@@ -541,7 +541,7 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	container->oom_score_adj = k2v3_get(int, "oom_score_adj", cache);
 	// Get skip_setgroups.
 	if (k2v3_get(bool, "skip_setgroups", cache)) {
-		ruri_feature_flag(1, "skip_setgroups");
+		ruri_feature_flag(RURI_SET_FLAG, "skip_setgroups");
 	}
 	// Get user.
 	if (container->user == NULL) {
@@ -585,14 +585,14 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	container->masked_path[maskedlen] = NULL;
 	// Get enable_tty_signals.
 	if (k2v3_get(bool, "enable_tty_signals", cache)) {
-		ruri_feature_flag(1, "enable_tty_signals");
+		ruri_feature_flag(RURI_SET_FLAG, "enable_tty_signals");
 	}
 	// Get command.
 	int comlen = k2v3_get(char_array, "command", cache, container->command, RURI_MAX_COMMANDS);
 	container->command[comlen] = NULL;
 	// Get systemd_mode.
 	if (k2v3_get(bool, "systemd_mode", cache)) {
-		ruri_feature_flag(1, "systemd_init");
+		ruri_feature_flag(RURI_SET_FLAG, "systemd_init");
 	}
 	free(buf);
 	k2v3_dump(cache);
@@ -724,7 +724,7 @@ void ruri_correct_config(const char *_Nonnull path)
 		ruri_warning("{green}No key no_warnings found, set to false\n{clear}");
 	} else {
 		if (k2v_get_key(bool, "no_warnings", buf)) {
-			ruri_feature_flag(0, "disable_warnings");
+			ruri_feature_flag(RURI_SET_FLAG, "disable_warnings");
 		}
 	}
 	if (!have_key("enable_unshare", buf)) {
@@ -761,7 +761,7 @@ void ruri_correct_config(const char *_Nonnull path)
 		ruri_warning("{green}No key use_rurienv found\n{clear}");
 	} else {
 		if (!k2v_get_key(bool, "use_rurienv", buf)) {
-			ruri_feature_flag(0, "no_rurienv");
+			ruri_feature_flag(RURI_SET_FLAG, "no_rurienv");
 		}
 	}
 #ifdef DISABLE_RURIENV
@@ -849,7 +849,7 @@ void ruri_correct_config(const char *_Nonnull path)
 		ruri_warning("{green}No key no_network found, set to false\n{clear}");
 	} else {
 		if (k2v_get_key(bool, "no_network", buf)) {
-			ruri_feature_flag(1, "empty_net_ns");
+			ruri_feature_flag(RURI_SET_FLAG, "empty_net_ns");
 			container.enable_unshare = true;
 		}
 	}
@@ -863,7 +863,7 @@ void ruri_correct_config(const char *_Nonnull path)
 		ruri_warning("{green}No key use_kvm found, set to false\n{clear}");
 	} else {
 		if (k2v_get_key(bool, "create_kvm_node", buf)) {
-			ruri_feature_flag(1, "create_kvm_node");
+			ruri_feature_flag(RURI_SET_FLAG, "create_kvm_node");
 		}
 	}
 	if (!have_key("timens_realtime_offset", buf)) {
@@ -888,7 +888,7 @@ void ruri_correct_config(const char *_Nonnull path)
 		ruri_warning("{green}No key systemd_mode found, set to false\n{clear}");
 	} else {
 		if (k2v_get_key(bool, "systemd_mode", buf)) {
-			ruri_feature_flag(1, "systemd_init");
+			ruri_feature_flag(RURI_SET_FLAG, "systemd_init");
 		}
 	}
 	if (!have_key("enable_seccomp_whitelist", buf)) {
