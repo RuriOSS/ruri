@@ -309,7 +309,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// Use kvm.
 	ret = k2v3_add_comment(ret, "Use kvm");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "create_kvm_node", ruri_flag("create_kvm_node"));
+	ret = k2v3_add_config(bool, ret, "create_kvm_node", ruri_has_dev("kvm"));
 	// oom_score_adj.
 	ret = k2v3_add_comment(ret, "OOM score.");
 	ret = k2v3_add_comment(ret, "Default is 0.");
