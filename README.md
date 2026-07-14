@@ -200,10 +200,10 @@ Never. You need a netns wrapper, or use `--pid-file` with `empty_net_ns` and `wa
 On Macbook Air M4, orbstack, fedora 43:
 
 ```
-[moe-hacker@fedora ruri]$ sudo /usr/bin/time -f "Time: %E\nMax memory: %M KB"  ./ruri -u ../ubuntu/ echo hello ruri
+[moe-hacker@fedora ruri]$ sudo /usr/bin/time -f "Time: %es\nMax memory: %M KB"  ./ruri -u ../ubuntu/ echo hello ruri
 hello ruri
-Time: 0:00.00
-Max memory: 5932 KB
+Time: 0.00s
+Max memory: 5936 KB
 ```
 
 ## Binary size(amd64)
