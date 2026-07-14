@@ -375,12 +375,13 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container);
 int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container);
 void ruri_fork_as_init(void);
 void ruri_check_container_dir(char *dir);
-char *ruri_feature_flag(int req, char *_Nonnull flag);
+char *ruri_feature_flag(int req, const char *_Nonnull flag);
 bool ruri_flag(char *_Nonnull flag);
 void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container);
 void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container);
 void ruri_panic(int sig);
 void ruri_pid_file_wait_lock(int pidfile_fd);
+void ruri_set_flag(const char *_Nonnull flag);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

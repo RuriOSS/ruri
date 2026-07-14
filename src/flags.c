@@ -32,7 +32,7 @@
  * Feature flags are used to enable or disable certain features in ruri.
  */
 #include "include/ruri.h"
-static char *true_or_null(char *str, char *full_flag)
+static char *true_or_null(char *str, const char *full_flag)
 {
 	/*
 	 * This function is used to convert a string to a boolean value.
@@ -60,7 +60,7 @@ static char *true_or_null(char *str, char *full_flag)
 	ruri_error("{red}Unknown flag: %s, for value `%s`\n", full_flag, str);
 }
 // Feature flags.
-char *ruri_feature_flag(int req, char *_Nonnull flag)
+char *ruri_feature_flag(int req, const char *_Nonnull flag)
 {
 	/*
 	 * We set all value to char*,
@@ -462,4 +462,8 @@ bool ruri_flag(char *_Nonnull flag)
 		return true;
 	}
 	return false;
+}
+void ruri_set_flag(const char *_Nonnull flag)
+{
+	ruri_feature_flag(RURI_SET_FLAG, flag);
 }

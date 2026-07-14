@@ -447,7 +447,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	}
 	// Get skip_setgroups.
 	if (k2v3_get(bool, "skip_setgroups", cache)) {
-		ruri_feature_flag(RURI_SET_FLAG, "skip_setgroups");
+		ruri_set_flag("skip_setgroups");
 		// Check if skip_setgroups changed.
 		if (!ruri_flag("skip_setgroups")) {
 			if (!ruri_flag("disable_warnings")) {
@@ -469,7 +469,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	}
 	// Get no_warnings.
 	if (k2v3_get(bool, "no_warnings", cache)) {
-		ruri_feature_flag(RURI_SET_FLAG, "disable_warnings");
+		ruri_set_flag("disable_warnings");
 	}
 	// User.
 	if (container->user == NULL) {
@@ -477,7 +477,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	}
 	// Get no_network.
 	if (k2v3_get(bool, "no_network", cache)) {
-		ruri_feature_flag(RURI_SET_FLAG, "empty_net_ns");
+		ruri_set_flag("empty_net_ns");
 	}
 	// Get oom_score_adj.
 	container->oom_score_adj = k2v3_get(int, "oom_score_adj", cache);
@@ -487,7 +487,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->env[envlen + 1] = NULL;
 	// Get systemd_mode.
 	if (k2v3_get(bool, "systemd_mode", cache)) {
-		ruri_feature_flag(RURI_SET_FLAG, "systemd_init");
+		ruri_set_flag("systemd_init");
 	}
 	// Qemu will only be set when initializing container.
 	free(container->cross_arch);
