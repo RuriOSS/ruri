@@ -594,6 +594,7 @@ Current supported boolean flags:
 - `no_freezer_cgroup`: Disable all freezer cgroup based features.
 - `no_pidfd`: Disable all pidfd based features, for debugging.
 - `just_chroot`: The internal implementation of `--just-chroot`, will just chroot into the container without creating runtime directories.
+- `ruri_dbg`: Enable ruri debug mode, will print logs and do other debug stuff. For debugging.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.

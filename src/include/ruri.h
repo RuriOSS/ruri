@@ -251,19 +251,15 @@ struct RURI_CONTAINER {
 		}                                                                          \
 	} while (0)
 // Log system.
-#if defined(RURI_DEBUG)
 #define ruri_log(format, ...)                                                                                                                                       \
 	do {                                                                                                                                                        \
-		if (!ruri_flag(no_logs)) {                                                                                                                          \
+		if (ruri_flag(ruri_dbg) && !ruri_flag(no_logs)) {                                                                                                   \
 			struct timeval tv;                                                                                                                          \
 			gettimeofday(&tv, NULL);                                                                                                                    \
 			cfprintf(stderr, "{green}[%ld.%06ld] from pid %d in %s() at %s line %d:\n", tv.tv_sec, tv.tv_usec, getpid(), __func__, __FILE__, __LINE__); \
 			cfprintf(stderr, format, ##__VA_ARGS__);                                                                                                    \
 		}                                                                                                                                                   \
 	} while (0)
-#else
-#define ruri_log(format, ...)
-#endif
 // Profiling log system.
 #if defined(RURI_PROFILING)
 #define ruri_profile_log(format, ...)                                                              \

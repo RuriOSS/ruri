@@ -137,13 +137,13 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container)
 		}
 		// Redirect output to /dev/null.
 		int dev_null_fd = open("/dev/null", O_RDWR | O_CLOEXEC);
-#ifndef RURI_DEBUG
-		if (dev_null_fd >= 0) {
-			dup2(dev_null_fd, STDOUT_FILENO);
-			dup2(dev_null_fd, STDERR_FILENO);
-			close(dev_null_fd);
+		if (!ruri_flag(ruri_dbg)) {
+			if (dev_null_fd >= 0) {
+				dup2(dev_null_fd, STDOUT_FILENO);
+				dup2(dev_null_fd, STDERR_FILENO);
+				close(dev_null_fd);
+			}
 		}
-#endif
 		// Write OK signal to parent.
 		write(sync_pipe[1], "OK", 2);
 		close(sync_pipe[1]);
@@ -324,10 +324,12 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 			ruri_proc_mark(RURI_DAEMON);
 			// Redirect output to /dev/null.
 			int dev_null_fd = open("/dev/null", O_RDWR | O_CLOEXEC);
-			if (dev_null_fd >= 0) {
-				dup2(dev_null_fd, STDOUT_FILENO);
-				dup2(dev_null_fd, STDERR_FILENO);
-				close(dev_null_fd);
+			if (!ruri_flag(ruri_dbg)) {
+				if (dev_null_fd >= 0) {
+					dup2(dev_null_fd, STDOUT_FILENO);
+					dup2(dev_null_fd, STDERR_FILENO);
+					close(dev_null_fd);
+				}
 			}
 			// Close the write end of the pipe in the child process, we only need to read from it.
 			close(pid_pipe[1]);

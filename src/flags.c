@@ -186,7 +186,8 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 	 * because we will have someting like flag_foo="bar" in the future.
 	 * -1 for query, other value for set.
 	 */
-	static struct RURI_FLAGS flags = { // clang-format off
+	static struct RURI_FLAGS flags = {
+		// clang-format off
 		.ban_futex_pi = NULL,
 		.wait_before_exec = NULL,
 		.allow_personality = NULL,
@@ -222,7 +223,8 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.no_freezer_cgroup = NULL,
 		.no_pidfd = NULL,
 		.dev_nodes = NULL,
-		.just_chroot = NULL
+		.just_chroot = NULL,
+		.ruri_dbg = NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -452,6 +454,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		free(flags.just_chroot);
 		flags.just_chroot = true_or_null(flag + strlen("just_chroot"), flag);
 		return flags.just_chroot;
+	}
+	if (!strncmp(flag, "ruri_dbg", strlen("ruri_dbg"))) {
+		free(flags.ruri_dbg);
+		flags.ruri_dbg = true_or_null(flag + strlen("ruri_dbg"), flag);
+		return flags.ruri_dbg;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

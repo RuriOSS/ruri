@@ -1517,6 +1517,10 @@ static void detect_suid_or_capability(void)
 // The real main() function.
 int ruri(int argc, char **argv)
 {
+#if defined(RURI_DEBUG) || defined(RURI_DEV)
+	// Enable debug log.
+	ruri_set_flag("ruri_dbg");
+#endif
 	ruri_diff_time();
 	// Detect SUID or capability.
 	detect_suid_or_capability();
@@ -1524,12 +1528,6 @@ int ruri(int argc, char **argv)
 	k2v_stop_at_warning = true;
 	// Set process name.
 	prctl(PR_SET_NAME, "ruri");
-// Set no dumpable.
-#ifndef RURI_DEBUG
-	prctl(PR_SET_DUMPABLE, 0);
-	// This need YAMA.
-	prctl(PR_SET_PTRACER, 0);
-#endif
 	// Catch coredump signal.
 	ruri_register_signal();
 // Warning for dev/debug build.
@@ -1553,6 +1551,12 @@ int ruri(int argc, char **argv)
 	// Parse arguments.
 	parse_args(argc, argv, container);
 	unsetenv("ruri_path");
+	// Set no dumpable.
+	if (!ruri_flag(ruri_dbg)) {
+		prctl(PR_SET_DUMPABLE, 0);
+		// This need YAMA.
+		prctl(PR_SET_PTRACER, 0);
+	}
 	// An easter egg for meow flag.
 	if (ruri_flag(meow)) {
 		ruri_meow();

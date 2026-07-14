@@ -843,21 +843,21 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "\n{yellow}Warning: failed to set uid QwQ\n");
 		}
 	}
-#ifdef RURI_DEV
-	// NOLINTBEGIN
-	ruri_log("{base}Changed to user: %s (uid: %d, gid: %d)\n", user, getuid(), getgid());
-	ruri_log("{base}Supplementary groups: \n");
-	int ngroups = getgroups(0, NULL);
-	if (ngroups > 0) {
-		gid_t *groups = ruri_malloc((size_t)ngroups * sizeof(gid_t));
-		getgroups(ngroups, groups);
-		for (int i = 0; i < ngroups; i++) {
-			ruri_log("{base}Supplementary group: %d \n", groups[i]);
+	if (ruri_flag(ruri_dbg)) {
+		// NOLINTBEGIN
+		ruri_log("{base}Changed to user: %s (uid: %d, gid: %d)\n", user, getuid(), getgid());
+		ruri_log("{base}Supplementary groups: \n");
+		int ngroups = getgroups(0, NULL);
+		if (ngroups > 0) {
+			gid_t *groups = ruri_malloc((size_t)ngroups * sizeof(gid_t));
+			getgroups(ngroups, groups);
+			for (int i = 0; i < ngroups; i++) {
+				ruri_log("{base}Supplementary group: %d \n", groups[i]);
+			}
+			free(groups);
 		}
-		free(groups);
+		// NOLINTEND
 	}
-	// NOLINTEND
-#endif
 }
 static void set_hostname(struct RURI_CONTAINER *_Nonnull container)
 {
