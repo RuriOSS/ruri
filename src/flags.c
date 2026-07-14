@@ -71,6 +71,12 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		char *no_cgroup;
 		char *no_pidfile_daemon;
 		char *no_drop_caps;
+		char *no_memory_cgroup;
+		char *no_cpuset_cgroup;
+		char *no_cpupercent_cgroup;
+		char *no_pids_cgroup;
+		char *no_io_cgroup;
+		char *no_freezer_cgroup;
 	} flags = { // clang-format off
 		.ban_futex_pi = NULL,
 		.wait_before_exec = NULL,
@@ -101,7 +107,13 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		.no_rurienv = NULL,
 		.no_cgroup = NULL,
 		.no_pidfile_daemon = NULL,
-		.no_drop_caps = NULL
+		.no_drop_caps = NULL,
+		.no_memory_cgroup = NULL,
+		.no_cpuset_cgroup = NULL,
+		.no_cpupercent_cgroup = NULL,
+		.no_pids_cgroup = NULL,
+		.no_io_cgroup = NULL,
+		.no_freezer_cgroup = NULL
 	};
 	// clang-format on
 	if (req == -1) {
@@ -194,6 +206,24 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "no_drop_caps")) {
 			return flags.no_drop_caps;
+		}
+		if (!strcmp(flag, "no_memory_cgroup")) {
+			return flags.no_memory_cgroup;
+		}
+		if (!strcmp(flag, "no_cpuset_cgroup")) {
+			return flags.no_cpuset_cgroup;
+		}
+		if (!strcmp(flag, "no_cpupercent_cgroup")) {
+			return flags.no_cpupercent_cgroup;
+		}
+		if (!strcmp(flag, "no_pids_cgroup")) {
+			return flags.no_pids_cgroup;
+		}
+		if (!strcmp(flag, "no_io_cgroup")) {
+			return flags.no_io_cgroup;
+		}
+		if (!strcmp(flag, "no_freezer_cgroup")) {
+			return flags.no_freezer_cgroup;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -317,6 +347,30 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 	if (!strcmp(flag, "no_drop_caps")) {
 		flags.no_drop_caps = strdup("true");
 		return flags.no_drop_caps;
+	}
+	if (!strcmp(flag, "no_memory_cgroup")) {
+		flags.no_memory_cgroup = strdup("true");
+		return flags.no_memory_cgroup;
+	}
+	if (!strcmp(flag, "no_cpuset_cgroup")) {
+		flags.no_cpuset_cgroup = strdup("true");
+		return flags.no_cpuset_cgroup;
+	}
+	if (!strcmp(flag, "no_cpupercent_cgroup")) {
+		flags.no_cpupercent_cgroup = strdup("true");
+		return flags.no_cpupercent_cgroup;
+	}
+	if (!strcmp(flag, "no_pids_cgroup")) {
+		flags.no_pids_cgroup = strdup("true");
+		return flags.no_pids_cgroup;
+	}
+	if (!strcmp(flag, "no_io_cgroup")) {
+		flags.no_io_cgroup = strdup("true");
+		return flags.no_io_cgroup;
+	}
+	if (!strcmp(flag, "no_freezer_cgroup")) {
+		flags.no_freezer_cgroup = strdup("true");
+		return flags.no_freezer_cgroup;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
