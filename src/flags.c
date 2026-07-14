@@ -97,18 +97,27 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 	}
 	// Parse flag string.
 	char *value = ruri_feature_flag(RURI_QUERY_FLAG, "dev_nodes");
+	char *new_value = NULL;
 	if (value == NULL && dev == NULL) {
 		return false;
 	}
 	if (dev) {
-		value = ruri_malloc(strlen(value) + strlen(dev) + 2);
-		strcpy(value, value);
-		strcat(value, ",");
-		strcat(value, dev);
+		if (value) {
+			new_value = ruri_malloc(strlen(value) + strlen(dev) + 2);
+			strcpy(new_value, value);
+			strcat(new_value, ",");
+			strcat(new_value, dev);
+		} else {
+			new_value = strdup(dev);
+		}
 	} else {
-		value = strdup(value);
+		if (value) {
+			new_value = strdup(value);
+		} else {
+			return false;
+		}
 	}
-	char *token = strtok(value, ",");
+	char *token = strtok(new_value, ",");
 	while (token != NULL) {
 		// +dev logic.
 		if (!strcmp(token, "+console")) {
@@ -158,12 +167,12 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 		// Unknown device logic.
 		else {
 			ruri_error("{red}Unsupported device: %s\n", token);
-			free(value);
+			free(new_value);
 			return false;
 		}
 		token = strtok(NULL, ",");
 	}
-	free(value);
+	free(new_value);
 	return false;
 }
 bool ruri_has_dev(const char *_Nonnull dev)
