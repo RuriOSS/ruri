@@ -32,6 +32,33 @@
  * Feature flags are used to enable or disable certain features in ruri.
  */
 #include "include/ruri.h"
+static char *true_or_null(char *str, char *full_flag)
+{
+	/*
+	 * This function is used to convert a string to a boolean value.
+	 *
+	 * return strdup("true") if the string is "=true", "=1", or ""
+	 * return NULL if the string is "=false" or "=0"
+	 * panic if the string is anything else.
+	 *
+	 */
+	if (!strcmp(str, "=true")) {
+		return strdup("true");
+	}
+	if (!strcmp(str, "=false")) {
+		return NULL;
+	}
+	if (!strcmp(str, "")) {
+		return strdup("true");
+	}
+	if (!strcmp(str, "=1")) {
+		return strdup("true");
+	}
+	if (!strcmp(str, "=0")) {
+		return NULL;
+	}
+	ruri_error("{red}Unknown flag: %s\n", full_flag);
+}
 // Feature flags.
 char *ruri_feature_flag(int req, char *_Nonnull flag)
 {
@@ -228,148 +255,184 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
 	}
-	if (!strcmp(flag, "ban_futex_pi")) {
-		flags.ban_futex_pi = strdup("true");
+	if (!strncmp(flag, "ban_futex_pi", strlen("ban_futex_pi"))) {
+		free(flags.ban_futex_pi);
+		flags.ban_futex_pi = true_or_null(flag + strlen("ban_futex_pi"), flag);
 		return flags.ban_futex_pi;
 	}
-	if (!strcmp(flag, "wait_before_exec")) {
-		flags.wait_before_exec = strdup("true");
+	if (!strncmp(flag, "wait_before_exec", strlen("wait_before_exec"))) {
+		free(flags.wait_before_exec);
+		flags.wait_before_exec = true_or_null(flag + strlen("wait_before_exec"), flag);
 		return flags.wait_before_exec;
 	}
-	if (!strcmp(flag, "allow_personality")) {
-		flags.allow_personality = strdup("true");
+	if (!strncmp(flag, "allow_personality", strlen("allow_personality"))) {
+		free(flags.allow_personality);
+		flags.allow_personality = true_or_null(flag + strlen("allow_personality"), flag);
 		return flags.allow_personality;
 	}
-	if (!strcmp(flag, "force_panic")) {
-		flags.force_panic = strdup("true");
+	if (!strncmp(flag, "force_panic", strlen("force_panic"))) {
+		free(flags.force_panic);
+		flags.force_panic = true_or_null(flag + strlen("force_panic"), flag);
 		return flags.force_panic;
 	}
-	if (!strcmp(flag, "no_time_ns")) {
-		flags.no_time_ns = strdup("true");
+	if (!strncmp(flag, "no_time_ns", strlen("no_time_ns"))) {
+		free(flags.no_time_ns);
+		flags.no_time_ns = true_or_null(flag + strlen("no_time_ns"), flag);
 		return flags.no_time_ns;
 	}
-	if (!strcmp(flag, "no_uts_ns")) {
-		flags.no_uts_ns = strdup("true");
+	if (!strncmp(flag, "no_uts_ns", strlen("no_uts_ns"))) {
+		free(flags.no_uts_ns);
+		flags.no_uts_ns = true_or_null(flag + strlen("no_uts_ns"), flag);
 		return flags.no_uts_ns;
 	}
-	if (!strcmp(flag, "no_ipc_ns")) {
-		flags.no_ipc_ns = strdup("true");
+	if (!strncmp(flag, "no_ipc_ns", strlen("no_ipc_ns"))) {
+		free(flags.no_ipc_ns);
+		flags.no_ipc_ns = true_or_null(flag + strlen("no_ipc_ns"), flag);
 		return flags.no_ipc_ns;
 	}
-	if (!strcmp(flag, "no_pid_ns")) {
-		flags.no_pid_ns = strdup("true");
+	if (!strncmp(flag, "no_pid_ns", strlen("no_pid_ns"))) {
+		free(flags.no_pid_ns);
+		flags.no_pid_ns = true_or_null(flag + strlen("no_pid_ns"), flag);
 		return flags.no_pid_ns;
 	}
-	if (!strcmp(flag, "no_cgroup_ns")) {
-		flags.no_cgroup_ns = strdup("true");
+	if (!strncmp(flag, "no_cgroup_ns", strlen("no_cgroup_ns"))) {
+		free(flags.no_cgroup_ns);
+		flags.no_cgroup_ns = true_or_null(flag + strlen("no_cgroup_ns"), flag);
 		return flags.no_cgroup_ns;
 	}
-	if (!strcmp(flag, "meow")) {
-		flags.meow = strdup("true");
+	if (!strncmp(flag, "meow", strlen("meow"))) {
+		free(flags.meow);
+		flags.meow = true_or_null(flag + strlen("meow"), flag);
 		return flags.meow;
 	}
-	if (!strcmp(flag, "fork_as_init")) {
-		flags.fork_as_init = strdup("true");
+	if (!strncmp(flag, "fork_as_init", strlen("fork_as_init"))) {
+		free(flags.fork_as_init);
+		flags.fork_as_init = true_or_null(flag + strlen("fork_as_init"), flag);
 		return flags.fork_as_init;
 	}
-	if (!strcmp(flag, "disable_warnings")) {
-		flags.disable_warnings = strdup("true");
+	if (!strncmp(flag, "disable_warnings", strlen("disable_warnings"))) {
+		free(flags.disable_warnings);
+		flags.disable_warnings = true_or_null(flag + strlen("disable_warnings"), flag);
 		return flags.disable_warnings;
 	}
-	if (!strcmp(flag, "auto_umount")) {
-		flags.auto_umount = strdup("true");
+	if (!strncmp(flag, "auto_umount", strlen("auto_umount"))) {
+		free(flags.auto_umount);
+		flags.auto_umount = true_or_null(flag + strlen("auto_umount"), flag);
 		return flags.auto_umount;
 	}
-	if (!strcmp(flag, "auto_umount_on_panic")) {
-		flags.auto_umount_on_panic = strdup("true");
+	if (!strncmp(flag, "auto_umount_on_panic", strlen("auto_umount_on_panic"))) {
+		free(flags.auto_umount_on_panic);
+		flags.auto_umount_on_panic = true_or_null(flag + strlen("auto_umount_on_panic"), flag);
 		return flags.auto_umount_on_panic;
 	}
-	if (!strcmp(flag, "systemd_init")) {
-		flags.systemd_init = strdup("true");
+	if (!strncmp(flag, "systemd_init", strlen("systemd_init"))) {
+		free(flags.systemd_init);
+		flags.systemd_init = true_or_null(flag + strlen("systemd_init"), flag);
 		return flags.systemd_init;
 	}
-	if (!strcmp(flag, "is_health_check")) {
-		flags.is_health_check = strdup("true");
+	if (!strncmp(flag, "is_health_check", strlen("is_health_check"))) {
+		free(flags.is_health_check);
+		flags.is_health_check = true_or_null(flag + strlen("is_health_check"), flag);
 		return flags.is_health_check;
 	}
-	if (!strcmp(flag, "enable_tty_signals")) {
-		flags.enable_tty_signals = strdup("true");
+	if (!strncmp(flag, "enable_tty_signals", strlen("enable_tty_signals"))) {
+		free(flags.enable_tty_signals);
+		flags.enable_tty_signals = true_or_null(flag + strlen("enable_tty_signals"), flag);
 		return flags.enable_tty_signals;
 	}
-	if (!strcmp(flag, "skip_setgroups")) {
-		flags.skip_setgroups = strdup("true");
+	if (!strncmp(flag, "skip_setgroups", strlen("skip_setgroups"))) {
+		free(flags.skip_setgroups);
+		flags.skip_setgroups = true_or_null(flag + strlen("skip_setgroups"), flag);
 		return flags.skip_setgroups;
 	}
-	if (!strcmp(flag, "create_kvm_node")) {
-		flags.create_kvm_node = strdup("true");
+	if (!strncmp(flag, "create_kvm_node", strlen("create_kvm_node"))) {
+		free(flags.create_kvm_node);
+		flags.create_kvm_node = true_or_null(flag + strlen("create_kvm_node"), flag);
 		return flags.create_kvm_node;
 	}
-	if (!strcmp(flag, "empty_net_ns")) {
-		flags.empty_net_ns = strdup("true");
+	if (!strncmp(flag, "empty_net_ns", strlen("empty_net_ns"))) {
+		free(flags.empty_net_ns);
+		flags.empty_net_ns = true_or_null(flag + strlen("empty_net_ns"), flag);
 		return flags.empty_net_ns;
 	}
-	if (!strcmp(flag, "create_gunyah_node")) {
-		flags.create_gunyah_node = strdup("true");
+	if (!strncmp(flag, "create_gunyah_node", strlen("create_gunyah_node"))) {
+		free(flags.create_gunyah_node);
+		flags.create_gunyah_node = true_or_null(flag + strlen("create_gunyah_node"), flag);
 		return flags.create_gunyah_node;
 	}
-	if (!strcmp(flag, "create_geniezone_node")) {
-		flags.create_geniezone_node = strdup("true");
+	if (!strncmp(flag, "create_geniezone_node", strlen("create_geniezone_node"))) {
+		free(flags.create_geniezone_node);
+		flags.create_geniezone_node = true_or_null(flag + strlen("create_geniezone_node"), flag);
 		return flags.create_geniezone_node;
 	}
-	if (!strcmp(flag, "no_reset_pidfile")) {
-		flags.no_reset_pidfile = strdup("true");
+	if (!strncmp(flag, "no_reset_pidfile", strlen("no_reset_pidfile"))) {
+		free(flags.no_reset_pidfile);
+		flags.no_reset_pidfile = true_or_null(flag + strlen("no_reset_pidfile"), flag);
 		return flags.no_reset_pidfile;
 	}
-	if (!strcmp(flag, "no_logs")) {
-		flags.no_logs = strdup("true");
+	if (!strncmp(flag, "no_logs", strlen("no_logs"))) {
+		free(flags.no_logs);
+		flags.no_logs = true_or_null(flag + strlen("no_logs"), flag);
 		return flags.no_logs;
 	}
-	if (!strcmp(flag, "wait_pidfile_lock")) {
-		flags.wait_pidfile_lock = strdup("true");
+	if (!strncmp(flag, "wait_pidfile_lock", strlen("wait_pidfile_lock"))) {
+		free(flags.wait_pidfile_lock);
+		flags.wait_pidfile_lock = true_or_null(flag + strlen("wait_pidfile_lock"), flag);
 		return flags.wait_pidfile_lock;
 	}
-	if (!strcmp(flag, "no_seccomp")) {
-		flags.no_seccomp = strdup("true");
+	if (!strncmp(flag, "no_seccomp", strlen("no_seccomp"))) {
+		free(flags.no_seccomp);
+		flags.no_seccomp = true_or_null(flag + strlen("no_seccomp"), flag);
 		return flags.no_seccomp;
 	}
-	if (!strcmp(flag, "no_rurienv")) {
-		flags.no_rurienv = strdup("true");
+	if (!strncmp(flag, "no_rurienv", strlen("no_rurienv"))) {
+		free(flags.no_rurienv);
+		flags.no_rurienv = true_or_null(flag + strlen("no_rurienv"), flag);
 		return flags.no_rurienv;
 	}
-	if (!strcmp(flag, "no_cgroup")) {
-		flags.no_cgroup = strdup("true");
+	if (!strncmp(flag, "no_cgroup", strlen("no_cgroup"))) {
+		free(flags.no_cgroup);
+		flags.no_cgroup = true_or_null(flag + strlen("no_cgroup"), flag);
 		return flags.no_cgroup;
 	}
-	if (!strcmp(flag, "no_pidfile_daemon")) {
-		flags.no_pidfile_daemon = strdup("true");
+	if (!strncmp(flag, "no_pidfile_daemon", strlen("no_pidfile_daemon"))) {
+		free(flags.no_pidfile_daemon);
+		flags.no_pidfile_daemon = true_or_null(flag + strlen("no_pidfile_daemon"), flag);
 		return flags.no_pidfile_daemon;
 	}
-	if (!strcmp(flag, "no_drop_caps")) {
-		flags.no_drop_caps = strdup("true");
+	if (!strncmp(flag, "no_drop_caps", strlen("no_drop_caps"))) {
+		free(flags.no_drop_caps);
+		flags.no_drop_caps = true_or_null(flag + strlen("no_drop_caps"), flag);
 		return flags.no_drop_caps;
 	}
-	if (!strcmp(flag, "no_memory_cgroup")) {
-		flags.no_memory_cgroup = strdup("true");
+	if (!strncmp(flag, "no_memory_cgroup", strlen("no_memory_cgroup"))) {
+		free(flags.no_memory_cgroup);
+		flags.no_memory_cgroup = true_or_null(flag + strlen("no_memory_cgroup"), flag);
 		return flags.no_memory_cgroup;
 	}
-	if (!strcmp(flag, "no_cpuset_cgroup")) {
-		flags.no_cpuset_cgroup = strdup("true");
+	if (!strncmp(flag, "no_cpuset_cgroup", strlen("no_cpuset_cgroup"))) {
+		free(flags.no_cpuset_cgroup);
+		flags.no_cpuset_cgroup = true_or_null(flag + strlen("no_cpuset_cgroup"), flag);
 		return flags.no_cpuset_cgroup;
 	}
-	if (!strcmp(flag, "no_cpupercent_cgroup")) {
-		flags.no_cpupercent_cgroup = strdup("true");
+	if (!strncmp(flag, "no_cpupercent_cgroup", strlen("no_cpupercent_cgroup"))) {
+		free(flags.no_cpupercent_cgroup);
+		flags.no_cpupercent_cgroup = true_or_null(flag + strlen("no_cpupercent_cgroup"), flag);
 		return flags.no_cpupercent_cgroup;
 	}
-	if (!strcmp(flag, "no_pids_cgroup")) {
-		flags.no_pids_cgroup = strdup("true");
+	if (!strncmp(flag, "no_pids_cgroup", strlen("no_pids_cgroup"))) {
+		free(flags.no_pids_cgroup);
+		flags.no_pids_cgroup = true_or_null(flag + strlen("no_pids_cgroup"), flag);
 		return flags.no_pids_cgroup;
 	}
-	if (!strcmp(flag, "no_io_cgroup")) {
-		flags.no_io_cgroup = strdup("true");
+	if (!strncmp(flag, "no_io_cgroup", strlen("no_io_cgroup"))) {
+		free(flags.no_io_cgroup);
+		flags.no_io_cgroup = true_or_null(flag + strlen("no_io_cgroup"), flag);
 		return flags.no_io_cgroup;
 	}
-	if (!strcmp(flag, "no_freezer_cgroup")) {
-		flags.no_freezer_cgroup = strdup("true");
+	if (!strncmp(flag, "no_freezer_cgroup", strlen("no_freezer_cgroup"))) {
+		free(flags.no_freezer_cgroup);
+		flags.no_freezer_cgroup = true_or_null(flag + strlen("no_freezer_cgroup"), flag);
 		return flags.no_freezer_cgroup;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);

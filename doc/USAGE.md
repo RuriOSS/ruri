@@ -555,7 +555,8 @@ This option will erase ruri's cmdline args before running the container, so that
 
 ruri uses feature flags for lightweight feature control. You can use this option to set a feature flag.    
 Note: This option is FULLY EXPERIMENTAL, use it only if you know what you are doing.    
-Current supported flags:    
+A boolean flag can be set with `flag_name`, `flag_name=1`, or `flag_name=true` to be true, and `flag_name=0` or `flag_name=false` to be false.    
+Current supported boolean flags:    
 - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
 - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
 - `allow_personality`: Allow personality() syscall, for compatibility with some software like debian reprotest, box86/wine, etc.    
