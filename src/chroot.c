@@ -187,17 +187,17 @@ static void prepare_systemd_cgroup_scope(const struct RURI_CONTAINER *_Nonnull c
 	snprintf(scope_dir, sizeof(scope_dir), "/sys/fs/cgroup/ruri-%d", container->container_id);
 	snprintf(scope_procs, sizeof(scope_procs), "%s/cgroup.procs", scope_dir);
 	if (mkdir(scope_dir, 0755) < 0 && errno != EEXIST) {
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create systemd cgroup scope %s: %s\n", scope_dir, strerror(errno));
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create systemd cgroup scope %s: %s\n", scope_dir, strerror(errno));
 		return;
 	}
 	int fd = open(scope_procs, O_WRONLY | O_CLOEXEC);
 	if (fd < 0) {
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to open %s: %s\n", scope_procs, strerror(errno));
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to open %s: %s\n", scope_procs, strerror(errno));
 		return;
 	}
 	snprintf(pid_buf, sizeof(pid_buf), "%d\n", getpid());
 	if (write(fd, pid_buf, strlen(pid_buf)) < 0) {
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to move systemd pid into %s: %s\n", scope_dir, strerror(errno));
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to move systemd pid into %s: %s\n", scope_dir, strerror(errno));
 	}
 	close(fd);
 }
@@ -226,14 +226,14 @@ static void setup_systemd_runtime(struct RURI_CONTAINER *_Nonnull container)
 		ruri_log("{blue}Setup /run/systemd/container for systemd runtime.\n");
 		ruri_log("{blue}systemd will treat this container as a docker container, which is good for compatibility.\n");
 	} else {
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Failed to setup /run/systemd/container\n");
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Failed to setup /run/systemd/container\n");
 	}
 	// Create journal runtime directory.
 	mkdir("/run/log", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
 	mkdir("/run/log/journal", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
 	// Create dbus runtime directory.
 	int res = mkdir("/run/dbus", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
-	ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /run/dbus, dbus service may not work.\n");
+	ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /run/dbus, dbus service may not work.\n");
 	// Ensure /var/run points to /run for dbus compatibility.
 	if (access("/var/run", F_OK) != 0) {
 		symlink("/run", "/var/run");
@@ -267,19 +267,19 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		mkdir("/dev", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		if (container->ro_root) {
 			res = mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_RDONLY, NULL);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount procfs as read-only, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount procfs as read-only, will continue.\n");
 			res = mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_RDONLY, NULL);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount sysfs as read-only, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount sysfs as read-only, will continue.\n");
 		} else {
 			res = mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount procfs, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount procfs, will continue.\n");
 			res = mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount sysfs, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount sysfs, will continue.\n");
 		}
 		res = mount("tmpfs", "/dev", "tmpfs", MS_NOSUID, "size=65536k,mode=755");
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount devtmpfs, will continue.\n");
+		ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount devtmpfs, will continue.\n");
 		// Continue mounting some other directories in /dev.
-		if (ruri_has_dev("devshm")) {
+		if (ruri_has_dev(devshm)) {
 			char *devshm_options = NULL;
 			if (container->memory == NULL) {
 				devshm_options = strdup("size=65536k,mode=1777");
@@ -288,71 +288,71 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 				sprintf(devshm_options, "size=%s,mode=1777", container->memory);
 			}
 			res = mkdir("/dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/shm, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/shm, will continue.\n");
 			res = mount("tmpfs", "/dev/shm", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, devshm_options);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount /dev/shm, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount /dev/shm, will continue.\n");
 			free(devshm_options);
 		}
 		// Mount binfmt_misc.
 		res = mount("binfmt_misc", "/proc/sys/fs/binfmt_misc", "binfmt_misc", 0, NULL);
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount binfmt_misc, will continue.\n");
+		ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount binfmt_misc, will continue.\n");
 		// Create system runtime files in /dev and then fix permissions.
-		if (ruri_has_dev("full")) {
+		if (ruri_has_dev(full)) {
 			res = mknod("/dev/full", S_IFCHR, makedev(1, 7));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/full, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/full, will continue.\n");
 			chmod("/dev/full", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		}
-		if (ruri_has_dev("null")) {
+		if (ruri_has_dev(null)) {
 			res = mknod("/dev/null", S_IFCHR, makedev(1, 3));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/null, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/null, will continue.\n");
 			chmod("/dev/null", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		}
-		if (ruri_has_dev("zero")) {
+		if (ruri_has_dev(zero)) {
 			res = mknod("/dev/zero", S_IFCHR, makedev(1, 5));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/zero, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/zero, will continue.\n");
 			chmod("/dev/zero", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		}
-		if (ruri_has_dev("devpts")) {
+		if (ruri_has_dev(devpts)) {
 			res = mkdir("/dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/pts, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/pts, will continue.\n");
 			res = mount("devpts", "/dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount devpts, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount devpts, will continue.\n");
 			// /dev/ptmx is a symlink to /dev/pts/ptmx.
 			res = symlink("/dev/pts/ptmx", "/dev/ptmx");
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/ptmx, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/ptmx, will continue.\n");
 			chown("/dev/ptmx", 0, 5);
 			chmod("/dev/ptmx", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		}
-		if (ruri_has_dev("random")) {
+		if (ruri_has_dev(random)) {
 			res = mknod("/dev/random", S_IFCHR, makedev(1, 8));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/random, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/random, will continue.\n");
 			chmod("/dev/random", S_IRUSR | S_IRGRP | S_IROTH);
 		}
-		if (ruri_has_dev("urandom")) {
+		if (ruri_has_dev(urandom)) {
 			res = mknod("/dev/urandom", S_IFCHR, makedev(1, 9));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/urandom, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/urandom, will continue.\n");
 			chmod("/dev/urandom", S_IRUSR | S_IRGRP | S_IROTH);
 		}
-		if (ruri_has_dev("net_tun")) {
+		if (ruri_has_dev(net_tun)) {
 			res = mkdir("/dev/net", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/net, will continue.\n");
 			res = mknod("/dev/net/tun", S_IFCHR, makedev(10, 200));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net/tun, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/net/tun, will continue.\n");
 		}
-		if (ruri_has_dev("kvm")) {
+		if (ruri_has_dev(kvm)) {
 			res = mknod("/dev/kvm", S_IFCHR, makedev(10, 232));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/kvm, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/kvm, will continue.\n");
 			chmod("/dev/kvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
 		// Gunyah and GenieZone nodes.
-		if (ruri_has_dev("gunyah")) {
+		if (ruri_has_dev(gunyah)) {
 			res = mknod("/dev/gunyah", S_IFCHR, makedev(10, 124));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/gunyah, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/gunyah, will continue.\n");
 			chmod("/dev/gunyah", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
-		if (ruri_has_dev("gzvm")) {
+		if (ruri_has_dev(gzvm)) {
 			res = mknod("/dev/gzvm", S_IFCHR, makedev(10, 107));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/gzvm, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/gzvm, will continue.\n");
 			chmod("/dev/gzvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
 		// Create some system runtime link files in /dev.
@@ -360,9 +360,9 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		symlink("/proc/self/fd/0", "/dev/stdin");
 		symlink("/proc/self/fd/1", "/dev/stdout");
 		symlink("/proc/self/fd/2", "/dev/stderr");
-		if (ruri_has_dev("console")) {
+		if (ruri_has_dev(console)) {
 			res = mknod("/dev/console", S_IFCHR, makedev(5, 1));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/console, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/console, will continue.\n");
 			chmod("/dev/console", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		} else {
 			symlink("/dev/null", "/dev/console");
@@ -370,15 +370,15 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		remove("/dev/tty0");
 		unlink("/dev/tty0");
 		symlink("/dev/null", "/dev/tty0");
-		if (ruri_has_dev("tty")) {
+		if (ruri_has_dev(tty)) {
 			res = mknod("/dev/tty", S_IFCHR, makedev(5, 0));
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/tty, will continue.\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/tty, will continue.\n");
 			chmod("/dev/tty", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		} else {
 			symlink("/dev/null", "/dev/tty");
 		}
 		// Setup systemd runtime environment
-		if (ruri_flag("systemd_init")) {
+		if (ruri_flag(systemd_init)) {
 			setup_systemd_runtime(container);
 		}
 		if (!container->unmask_dirs) {
@@ -399,7 +399,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			mount("tmpfs", "/sys/kernel/debug", "tmpfs", MS_RDONLY, NULL);
 			mount("tmpfs", "/sys/module", "tmpfs", MS_RDONLY, NULL);
 			mount("tmpfs", "/sys/class/net", "tmpfs", MS_RDONLY, NULL);
-			if (!ruri_flag("systemd_init")) {
+			if (!ruri_flag(systemd_init)) {
 				mount("tmpfs", "/sys/fs/cgroup", "tmpfs", MS_RDONLY, NULL);
 			}
 			// Protect some system runtime directories by mounting themselves as read-only.
@@ -427,7 +427,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			// Try to mask with /dev/null.
 			mount("/dev/null", container->masked_path[i], NULL, MS_BIND, NULL);
 			res2 = mount("/dev/null", container->masked_path[i], NULL, MS_BIND | MS_REMOUNT | MS_RDONLY, NULL);
-			ruri_warn_on_error((res1 == 0 || res2 == 0), true, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mask %s as read-only.\n", container->masked_path[i]);
+			ruri_warn_on_error((res1 == 0 || res2 == 0), true, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mask %s as read-only.\n", container->masked_path[i]);
 		}
 	} else {
 		container->first_init = false;
@@ -445,7 +445,7 @@ static void mk_char_devs(struct RURI_CONTAINER *_Nonnull container)
 		if (container->char_devs[0] == NULL) {
 			return;
 		}
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to chdir(2) to /dev, will not create char devices.\n");
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to chdir(2) to /dev, will not create char devices.\n");
 		return;
 	}
 	for (int i = 0; true; i += 3) {
@@ -455,7 +455,7 @@ static void mk_char_devs(struct RURI_CONTAINER *_Nonnull container)
 		ruri_mkdirs(container->char_devs[i], 0666);
 		rmdir(container->char_devs[i]);
 		int res = mknod(container->char_devs[i], S_IFCHR, makedev((unsigned int)atoi(container->char_devs[i + 1]), (unsigned int)atoi(container->char_devs[i + 2])));
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create char device %s, will continue.\n", container->char_devs[i]);
+		ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create char device %s, will continue.\n", container->char_devs[i]);
 		chmod(container->char_devs[i], S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	}
 	chdir("/");
@@ -543,8 +543,8 @@ static void drop_caps(const struct RURI_CONTAINER *_Nonnull container)
 		if (CAP_IS_SUPPORTED(container->drop_caplist[i])) {
 			// Drop CapBnd.
 			if (cap_drop_bound(container->drop_caplist[i]) != 0) {
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to drop cap `%s`\n", cap_to_name(container->drop_caplist[i]));
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}error reason: %s{clear}\n", strerror(errno));
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to drop cap `%s`\n", cap_to_name(container->drop_caplist[i]));
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}error reason: %s{clear}\n", strerror(errno));
 			}
 			// Drop CapAmb.
 			prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_LOWER, container->drop_caplist[i], 0, 0);
@@ -660,7 +660,7 @@ static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)
 		strcpy(mountpoint_dir, container->container_dir);
 		strcat(mountpoint_dir, container->extra_mountpoint[i + 1]);
 		if (ruri_trymount(container->extra_mountpoint[i], mountpoint_dir, 0) != 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount %s to %s, will continue.\n", container->extra_mountpoint[i], mountpoint_dir);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount %s to %s, will continue.\n", container->extra_mountpoint[i], mountpoint_dir);
 		}
 		free(mountpoint_dir);
 	}
@@ -674,7 +674,7 @@ static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)
 		strcpy(mountpoint_dir, container->container_dir);
 		strcat(mountpoint_dir, container->extra_ro_mountpoint[i + 1]);
 		if (ruri_trymount(container->extra_ro_mountpoint[i], mountpoint_dir, MS_RDONLY) != 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount %s to %s, will continue.\n", container->extra_ro_mountpoint[i], mountpoint_dir);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount %s to %s, will continue.\n", container->extra_ro_mountpoint[i], mountpoint_dir);
 		}
 		free(mountpoint_dir);
 	}
@@ -770,7 +770,7 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 	 */
 	int res = 0;
 	setgroups(0, NULL);
-	if (ruri_flag("skip_setgroups")) {
+	if (ruri_flag(skip_setgroups)) {
 		if (container->user != NULL) {
 			if (atoi(container->user) > 0) {
 				res = setgid((gid_t)atoi(container->user));
@@ -823,24 +823,24 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 			uid_t user_uid = ruri_get_user_uid(user);
 			gid_t user_gid = ruri_get_user_gid(user);
 			if (RURI_PWD_ERRNO != 0) {
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to get user info for `%s`: %s{clear}\n", user, strerror(RURI_PWD_ERRNO));
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: failed to get user info for `%s`: %s{clear}\n", user, strerror(RURI_PWD_ERRNO));
 				free(groups);
 				return;
 			}
 			groups_count = ruri_get_groups(user_uid, groups);
 			if (groups_count > 0) {
 				res = setgroups((size_t)groups_count, groups);
-				ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "\n{yellow}Warning: failed to set groups QwQ\n");
+				ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "\n{yellow}Warning: failed to set groups QwQ\n");
 			} else {
 				groups[0] = user_uid;
 				res = setgroups(1, groups);
-				ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "\n{yellow}Warning: failed to set groups QwQ\n");
+				ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "\n{yellow}Warning: failed to set groups QwQ\n");
 			}
 			free(groups);
 			res = setgid(user_gid);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "\n{yellow}Warning: failed to set gid QwQ\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "\n{yellow}Warning: failed to set gid QwQ\n");
 			res = setuid(user_uid);
-			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "\n{yellow}Warning: failed to set uid QwQ\n");
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "\n{yellow}Warning: failed to set uid QwQ\n");
 		}
 	}
 #ifdef RURI_DEV
@@ -941,7 +941,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Set hostname.
 	set_hostname(container);
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
-	if (ruri_flag("enable_tty_signals")) {
+	if (ruri_flag(enable_tty_signals)) {
 		sigset_t sigs;
 		sigemptyset(&sigs);
 		sigaddset(&sigs, SIGTTIN);
@@ -962,7 +962,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			}
 		}
 		if (!proc_mounted) {
-			if (ruri_flag("is_health_check")) {
+			if (ruri_flag(is_health_check)) {
 				ruri_error("{red}Error: health check should not run before container is initialized QwQ\n");
 			}
 			// Mount mountpoints.
@@ -971,7 +971,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			// Copy qemu binary into container.
 			copy_qemu_binary(container);
 			// Store container info.
-			if (!container->enable_unshare && !container->just_chroot && !ruri_flag("no_rurienv")) {
+			if (!container->enable_unshare && !container->just_chroot && !ruri_flag(no_rurienv)) {
 				ruri_store_info(container);
 			}
 			// If `-S` option is set, bind-mount /dev/, /sys/ and /proc/ from host.
@@ -984,7 +984,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			}
 		} else {
 			// If container already mounted, sync the config.
-			if (!ruri_flag("no_rurienv")) {
+			if (!ruri_flag(no_rurienv)) {
 				ruri_read_info(container, container->container_dir);
 			}
 		}
@@ -1009,7 +1009,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Check binary used.
 	check_binary(container);
 	// Set up cgroup limit on host.
-	if (!container->enable_unshare && !ruri_flag("no_cgroup")) {
+	if (!container->enable_unshare && !ruri_flag(no_cgroup)) {
 		ruri_set_limit(container);
 	}
 	// We only need 0(stdin), 1(stdout), 2(stderr), and pid_fd
@@ -1036,7 +1036,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Change to the work dir.
 	if (container->work_dir != NULL) {
 		if (chdir(container->work_dir) == -1) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to change to work dir `%s`\n", container->work_dir);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to change to work dir `%s`\n", container->work_dir);
 		}
 	}
 	// remove /.ruri_umounted
@@ -1061,7 +1061,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Umount binfmt_misc apifs.
 	umount2("/proc/sys/fs/binfmt_misc", MNT_DETACH | MNT_FORCE);
-	if (container->enable_unshare && container->first_init && ruri_flag("systemd_init")) {
+	if (container->enable_unshare && container->first_init && ruri_flag(systemd_init)) {
 		/*
 		 * Setup a clean cgroup v2 mount for systemd.
 		 * Let systemd create and manage its own scopes instead of pre-configuring
@@ -1074,7 +1074,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		int cgroup_mount_flags = MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME;
 		int mount_ret = mount("cgroup2", "/sys/fs/cgroup", "cgroup2", cgroup_mount_flags, NULL);
 		if (mount_ret < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount cgroup2: %s\n", strerror(errno));
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount cgroup2: %s\n", strerror(errno));
 		} else {
 			prepare_systemd_cgroup_scope(container);
 		}
@@ -1088,11 +1088,11 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		set_oom_score(container->oom_score_adj);
 	}
 	// Set up Seccomp BPF.
-	if (!ruri_flag("no_seccomp")) {
+	if (!ruri_flag(no_seccomp)) {
 		ruri_setup_seccomp(container);
 	}
 	// Drop specified capabilities.
-	if (!ruri_flag("no_drop_caps")) {
+	if (!ruri_flag(no_drop_caps)) {
 		drop_caps(container);
 	}
 	// Set envs.
@@ -1103,7 +1103,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (container->no_new_privs) {
 		prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
 	}
-	if (!ruri_flag("systemd_init")) {
+	if (!ruri_flag(systemd_init)) {
 		// Disallow raising ambient capabilities via the prctl(2) PR_CAP_AMBIENT_RAISE operation.
 		prctl(PR_SET_SECUREBITS, SECBIT_NO_CAP_AMBIENT_RAISE);
 	}
@@ -1118,13 +1118,13 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		close(i);
 	}
-	if (ruri_flag("systemd_init") && container->first_init) {
+	if (ruri_flag(systemd_init) && container->first_init) {
 		if (getpid() != 1) {
 			ruri_error("{red}Error: systemd mode requires the container to be init process (PID 1) QwQ\n");
 		}
 	}
 	ruri_profile_log("run_container() to exec(): %lldns\n", ruri_diff_time());
-	if (ruri_flag("wait_before_exec")) {
+	if (ruri_flag(wait_before_exec)) {
 		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);
 		// Wait for SIGUSR1 signal before execvp().
 		ruri_log("{base}Waiting for SIGUSR1 signal before execvp()...\n");
@@ -1139,7 +1139,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (!container->enable_unshare) {
 		ruri_pid_file_write(RURI_PID_FILE_PID, getpid());
 	}
-	if (ruri_flag("fork_as_init")) {
+	if (ruri_flag(fork_as_init)) {
 		ruri_fork_as_init();
 	}
 	// Execute the command.
@@ -1165,7 +1165,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		container->pidfile_lock_fd = RURI_INIT_VALUE;
 	}
 	// Ignore SIGTTIN, if we are running in the background, SIGTTIN may kill this process.
-	if (!ruri_flag("enable_tty_signals")) {
+	if (!ruri_flag(enable_tty_signals)) {
 		sigset_t sigs;
 		sigemptyset(&sigs);
 		sigaddset(&sigs, SIGTTIN);
@@ -1218,7 +1218,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	// Change to the work dir.
 	if (container->work_dir != NULL) {
 		if (chdir(container->work_dir) == -1) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to change to work dir `%s`\n", container->work_dir);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to change to work dir `%s`\n", container->work_dir);
 		}
 	}
 	// remove /.ruri_umounted
@@ -1242,11 +1242,11 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		set_oom_score(container->oom_score_adj);
 	}
 	// Set up Seccomp BPF.
-	if (!ruri_flag("no_seccomp")) {
+	if (!ruri_flag(no_seccomp)) {
 		ruri_setup_seccomp(container);
 	}
 	// Drop caps.
-	if (!ruri_flag("no_drop_caps")) {
+	if (!ruri_flag(no_drop_caps)) {
 		drop_caps(container);
 	}
 	// Set envs.
@@ -1257,7 +1257,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	if (container->no_new_privs) {
 		prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
 	}
-	if (!ruri_flag("systemd_init")) {
+	if (!ruri_flag(systemd_init)) {
 		// Disallow raising ambient capabilities via the prctl(2) PR_CAP_AMBIENT_RAISE operation.
 		prctl(PR_SET_SECUREBITS, SECBIT_NO_CAP_AMBIENT_RAISE);
 	}
@@ -1271,7 +1271,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		}
 		close(i);
 	}
-	if (ruri_flag("wait_before_exec")) {
+	if (ruri_flag(wait_before_exec)) {
 		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);
 		// Wait for SIGUSR1 signal before execvp().
 		ruri_log("{base}Waiting for SIGUSR1 signal before execvp()...\n");
@@ -1283,7 +1283,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		sigwait(&sigset, &sig);
 		ruri_pid_file_write(RURI_PID_FILE_PID, container->pid_out);
 	}
-	if (ruri_flag("fork_as_init")) {
+	if (ruri_flag(fork_as_init)) {
 		ruri_fork_as_init();
 	}
 	// Execute command in container.

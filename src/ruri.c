@@ -172,7 +172,7 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: mountpoint path is too long QwQ\n");
 		}
 	}
-	if (ruri_flag("systemd_init") && container->mount_host_runtime) {
+	if (ruri_flag(systemd_init) && container->mount_host_runtime) {
 		ruri_error("{red}Error: --systemd should not run with --mount-host-runtime QwQ\n");
 	}
 	// If container_dir/.rurienv and container_dir/.ruri_umounted both exists, panic.
@@ -1400,7 +1400,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 	}
 	// Error If systemd mode is enabled but even_unstable is not enabled, for safety.
-	if (ruri_flag("systemd_init") && !even_unstable) {
+	if (ruri_flag(systemd_init) && !even_unstable) {
 		ruri_error("{red}Error: systemd mode is very unstable, you must enable --even-unstable to use it, if you know what you are doing\n");
 	}
 	// Fork to background if -b is set.
@@ -1554,11 +1554,11 @@ int ruri(int argc, char **argv)
 	parse_args(argc, argv, container);
 	unsetenv("ruri_path");
 	// An easter egg for meow flag.
-	if (ruri_flag("meow")) {
+	if (ruri_flag(meow)) {
 		ruri_meow();
 	}
 	// If --fork-as-init, erase argv.
-	if (ruri_flag("fork_as_init")) {
+	if (ruri_flag(fork_as_init)) {
 		for (int i = 0; i < argc; i++) {
 			memset(argv[i], 0, strlen(argv[i]));
 		}
@@ -1573,7 +1573,7 @@ int ruri(int argc, char **argv)
 	unsetenv("LD_PRELOAD");
 	ruri_profile_log("ruri() to run_container(): %lldns\n", ruri_diff_time());
 	// Daemon for pidfile.
-	if (!ruri_flag("no_pidfile_daemon")) {
+	if (!ruri_flag(no_pidfile_daemon)) {
 		ruri_setup_pid_file_daemon(container);
 	}
 	// Timeout watchdog.
@@ -1604,7 +1604,7 @@ int ruri(int argc, char **argv)
 				ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
 			}
 			// Wait pidfile lock.
-			if (ruri_flag("wait_pidfile_lock")) {
+			if (ruri_flag(wait_pidfile_lock)) {
 				close(ruri_pid_file_fd(-1));
 				if (container->pid_file != NULL) {
 					ruri_pid_file_wait_lock(container->pidfile_lock_fd);

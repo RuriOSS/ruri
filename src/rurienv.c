@@ -181,10 +181,10 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 	ret = k2v3_add_config(char, ret, "work_dir", container->work_dir);
 	// no_warnings.
 	ret = k2v3_add_comment(ret, "Do not show warnings.");
-	ret = k2v3_add_config(bool, ret, "no_warnings", ruri_flag("disable_warnings"));
+	ret = k2v3_add_config(bool, ret, "no_warnings", ruri_flag(disable_warnings));
 	// no_network.
 	ret = k2v3_add_comment(ret, "Disable network.");
-	ret = k2v3_add_config(bool, ret, "no_network", ruri_flag("empty_net_ns"));
+	ret = k2v3_add_config(bool, ret, "no_network", ruri_flag(empty_net_ns));
 	// rootless
 	ret = k2v3_add_comment(ret, "Run rootless container.");
 	ret = k2v3_add_config(bool, ret, "rootless", container->rootless);
@@ -224,10 +224,10 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 	ret = k2v3_add_newline(ret);
 	// skip_setgroups.
 	ret = k2v3_add_comment(ret, "Skip setgroups() call.");
-	ret = k2v3_add_config(bool, ret, "skip_setgroups", ruri_flag("skip_setgroups"));
+	ret = k2v3_add_config(bool, ret, "skip_setgroups", ruri_flag(skip_setgroups));
 	// Systemd mode.
 	ret = k2v3_add_comment(ret, "Systemd mode.");
-	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag("systemd_init"));
+	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag(systemd_init));
 	return ret;
 }
 // Store container info.
@@ -361,7 +361,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		// Unset immutable flag of .rurienv.
 		umount2(file, MNT_DETACH | MNT_FORCE);
 		int fd = open(file, O_RDONLY | O_CLOEXEC);
-		if (fd < 0 && !ruri_flag("disable_warnings")) {
+		if (fd < 0 && !ruri_flag(disable_warnings)) {
 			ruri_warning("{yellow}Open .rurienv failed{clear}\n");
 			return container;
 		}
@@ -417,7 +417,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 #endif
 	// Check if drop_caplist changed.
 	if (memcmp(backup->drop_caplist, container->drop_caplist, sizeof(cap_value_t) * RURI_CAP_LAST_CAP) != 0) {
-		if (!ruri_flag("disable_warnings")) {
+		if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{yellow}.rurienv detected, drop_caplist changed{clear}\n");
 		}
 	}
@@ -425,7 +425,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->no_new_privs = k2v3_get(bool, "no_new_privs", cache);
 	// Check if no_new_privs changed.
 	if (backup->no_new_privs != container->no_new_privs) {
-		if (!ruri_flag("disable_warnings")) {
+		if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{yellow}.rurienv detected, no_new_privs changed{clear}\n");
 		}
 	}
@@ -433,7 +433,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->enable_default_seccomp = k2v3_get(bool, "enable_seccomp", cache);
 	// Check if enable_seccomp changed.
 	if (backup->enable_default_seccomp != container->enable_default_seccomp) {
-		if (!ruri_flag("disable_warnings")) {
+		if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{yellow}.rurienv detected, enable_seccomp changed{clear}\n");
 		}
 	}
@@ -441,7 +441,7 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	container->enable_seccomp_whitelist = k2v3_get(bool, "enable_seccomp_whitelist", cache);
 	// Check if enable_seccomp_whitelist changed.
 	if (backup->enable_seccomp_whitelist != container->enable_seccomp_whitelist) {
-		if (!ruri_flag("disable_warnings")) {
+		if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{yellow}.rurienv detected, enable_seccomp_whitelist changed{clear}\n");
 		}
 	}
@@ -449,8 +449,8 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	if (k2v3_get(bool, "skip_setgroups", cache)) {
 		ruri_set_flag("skip_setgroups");
 		// Check if skip_setgroups changed.
-		if (!ruri_flag("skip_setgroups")) {
-			if (!ruri_flag("disable_warnings")) {
+		if (!ruri_flag(skip_setgroups)) {
+			if (!ruri_flag(disable_warnings)) {
 				ruri_warning("{yellow}.rurienv detected, skip_setgroups changed{clear}\n");
 			}
 		}

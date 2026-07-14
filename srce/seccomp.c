@@ -43,7 +43,7 @@
 static void ruri_check_seccomp_ret(int res)
 {
 	if (res < 0 && res != -EEXIST) {
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "seccomp rule add failed: %s\n", strerror(-res));
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "seccomp rule add failed: %s\n", strerror(-res));
 	}
 }
 static int ruri_resolve_seccomp_errno(const char *_Nonnull syscall, scmp_filter_ctx *_Nonnull ctx)
@@ -238,7 +238,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 			seccomp_rule_add(ctx, SCMP_ACT_KILL, syscall_nr, 0) :<;
 		}
 	}
-	if (ruri_flag("ban_futex_pi")) {
+	if (ruri_flag(ban_futex_pi)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI2)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_TRYLOCK_PI)) :<;
@@ -615,7 +615,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_LT, AF_ALG)) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_NFC)) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_GT, AF_VSOCK)) :<;
-	if (ruri_flag("allow_personality")) {
+	if (ruri_flag(allow_personality)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 0) :<;
 	} else {
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_EQ, PER_LINUX)) :<;
@@ -744,7 +744,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 	// Load seccomp rules.
 	if (seccomp_load(ctx) != 0) {
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
 	}
 #else
 	ruri_error("libseccomp is disabled, cannot setup seccomp whitelist filter\n");
@@ -765,7 +765,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	 * NOTE: This profile is not fully tested.
 	 */
 	int res = 0;
-	if (!container->enable_default_seccomp && !container->seccomp_denied_syscall[0] && !ruri_flag("systemd_init")) {
+	if (!container->enable_default_seccomp && !container->seccomp_denied_syscall[0] && !ruri_flag(systemd_init)) {
 		return;
 	}
 	scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ALLOW);
@@ -780,12 +780,12 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			seccomp_rule_add(ctx, SCMP_ACT_KILL, syscall_nr, 0) :<;
 		}
 	}
-	if (!container->enable_default_seccomp && !ruri_flag("systemd_init")) {
+	if (!container->enable_default_seccomp && !ruri_flag(systemd_init)) {
 		// Disable no_new_privs bit by default.
 		seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 		// Load seccomp rules.
 		if (seccomp_load(ctx) != 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
 		}
 		ruri_log("{base}Seccomp filter loaded\n");
 	}
@@ -849,7 +849,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		// Disallow AF_PACKET.
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_PACKET)) :<;
 		// Disallow SOCKET_RAW.
-		if (!ruri_flag("systemd_init") && (ruri_is_in_caplist(container->drop_caplist, CAP_AUDIT_WRITE) || not_root_user)) {
+		if (!ruri_flag(systemd_init) && (ruri_is_in_caplist(container->drop_caplist, CAP_AUDIT_WRITE) || not_root_user)) {
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(socket), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, SOCK_TYPE_MASK, SOCK_RAW)) :<;
 		}
 		// Disallow SOCKET_PACKET.
@@ -910,7 +910,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, clone_flags[i], clone_flags[i])) :<;
 			}
 		}
-		if (!ruri_flag("systemd_init")) {
+		if (!ruri_flag(systemd_init)) {
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clone3), 0) :<;
 		}
 		// Why you run 8086 vm in container? Weird.
@@ -964,7 +964,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_file_load), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_load), 0) :<;
 	// As systemd eats everything, let it cook.
-	if (!ruri_flag("systemd_init")) {
+	if (!ruri_flag(systemd_init)) {
 		seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(reboot), 0) :<;
 	} else {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(reboot), 0) :<;
@@ -972,7 +972,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// Deprecated syscall, we kill it directly.
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(nfsservctl), 0) :<;
 	if (ruri_is_in_caplist(container->drop_caplist, CAP_DAC_READ_SEARCH) || not_root_user) {
-		if (!ruri_flag("systemd_init")) {
+		if (!ruri_flag(systemd_init)) {
 			// open_by_handle_at(2) can be used to access files outside of their intended scope, which is very dangerous.
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0) :<;
 			// also, name_to_handle_at(2).
@@ -981,7 +981,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	}
 	// Wine/box86 needs personality syscall.
 	// But, we cannot SCMP_ACT_ALLOW it, so just ban.
-	if (!ruri_flag("allow_personality")) {
+	if (!ruri_flag(allow_personality)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL)) :<;
 	}
 	// I think I just called pivot_root() for you bro.
@@ -1053,7 +1053,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// Disallow AF_PACKET.
 	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(0, SCMP_CMP_EQ, AF_PACKET)) :<;
 	// Disallow SOCKET_RAW.
-	if (!ruri_flag("systemd_init")) {
+	if (!ruri_flag(systemd_init)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(socket), 1, SCMP_CMP(1, SCMP_CMP_MASKED_EQ, SOCK_TYPE_MASK, SOCK_RAW)) :<;
 	}
 	// Disallow SOCKET_PACKET.
@@ -1109,7 +1109,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(clone), 1, SCMP_CMP(0, SCMP_CMP_MASKED_EQ, clone_flags[i], clone_flags[i])) :<;
 		}
 	}
-	if (!ruri_flag("systemd_init")) {
+	if (!ruri_flag(systemd_init)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clone3), 0) :<;
 	}
 	// Why you run 8086 vm in container? Weird.
@@ -1158,14 +1158,14 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_file_load), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(kexec_load), 0) :<;
 	// As systemd eats everything, let it cook.
-	if (!ruri_flag("systemd_init")) {
+	if (!ruri_flag(systemd_init)) {
 		seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(reboot), 0) :<;
 	} else {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(reboot), 0) :<;
 	}
 	// Deprecated syscall, we kill it directly.
 	seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(nfsservctl), 0) :<;
-	if (!ruri_flag("systemd_init")) {
+	if (!ruri_flag(systemd_init)) {
 		// open_by_handle_at(2) can be used to access files outside of their intended scope, which is very dangerous.
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0) :<;
 		// also, name_to_handle_at(2).
@@ -1173,7 +1173,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	}
 	// wine/box86 needs personality syscall.
 	// But, we cannot SCMP_ACT_ALLOW it, so just ban.
-	if (!ruri_flag("allow_personality")) {
+	if (!ruri_flag(allow_personality)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(personality), 1, SCMP_CMP(0, SCMP_CMP_NE, 0xFFFFFFFFUL)) :<;
 	}
 	// I think I just called pivot_root() for you bro.
@@ -1195,7 +1195,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// But, as systemctl even tries this, we just deny it as EPERM.
 	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chroot), 0) :<;
 #endif
-	if (ruri_flag("systemd_init")) {
+	if (ruri_flag(systemd_init)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(kexec_load), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(init_module), 0) :<;
@@ -1208,7 +1208,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0) :<;
 	}
-	if (ruri_flag("ban_futex_pi")) {
+	if (ruri_flag(ban_futex_pi)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI2)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_TRYLOCK_PI)) :<;
@@ -1220,7 +1220,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
 	// Load seccomp rules.
 	if (seccomp_load(ctx) != 0) {
-		ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
+		ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: failed to load seccomp filter QwQ{clear}\n");
 	}
 	ruri_log("{base}Seccomp filter loaded\n");
 #endif

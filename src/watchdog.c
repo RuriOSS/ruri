@@ -49,7 +49,7 @@ void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg)
 	 * Write content to pid file fd,
 	 * the content is determined by req and arg.
 	 */
-	if (ruri_flag("no_pidfile_daemon") || ruri_pid_file_fd(-1) < 0) {
+	if (ruri_flag(no_pidfile_daemon) || ruri_pid_file_fd(-1) < 0) {
 		return;
 	}
 	char buf[256] = { '\0' };
@@ -165,7 +165,7 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container)
 		}
 		pid_t to_watch = pid_got;
 		int pidfd = -1;
-		if (!ruri_flag("no_pidfd")) {
+		if (!ruri_flag(no_pidfd)) {
 			pidfd = pidfd_open(to_watch, 0);
 		}
 		// Get current time in ns.
@@ -174,7 +174,7 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container)
 		long long start_ns = (ts.tv_sec * 1000000000LL) + ts.tv_nsec;
 		while (1) {
 			// If pid died, exit.
-			if (!ruri_flag("no_pidfd") && pidfd >= 0) {
+			if (!ruri_flag(no_pidfd) && pidfd >= 0) {
 				if (pidfd_send_signal(pidfd, 0, NULL, 0) < 0) {
 					exit(0);
 				}
@@ -189,28 +189,28 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container)
 				// This will exit pid_file daemon.
 				ruri_pid_file_write(RURI_PID_FILE_PANIC_TIMEOUT, 0);
 				usleep(100000); // Sleep 0.1s to wait for the pid file to be updated.
-				if (!ruri_flag("fork_as_init")) {
-					if (!ruri_flag("no_pidfd") && pidfd >= 0) {
+				if (!ruri_flag(fork_as_init)) {
+					if (!ruri_flag(no_pidfd) && pidfd >= 0) {
 						pidfd_send_signal(pidfd, SIGKILL, NULL, 0);
 					} else {
 						kill(to_watch, SIGKILL);
 					}
 				} else {
-					if (!ruri_flag("no_pidfd") && pidfd >= 0) {
+					if (!ruri_flag(no_pidfd) && pidfd >= 0) {
 						pidfd_send_signal(pidfd, SIGUSR1, NULL, 0);
 					} else {
 						kill(to_watch, SIGUSR1);
 					}
 					// 3s timeout for waitpid() in daemon.
 					sleep(3);
-					if (!ruri_flag("no_pidfd") && pidfd >= 0) {
+					if (!ruri_flag(no_pidfd) && pidfd >= 0) {
 						pidfd_send_signal(pidfd, SIGKILL, NULL, 0);
 					} else {
 						kill(to_watch, SIGKILL);
 					}
 				}
 				usleep(100000); // Sleep 0.1s to wait for the process to be killed.
-				if (ruri_flag("auto_umount_on_panic")) {
+				if (ruri_flag(auto_umount_on_panic)) {
 					// Sleep 0.5s.
 					usleep(500000);
 					ruri_umount_container(container->container_dir);
@@ -353,7 +353,7 @@ int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container)
 					ruri_error("{red}Failed to get lock on pid file %s, maybe another process is using it QwQ\n", container->pid_file);
 				}
 			}
-			if (!ruri_flag("no_reset_pidfile")) {
+			if (!ruri_flag(no_reset_pidfile)) {
 				ftruncate(file_fd, 0);
 				lseek(file_fd, 0, SEEK_SET);
 			}
@@ -384,7 +384,7 @@ read_again:
 					}
 					free(last_msg);
 					last_msg = strdup(buf);
-					if (!ruri_flag("no_reset_pidfile")) {
+					if (!ruri_flag(no_reset_pidfile)) {
 						ftruncate(file_fd, 0);
 						lseek(file_fd, 0, SEEK_SET);
 					}
@@ -405,7 +405,7 @@ read_again:
 						if (strncmp(buf, "RURI_PANIC_TIMEOUT", strlen("RURI_PANIC_TIMEOUT")) == 0) {
 							exit(EXIT_FAILURE);
 						}
-						if (ruri_flag("auto_umount") || ruri_flag("auto_umount_on_panic")) {
+						if (ruri_flag(auto_umount) || ruri_flag(auto_umount_on_panic)) {
 							// Sleep 0.5s.
 							usleep(500000);
 							ruri_umount_container(container->container_dir);
@@ -420,7 +420,7 @@ read_again:
 						last_msg = strdup("RURI_INTERNAL_VOID");
 					}
 					if (strncmp(last_msg, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(last_msg, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(last_msg, "RURI_PANIC", strlen("RURI_PANIC"))) {
-						if (!ruri_flag("no_reset_pidfile")) {
+						if (!ruri_flag(no_reset_pidfile)) {
 							ftruncate(file_fd, 0);
 							lseek(file_fd, 0, SEEK_SET);
 						}
@@ -437,7 +437,7 @@ read_again:
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
 					// EOF, the other side has closed the connection, exit.
-					if (ruri_flag("auto_umount")) {
+					if (ruri_flag(auto_umount)) {
 						// Sleep 0.5s.
 						usleep(500000);
 						ruri_umount_container(container->container_dir);
@@ -457,7 +457,7 @@ read_again:
 						last_msg = strdup("RURI_INTERNAL_VOID");
 					}
 					if (strncmp(last_msg, "RURI_EXIT", strlen("RURI_EXIT")) && strncmp(last_msg, "RURI_SIGNALED", strlen("RURI_SIGNALED")) && strncmp(last_msg, "RURI_PANIC", strlen("RURI_PANIC"))) {
-						if (!ruri_flag("no_reset_pidfile")) {
+						if (!ruri_flag(no_reset_pidfile)) {
 							ftruncate(file_fd, 0);
 							lseek(file_fd, 0, SEEK_SET);
 						}
@@ -473,7 +473,7 @@ read_again:
 					fl.l_len = 0;
 					fl.l_type = F_UNLCK;
 					fcntl(file_fd, F_SETLK, &fl);
-					if (ruri_flag("auto_umount")) {
+					if (ruri_flag(auto_umount)) {
 						// Sleep 0.5s.
 						usleep(500000);
 						ruri_umount_container(container->container_dir);

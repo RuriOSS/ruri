@@ -214,7 +214,7 @@ static bool is_container_process(pid_t pid, const char *_Nonnull container_dir, 
 		ruri_warning("{base}Container directory is NULL, WHY??\n");
 		return false;
 	}
-	if (!ruri_flag("no_cgroup") && ruri_pid_in_cgroup(pid, container_id)) {
+	if (!ruri_flag(no_cgroup) && ruri_pid_in_cgroup(pid, container_id)) {
 		return true;
 	}
 	char path[PATH_MAX];
@@ -240,7 +240,7 @@ void ruri_kill_container(struct RURI_CONTAINER *_Nonnull container)
 	 * This function is called by ruri_umount_container().
 	 */
 	if (container->ns_pid > 0) {
-		if (!ruri_flag("no_cgroup") && ruri_try_cgroup_kill(container) == 0) {
+		if (!ruri_flag(no_cgroup) && ruri_try_cgroup_kill(container) == 0) {
 			ruri_log("{base}Killed container processes with cgroup v2\n");
 		}
 	}

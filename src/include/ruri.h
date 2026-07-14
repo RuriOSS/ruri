@@ -120,6 +120,7 @@ typedef int cap_value_t;
 #include "version.h"
 #include "compat.h"
 #include "hostarch.h"
+#include "flags.h"
 // Info of a container to create.
 struct RURI_CONTAINER {
 	// Container directory.
@@ -241,7 +242,7 @@ struct RURI_CONTAINER {
 #define ruri_warn_on_error(ret__, expect__, show__, format__, ...)                         \
 	do {                                                                               \
 		if (ret__ != expect__) {                                                   \
-			if (ruri_flag("force_panic")) {                                    \
+			if (ruri_flag(force_panic)) {                                      \
 				ruri_warning(format__, ##__VA_ARGS__);                     \
 				ruri_error("{red}Force panic is enabled, exiting now.\n"); \
 			} else {                                                           \
@@ -255,7 +256,7 @@ struct RURI_CONTAINER {
 #if defined(RURI_DEBUG)
 #define ruri_log(format, ...)                                                                                                                                       \
 	do {                                                                                                                                                        \
-		if (!ruri_flag("no_logs")) {                                                                                                                        \
+		if (!ruri_flag(no_logs)) {                                                                                                                          \
 			struct timeval tv;                                                                                                                          \
 			gettimeofday(&tv, NULL);                                                                                                                    \
 			cfprintf(stderr, "{green}[%ld.%06ld] from pid %d in %s() at %s line %d:\n", tv.tv_sec, tv.tv_usec, getpid(), __func__, __FILE__, __LINE__); \
@@ -319,9 +320,6 @@ struct RURI_ELF_MAGIC {
 	char *_Nonnull magic;
 	char *_Nonnull mask;
 };
-// For ruri_feature_flag().
-#define RURI_SET_FLAG (114)
-#define RURI_QUERY_FLAG (-514)
 // Common functions.
 int ruri_pid_file_fd(int req);
 void ruri_pid_file_write(enum RURI_PID_FILE_REQ req, long long arg);
@@ -375,15 +373,13 @@ void ruri_setup_timeout_watchdog(struct RURI_CONTAINER *_Nonnull container);
 int ruri_setup_pid_file_daemon(struct RURI_CONTAINER *_Nonnull container);
 void ruri_fork_as_init(void);
 void ruri_check_container_dir(char *dir);
-char *ruri_feature_flag(int req, const char *_Nonnull flag);
-bool ruri_flag(char *_Nonnull flag);
+char *ruri_feature_flag(int req, const char *_Nullable flag, size_t offset);
 void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container);
 void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container);
 void ruri_panic(int sig);
 void ruri_pid_file_wait_lock(int pidfile_fd);
 void ruri_set_flag(const char *_Nonnull flag);
-bool ruri_dev_nodes(int req, const char *_Nonnull dev);
-bool ruri_has_dev(const char *_Nonnull dev);
+bool ruri_dev_nodes(int req, const char *_Nonnull dev, size_t offset);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

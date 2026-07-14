@@ -190,7 +190,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// no_warnings.
 	ret = k2v3_add_comment(ret, "Disable warnings.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "no_warnings", ruri_flag("disable_warnings"));
+	ret = k2v3_add_config(bool, ret, "no_warnings", ruri_flag(disable_warnings));
 	ret = k2v3_add_newline(ret);
 	// cross_arch.
 	ret = k2v3_add_comment(ret, "The arch for running cross-arch container.");
@@ -209,7 +209,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// use_rurienv.
 	ret = k2v3_add_comment(ret, "Enable using .rurienv file.");
 	ret = k2v3_add_comment(ret, "Default is true.");
-	ret = k2v3_add_config(bool, ret, "use_rurienv", !ruri_flag("no_rurienv"));
+	ret = k2v3_add_config(bool, ret, "use_rurienv", !ruri_flag(no_rurienv));
 	ret = k2v3_add_newline(ret);
 	// enable_default_seccomp.
 	ret = k2v3_add_comment(ret, "Enable built-in blacklist seccomp profile.");
@@ -304,12 +304,12 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_comment(ret, "Disable network.");
 	ret = k2v3_add_comment(ret, "This also need enable_unshare to be true.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "no_network", ruri_flag("empty_net_ns"));
+	ret = k2v3_add_config(bool, ret, "no_network", ruri_flag(empty_net_ns));
 	ret = k2v3_add_newline(ret);
 	// Use kvm.
 	ret = k2v3_add_comment(ret, "Use kvm");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "create_kvm_node", ruri_has_dev("kvm"));
+	ret = k2v3_add_config(bool, ret, "create_kvm_node", ruri_has_dev(kvm));
 	// oom_score_adj.
 	ret = k2v3_add_comment(ret, "OOM score.");
 	ret = k2v3_add_comment(ret, "Default is 0.");
@@ -420,18 +420,18 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_newline(ret);
 	// enable_tty_signals.
 	ret = k2v3_add_comment(ret, "Enable TTY signals in the container.");
-	ret = k2v3_add_config(bool, ret, "enable_tty_signals", ruri_flag("enable_tty_signals"));
+	ret = k2v3_add_config(bool, ret, "enable_tty_signals", ruri_flag(enable_tty_signals));
 	ret = k2v3_add_newline(ret);
 	// skip_setgroups.
 	ret = k2v3_add_comment(ret, "Skip setgroups() call.");
-	ret = k2v3_add_config(bool, ret, "skip_setgroups", ruri_flag("skip_setgroups"));
+	ret = k2v3_add_config(bool, ret, "skip_setgroups", ruri_flag(skip_setgroups));
 	ret = k2v3_add_newline(ret);
 	// systemd_mode.
 	// WARNING: This cannot enable --even-unstable.
 	ret = k2v3_add_comment(ret, "Enable systemd mode.");
 	ret = k2v3_add_comment(ret, "Also enables unshare.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag("systemd_init"));
+	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag(systemd_init));
 	ret = k2v3_add_newline(ret);
 	return ret;
 }

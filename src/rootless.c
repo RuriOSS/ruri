@@ -117,45 +117,45 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	mount("proc", "./proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL);
 	mkdir("./dev", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 	mount("tmpfs", "./dev", "tmpfs", MS_NOSUID, "size=65536k,mode=755");
-	if (ruri_has_dev("full")) {
+	if (ruri_has_dev(full)) {
 		close(open("./dev/full", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/full", "./dev/full", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("null")) {
+	if (ruri_has_dev(null)) {
 		close(open("./dev/null", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/null", "./dev/null", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("random")) {
+	if (ruri_has_dev(random)) {
 		close(open("./dev/random", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/random", "./dev/random", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("urandom")) {
+	if (ruri_has_dev(urandom)) {
 		close(open("./dev/urandom", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/urandom", "./dev/urandom", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("zero")) {
+	if (ruri_has_dev(zero)) {
 		close(open("./dev/zero", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/zero", "./dev/zero", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("kvm")) {
+	if (ruri_has_dev(kvm)) {
 		close(open("./dev/kvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/kvm", "./dev/kvm", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("gunyah")) {
-		if (!ruri_flag("disable_warnings")) {
+	if (ruri_has_dev(gunyah)) {
+		if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{green} How you made rootless container work on qcom devices? Crazy!");
 		}
 		close(open("./dev/gunyah", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/gunyah", "./dev/gunyah", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("gzvm")) {
-		if (!ruri_flag("disable_warnings")) {
+	if (ruri_has_dev(gzvm)) {
+		if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{green} How you made rootless container work on mtk devices? Crazy!");
 		}
 		close(open("./dev/gzvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/gzvm", "./dev/gzvm", NULL, MS_BIND, NULL);
 	}
-	if (ruri_has_dev("devpts")) {
+	if (ruri_has_dev(devpts)) {
 		mkdir("./dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		mount("devpts", "./dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
 		symlink("./dev/pts/ptmx", "./dev/ptmx");
@@ -165,19 +165,19 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	symlink("/proc/self/fd/1", "./dev/stdout");
 	symlink("/proc/self/fd/2", "./dev/stderr");
 	symlink("./dev/null", "./dev/tty0");
-	if (ruri_has_dev("tty")) {
+	if (ruri_has_dev(tty)) {
 		close(open("./dev/tty", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/tty", "./dev/tty", NULL, MS_BIND, NULL);
 	} else {
 		symlink("./dev/null", "./dev/tty");
 	}
-	if (ruri_has_dev("console")) {
+	if (ruri_has_dev(console)) {
 		close(open("./dev/console", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/console", "./dev/console", NULL, MS_BIND, NULL);
 	} else {
 		symlink("./dev/null", "./dev/console");
 	}
-	if (ruri_has_dev("devshm")) {
+	if (ruri_has_dev(devshm)) {
 		char *devshm_options = NULL;
 		if (container->memory == NULL) {
 			devshm_options = strdup("mode=1777");
@@ -189,7 +189,7 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		mount("tmpfs", "./dev/shm", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, devshm_options);
 		free(devshm_options);
 	}
-	if (ruri_has_dev("net_tun")) {
+	if (ruri_has_dev(net_tun)) {
 		mkdir("./dev/net", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		close(open("./dev/net/tun", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/net/tun", "./dev/net/tun", NULL, MS_BIND, NULL);
@@ -304,7 +304,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	ruri_proc_mark(RURI_CHROOT);
 	ruri_check_container_dir(container->container_dir);
 	prctl(PR_SET_DUMPABLE, 1);
-	if (!ruri_flag("no_rurienv")) {
+	if (!ruri_flag(no_rurienv)) {
 		ruri_read_info(container, container->container_dir);
 	}
 	bool container_initlized = false;
@@ -397,7 +397,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		sprintf(uts_ns, "/proc/%d/ns/uts", container->ns_pid);
 		int uts_ns_fd = open(uts_ns, O_RDONLY | O_CLOEXEC);
 		if (uts_ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(uts_ns_fd, CLONE_NEWUTS) == -1) {
 				ruri_error("{red}Failed to setns(2) to %s\n", uts_ns);
@@ -408,7 +408,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		sprintf(ipc_ns, "/proc/%d/ns/ipc", container->ns_pid);
 		int ipc_ns_fd = open(ipc_ns, O_RDONLY | O_CLOEXEC);
 		if (ipc_ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ipc_ns_fd, CLONE_NEWIPC) == -1) {
 				ruri_error("{red}Failed to setns(2) to %s\n", ipc_ns);
@@ -419,7 +419,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		sprintf(cgroup_ns, "/proc/%d/ns/cgroup", container->ns_pid);
 		int cgroup_ns_fd = open(cgroup_ns, O_RDONLY | O_CLOEXEC);
 		if (cgroup_ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(cgroup_ns_fd, CLONE_NEWCGROUP) == -1) {
 				ruri_error("{red}Failed to setns(2) to %s\n", cgroup_ns);
@@ -430,7 +430,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		sprintf(time_ns, "/proc/%d/ns/time", container->ns_pid);
 		int time_ns_fd = open(time_ns, O_RDONLY | O_CLOEXEC);
 		if (time_ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(time_ns_fd, CLONE_NEWTIME) == -1) {
 				ruri_error("{red}Failed to setns(2) to %s\n", time_ns);
@@ -449,16 +449,16 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		if (strcmp(self_net_ns, target_net_ns) != 0) {
 			int net_ns_fd = open(net_ns_file, O_RDONLY | O_CLOEXEC);
 			if (net_ns_fd < 0) {
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that network namespace is not supported on this device QwQ{clear}\n");
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that network namespace is not supported on this device QwQ{clear}\n");
 			} else {
 				if (setns(net_ns_fd, CLONE_NEWNET) == -1) {
-					ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that network namespace is not supported on this device QwQ{clear}\n");
+					ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that network namespace is not supported on this device QwQ{clear}\n");
 				}
 			}
 			close(net_ns_fd);
 		}
 	} else {
-		if (ruri_flag("is_health_check")) {
+		if (ruri_flag(is_health_check)) {
 			ruri_error("{red}Health check should not run when container is not initialized QwQ\n");
 		}
 		// We need to own mount namespace.
@@ -466,20 +466,20 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		// Seems we need to own a new pid namespace for mount procfs.
 		try_unshare(CLONE_NEWPID);
 		if (unshare(CLONE_NEWUTS) == -1) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
 		}
 		if (unshare(CLONE_NEWIPC) == -1) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
 		}
 		if (unshare(CLONE_NEWCGROUP) == -1) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
 		}
 		if (unshare(CLONE_NEWTIME) == -1) {
 			if (container->timens_realtime_offset != 0 || container->timens_monotonic_offset != 0) {
 				ruri_error("{red}Failed to unshare time namespace QwQ\n");
 			}
-			if (ruri_flag("disable_warnings")) {
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+			if (ruri_flag(disable_warnings)) {
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 			}
 		}
 		if (container->timens_monotonic_offset != 0) {
@@ -497,12 +497,12 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 			close(fd);
 		}
 		if (unshare(CLONE_SYSVSEM) == -1) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that semaphore namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that semaphore namespace is not supported on this device QwQ{clear}\n");
 		}
 		if (unshare(CLONE_FS) == -1) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
 		}
-		if (ruri_flag("empty_net_ns")) {
+		if (ruri_flag(empty_net_ns)) {
 			if (unshare(CLONE_NEWNET) == -1) {
 				ruri_error("{red}--no-network detected, but failed to unshare network namespace QwQ\n");
 			}
@@ -510,7 +510,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	}
 	if (!set_id_map_succeed) {
 		if (container->command[0] == NULL) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "\n{yellow}Warning: failed to setup id map for user namespace, command like su will run failed QwQ\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "\n{yellow}Warning: failed to setup id map for user namespace, command like su will run failed QwQ\n");
 			container->command[0] = "sh";
 			container->command[1] = NULL;
 		}
@@ -525,18 +525,18 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		// close read end of pipe.
 		close(sync_pipe_2[0]);
 		if (!set_id_map_succeed) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "\n{yellow}Check if uidmap is installed and /etc/subuid and /etc/subgid are configured on your host, command like su will run failed without uidmap.\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "\n{yellow}Check if uidmap is installed and /etc/subuid and /etc/subgid are configured on your host, command like su will run failed without uidmap.\n");
 			set_id_map(uid, gid);
 		}
 		container->ns_pid = pid;
-		if (!ruri_flag("no_rurienv") && !container_initlized && !container->just_chroot) {
+		if (!ruri_flag(no_rurienv) && !container_initlized && !container->just_chroot) {
 			ruri_store_info(container);
 		} else {
-			if (!ruri_flag("disable_warnings") && !container_initlized) {
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "\n{base}NS PID:{green} %d\n", container->ns_pid);
+			if (!ruri_flag(disable_warnings) && !container_initlized) {
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "\n{base}NS PID:{green} %d\n", container->ns_pid);
 			}
 		}
-		if (!ruri_flag("wait_before_exec")) {
+		if (!ruri_flag(wait_before_exec)) {
 			ruri_pid_file_write(RURI_PID_FILE_PID, container->ns_pid);
 		}
 		// Write YOUR_PID_OUT_{PID} to the pipe.
@@ -560,7 +560,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
 		}
 		// Wait pidfile lock.
-		if (ruri_flag("wait_pidfile_lock")) {
+		if (ruri_flag(wait_pidfile_lock)) {
 			close(ruri_pid_file_fd(-1));
 			if (container->pid_file != NULL) {
 				ruri_pid_file_wait_lock(container->pidfile_lock_fd);
@@ -585,7 +585,7 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		pid_text[n] = '\0';
 		if (strncmp(pid_text, "YOUR_PID_OUT_", 13) != 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: failed to read YOUR_PID_OUT from sync pipe for child process QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: failed to read YOUR_PID_OUT from sync pipe for child process QwQ{clear}\n");
 		}
 		char *endptr = NULL;
 		container->pid_out = strtol(pid_text + 13, &endptr, 10);

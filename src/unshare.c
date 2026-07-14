@@ -52,28 +52,28 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	int unshare_ret = 0;
 	unshare_ret = unshare(CLONE_NEWNS);
 	ruri_panic_on_error(unshare_ret, 0, "{red}Unshare container need at least mount ns support QwQ\n");
-	if (!ruri_flag("no_uts_ns")) {
+	if (!ruri_flag(no_uts_ns)) {
 		unshare_ret = unshare(CLONE_NEWUTS);
-		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (!ruri_flag("no_ipc_ns")) {
+	if (!ruri_flag(no_ipc_ns)) {
 		unshare_ret = unshare(CLONE_NEWIPC);
-		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (!ruri_flag("no_pid_ns")) {
+	if (!ruri_flag(no_pid_ns)) {
 		unshare_ret = unshare(CLONE_NEWPID);
-		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (!ruri_flag("no_cgroup_ns")) {
+	if (!ruri_flag(no_cgroup_ns)) {
 		unshare_ret = unshare(CLONE_NEWCGROUP);
-		ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+		ruri_warn_on_error(unshare_ret, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
 	}
-	if (!ruri_flag("no_time_ns")) {
+	if (!ruri_flag(no_time_ns)) {
 		if (unshare(CLONE_NEWTIME) == -1) {
 			if (container->timens_realtime_offset != 0 || container->timens_monotonic_offset != 0) {
 				ruri_error("{red}Failed to unshare time namespace, --timens-offset cannot be enabled QwQ\n");
 			}
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 		}
 		if (container->timens_monotonic_offset != 0) {
 			int fd = open("/proc/self/timens_offsets", O_WRONLY | O_CLOEXEC);
@@ -97,9 +97,9 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	unshare_ret = unshare(CLONE_FS);
-	ruri_warn_on_error(unshare_ret, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
+	ruri_warn_on_error(unshare_ret, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that we could not unshare filesystem information with child process QwQ{clear}\n");
 	// Disable network.
-	if (ruri_flag("empty_net_ns")) {
+	if (ruri_flag(empty_net_ns)) {
 		if (unshare(CLONE_NEWNET) == -1) {
 			ruri_error("{red}Failed to unshare network namespace, --no-network cannot be enabled QwQ\n");
 		}
@@ -115,13 +115,13 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	unshare_pid = fork();
 	if (unshare_pid > 0) {
 		// Store container info.
-		if (!ruri_flag("no_rurienv")) {
+		if (!ruri_flag(no_rurienv)) {
 			container->ns_pid = unshare_pid;
 			ruri_store_info(container);
-		} else if (!ruri_flag("disable_warnings")) {
+		} else if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{base}NS PID:{green} %d\n", unshare_pid);
 		}
-		if (!ruri_flag("wait_before_exec")) {
+		if (!ruri_flag(wait_before_exec)) {
 			ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
 		}
 		// parent: close read end, write YOUR_PID_OUT_{PID} to pipe to signal child process to continue.
@@ -140,7 +140,7 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
 		}
 		// Wait pidfile lock.
-		if (ruri_flag("wait_pidfile_lock")) {
+		if (ruri_flag(wait_pidfile_lock)) {
 			close(ruri_pid_file_fd(-1));
 			if (container->pid_file != NULL) {
 				ruri_pid_file_wait_lock(container->pidfile_lock_fd);
@@ -210,10 +210,10 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	sprintf(uts_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/uts");
 	// Enter namespaces via setns(2).
 	int ns_fd = RURI_INIT_VALUE;
-	if (!ruri_flag("no_time_ns")) {
+	if (!ruri_flag(no_time_ns)) {
 		ns_fd = open(time_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that time namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWTIME) == -1) {
 				ruri_error("{red}Failed to setns time namespace QwQ\n");
@@ -221,10 +221,10 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 			close(ns_fd);
 		}
 	}
-	if (!ruri_flag("no_uts_ns")) {
+	if (!ruri_flag(no_uts_ns)) {
 		ns_fd = open(uts_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that uts namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWUTS) == -1) {
 				ruri_error("{red}Failed to setns uts namespace QwQ\n");
@@ -232,10 +232,10 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 			close(ns_fd);
 		}
 	}
-	if (!ruri_flag("no_cgroup_ns")) {
+	if (!ruri_flag(no_cgroup_ns)) {
 		ns_fd = open(cgroup_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that cgroup namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWCGROUP) == -1) {
 				ruri_error("{red}Failed to setns cgroup namespace QwQ\n");
@@ -243,10 +243,10 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 			close(ns_fd);
 		}
 	}
-	if (!ruri_flag("no_ipc_ns")) {
+	if (!ruri_flag(no_ipc_ns)) {
 		ns_fd = open(ipc_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that ipc namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWIPC) == -1) {
 				ruri_error("{red}Failed to setns ipc namespace QwQ\n");
@@ -255,7 +255,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	// Disable network.
-	if (ruri_flag("empty_net_ns")) {
+	if (ruri_flag(empty_net_ns)) {
 		char net_ns_file[PATH_MAX] = { '\0' };
 		sprintf(net_ns_file, "%s%d%s", "/proc/", container->ns_pid, "/ns/net");
 		ns_fd = open(net_ns_file, O_RDONLY | O_CLOEXEC);
@@ -277,10 +277,10 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	if (mount_ns_fd < 0) {
 		ruri_error("{red}Unshare container need at least mount ns support QwQ\n");
 	}
-	if (!ruri_flag("no_pid_ns")) {
+	if (!ruri_flag(no_pid_ns)) {
 		ns_fd = open(pid_ns_file, O_RDONLY | O_CLOEXEC);
 		if (ns_fd < 0) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: seems that pid namespace is not supported on this device QwQ{clear}\n");
 		} else {
 			if (setns(ns_fd, CLONE_NEWPID) == -1) {
 				ruri_error("{red}Failed to setns pid namespace QwQ\n");
@@ -299,7 +299,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 	}
 	unshare_pid = fork();
 	if (unshare_pid > 0) {
-		if (!ruri_flag("wait_before_exec")) {
+		if (!ruri_flag(wait_before_exec)) {
 			ruri_pid_file_write(RURI_PID_FILE_PID, unshare_pid);
 		}
 		// Write YOUR_PID_OUT_{PID} to the pipe.
@@ -322,7 +322,7 @@ static pid_t join_ns(struct RURI_CONTAINER *_Nonnull container)
 			ruri_pid_file_write(RURI_PID_FILE_UNKNOWN, 0);
 		}
 		// Wait pidfile lock.
-		if (ruri_flag("wait_pidfile_lock")) {
+		if (ruri_flag(wait_pidfile_lock)) {
 			close(ruri_pid_file_fd(-1));
 			if (container->pid_file != NULL) {
 				ruri_pid_file_wait_lock(container->pidfile_lock_fd);
@@ -397,14 +397,14 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	ruri_check_container_dir(container->container_dir);
 	pid_t unshare_pid = RURI_INIT_VALUE;
 	// unshare(2) itself into new namespaces.
-	if (!ruri_flag("no_rurienv")) {
+	if (!ruri_flag(no_rurienv)) {
 		container = ruri_read_info(container, container->container_dir);
 	}
 	if (container->ns_pid < 0) {
-		if (ruri_flag("is_health_check")) {
+		if (ruri_flag(is_health_check)) {
 			ruri_error("{red}Error: health check should not run before container is initialized QwQ\n");
 		}
-		if (!ruri_flag("systemd_init") && !ruri_flag("no_cgroup")) {
+		if (!ruri_flag(systemd_init) && !ruri_flag(no_cgroup)) {
 			ruri_set_limit(container);
 		} else {
 			setup_cgroup2(container->container_id);
@@ -412,7 +412,7 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		unshare_pid = init_unshare_container(container);
 	} else {
 		container->first_init = false;
-		if (!ruri_flag("systemd_init") && !ruri_flag("no_cgroup")) {
+		if (!ruri_flag(systemd_init) && !ruri_flag(no_cgroup)) {
 			ruri_set_limit(container);
 		} else {
 			join_cgroup2(container->container_id);

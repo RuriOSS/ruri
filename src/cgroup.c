@@ -106,35 +106,35 @@ static int open_and_write(const char *file, const char *value)
 static void detect_cgroup_unified(struct RURI_CGROUP_ENV *cg_env)
 {
 	// Detect cgroup v2 unified hierarchy, which is used by systemd and some modern distros.
-	if (!ruri_flag("no_memory_cgroup") && access("/sys/fs/cgroup/unified/memory.high", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_memory_cgroup) && access("/sys/fs/cgroup/unified/memory.high", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/unified/ruri", S_IRUSR | S_IWUSR);
 		open_and_write("/sys/fs/cgroup/unified/cgroup.subtree_control", "+memory\n");
 		open_and_write("/sys/fs/cgroup/unified/ruri/cgroup.subtree_control", "+memory\n");
 		cg_env->memory.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->memory.type = RURI_CGROUP_V2;
 	}
-	if (!ruri_flag("no_cpupercent_cgroup") && access("/sys/fs/cgroup/unified/cpu.max", F_OK) == 0 && cg_env->cpupercent.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_cpupercent_cgroup) && access("/sys/fs/cgroup/unified/cpu.max", F_OK) == 0 && cg_env->cpupercent.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/unified/ruri", S_IRUSR | S_IWUSR);
 		open_and_write("/sys/fs/cgroup/unified/cgroup.subtree_control", "+cpu\n");
 		open_and_write("/sys/fs/cgroup/unified/ruri/cgroup.subtree_control", "+cpu\n");
 		cg_env->cpupercent.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->cpupercent.type = RURI_CGROUP_V2;
 	}
-	if (!ruri_flag("no_cpuset_cgroup") && access("/sys/fs/cgroup/unified/cpuset.cpus", F_OK) == 0 && cg_env->cpuset.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_cpuset_cgroup) && access("/sys/fs/cgroup/unified/cpuset.cpus", F_OK) == 0 && cg_env->cpuset.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/unified/ruri", S_IRUSR | S_IWUSR);
 		open_and_write("/sys/fs/cgroup/unified/cgroup.subtree_control", "+cpuset\n");
 		open_and_write("/sys/fs/cgroup/unified/ruri/cgroup.subtree_control", "+cpuset\n");
 		cg_env->cpuset.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->cpuset.type = RURI_CGROUP_V2;
 	}
-	if (!ruri_flag("no_pids_cgroup") && access("/sys/fs/cgroup/unified/pids.max", F_OK) == 0 && cg_env->pids.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_pids_cgroup) && access("/sys/fs/cgroup/unified/pids.max", F_OK) == 0 && cg_env->pids.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/unified/ruri", S_IRUSR | S_IWUSR);
 		open_and_write("/sys/fs/cgroup/unified/cgroup.subtree_control", "+pids\n");
 		open_and_write("/sys/fs/cgroup/unified/ruri/cgroup.subtree_control", "+pids\n");
 		cg_env->pids.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->pids.type = RURI_CGROUP_V2;
 	}
-	if (!ruri_flag("no_io_cgroup") && access("/sys/fs/cgroup/unified/io.max", F_OK) == 0 && cg_env->io.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_io_cgroup) && access("/sys/fs/cgroup/unified/io.max", F_OK) == 0 && cg_env->io.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/unified/ruri", S_IRUSR | S_IWUSR);
 		open_and_write("/sys/fs/cgroup/unified/cgroup.subtree_control", "+io\n");
 		open_and_write("/sys/fs/cgroup/unified/ruri/cgroup.subtree_control", "+io\n");
@@ -142,7 +142,7 @@ static void detect_cgroup_unified(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->io.type = RURI_CGROUP_V2;
 	}
 	// Freezer is built-in for cgroup v2
-	if (!ruri_flag("no_freezer_cgroup") && access("/sys/fs/cgroup/unified/ruri/cgroup.freeze", F_OK) == 0 && cg_env->freezer.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_freezer_cgroup) && access("/sys/fs/cgroup/unified/ruri/cgroup.freeze", F_OK) == 0 && cg_env->freezer.type == RURI_CGROUP_ENOSYS) {
 		cg_env->freezer.prefix = "/sys/fs/cgroup/unified/ruri/";
 		cg_env->freezer.type = RURI_CGROUP_V2;
 	}
@@ -150,48 +150,48 @@ static void detect_cgroup_unified(struct RURI_CGROUP_ENV *cg_env)
 static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 {
 	// Detect cgroup v1 fallback, which is used by some old distros and non-systemd distros.
-	if (!ruri_flag("no_cpupercent_cgroup") && access("/sys/fs/cgroup/cpu/cpu.cfs_quota_us", F_OK) == 0 && cg_env->cpupercent.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_cpupercent_cgroup) && access("/sys/fs/cgroup/cpu/cpu.cfs_quota_us", F_OK) == 0 && cg_env->cpupercent.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/cpu/ruri", S_IRUSR | S_IWUSR);
 		cg_env->cpupercent.prefix = "/sys/fs/cgroup/cpu/ruri/";
 		cg_env->cpupercent.type = RURI_CGROUP_V1;
 	}
-	if (!ruri_flag("no_memory_cgroup") && access("/sys/fs/cgroup/memory/memory.limit_in_bytes", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_memory_cgroup) && access("/sys/fs/cgroup/memory/memory.limit_in_bytes", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/memory/ruri", S_IRUSR | S_IWUSR);
 		cg_env->memory.prefix = "/sys/fs/cgroup/memory/ruri/";
 		cg_env->memory.type = RURI_CGROUP_V1;
 	}
-	if (!ruri_flag("no_cpuset_cgroup") && access("/sys/fs/cgroup/cpuset/cpuset.cpus", F_OK) == 0 && cg_env->cpuset.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_cpuset_cgroup) && access("/sys/fs/cgroup/cpuset/cpuset.cpus", F_OK) == 0 && cg_env->cpuset.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/cpuset/ruri", S_IRUSR | S_IWUSR);
 		cg_env->cpuset.prefix = "/sys/fs/cgroup/cpuset/ruri/";
 		cg_env->cpuset.type = RURI_CGROUP_V1;
 	}
-	if (!ruri_flag("no_pids_cgroup") && access("/sys/fs/cgroup/pids/pids.max", F_OK) == 0 && cg_env->pids.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_pids_cgroup) && access("/sys/fs/cgroup/pids/pids.max", F_OK) == 0 && cg_env->pids.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/pids/ruri", S_IRUSR | S_IWUSR);
 		cg_env->pids.prefix = "/sys/fs/cgroup/pids/ruri/";
 		cg_env->pids.type = RURI_CGROUP_V1;
 	}
-	if (!ruri_flag("no_io_cgroup") && access("/sys/fs/cgroup/blkio/blkio.throttle.read_bps_device", F_OK) == 0 && cg_env->io.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_io_cgroup) && access("/sys/fs/cgroup/blkio/blkio.throttle.read_bps_device", F_OK) == 0 && cg_env->io.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/blkio/ruri", S_IRUSR | S_IWUSR);
 		cg_env->io.prefix = "/sys/fs/cgroup/blkio/ruri/";
 		cg_env->io.type = RURI_CGROUP_V1;
 	}
-	if (!ruri_flag("no_freezer_cgroup") && access("/sys/fs/cgroup/freezer/freezer.state", F_OK) == 0 && cg_env->freezer.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_freezer_cgroup) && access("/sys/fs/cgroup/freezer/freezer.state", F_OK) == 0 && cg_env->freezer.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/sys/fs/cgroup/freezer/ruri", S_IRUSR | S_IWUSR);
 		cg_env->freezer.prefix = "/sys/fs/cgroup/freezer/ruri/";
 		cg_env->freezer.type = RURI_CGROUP_V1;
 	}
 	// For some Android devices, they mount cgroup v1 controllers in /dev.
-	if (!ruri_flag("no_memory_cgroup") && access("/dev/memcg/memory.limit_in_bytes", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_memory_cgroup) && access("/dev/memcg/memory.limit_in_bytes", F_OK) == 0 && cg_env->memory.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/dev/memcg/ruri", S_IRUSR | S_IWUSR);
 		cg_env->memory.prefix = "/dev/memcg/ruri/";
 		cg_env->memory.type = RURI_CGROUP_V1;
 	}
-	if (!ruri_flag("no_cpuset_cgroup") && access("/dev/cpuset/cpus", F_OK) == 0 && cg_env->cpuset.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_cpuset_cgroup) && access("/dev/cpuset/cpus", F_OK) == 0 && cg_env->cpuset.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/dev/cpuset/ruri", S_IRUSR | S_IWUSR);
 		cg_env->cpuset.prefix = "/dev/cpuset/ruri/";
 		cg_env->cpuset.type = RURI_CGROUP_V1;
 	}
-	if (!ruri_flag("no_cpupercent_cgroup") && access("/dev/cpuctl/cpu.cfs_quota_us", F_OK) == 0 && cg_env->cpupercent.type == RURI_CGROUP_ENOSYS) {
+	if (!ruri_flag(no_cpupercent_cgroup) && access("/dev/cpuctl/cpu.cfs_quota_us", F_OK) == 0 && cg_env->cpupercent.type == RURI_CGROUP_ENOSYS) {
 		mkdir("/dev/cpuctl/ruri", S_IRUSR | S_IWUSR);
 		cg_env->cpupercent.prefix = "/dev/cpuctl/ruri/";
 		cg_env->cpupercent.type = RURI_CGROUP_V1;
@@ -207,28 +207,28 @@ static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+cpuset\n");
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+pids\n");
 	open_and_write("/sys/fs/cgroup/cgroup.subtree_control", "+io\n");
-	if (!ruri_flag("no_memory_cgroup") && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+memory\n")) {
+	if (!ruri_flag(no_memory_cgroup) && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+memory\n")) {
 		cg_env->memory.type = RURI_CGROUP_V2;
 		cg_env->memory.prefix = "/sys/fs/cgroup/ruri/";
 	}
-	if (!ruri_flag("no_cpupercent_cgroup") && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+cpu\n")) {
+	if (!ruri_flag(no_cpupercent_cgroup) && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+cpu\n")) {
 		cg_env->cpupercent.type = RURI_CGROUP_V2;
 		cg_env->cpupercent.prefix = "/sys/fs/cgroup/ruri/";
 	}
-	if (!ruri_flag("no_cpuset_cgroup") && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+cpuset\n")) {
+	if (!ruri_flag(no_cpuset_cgroup) && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+cpuset\n")) {
 		cg_env->cpuset.type = RURI_CGROUP_V2;
 		cg_env->cpuset.prefix = "/sys/fs/cgroup/ruri/";
 	}
-	if (!ruri_flag("no_pids_cgroup") && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+pids\n")) {
+	if (!ruri_flag(no_pids_cgroup) && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+pids\n")) {
 		cg_env->pids.type = RURI_CGROUP_V2;
 		cg_env->pids.prefix = "/sys/fs/cgroup/ruri/";
 	}
-	if (!ruri_flag("no_io_cgroup") && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+io\n")) {
+	if (!ruri_flag(no_io_cgroup) && !open_and_write("/sys/fs/cgroup/ruri/cgroup.subtree_control", "+io\n")) {
 		cg_env->io.type = RURI_CGROUP_V2;
 		cg_env->io.prefix = "/sys/fs/cgroup/ruri/";
 	}
 	// Freezer is built-in for cgroup v2, no need to enable in subtree_control
-	if (!ruri_flag("no_freezer_cgroup") && access("/sys/fs/cgroup/ruri/cgroup.freeze", F_OK) == 0) {
+	if (!ruri_flag(no_freezer_cgroup) && access("/sys/fs/cgroup/ruri/cgroup.freeze", F_OK) == 0) {
 		cg_env->freezer.type = RURI_CGROUP_V2;
 		cg_env->freezer.prefix = "/sys/fs/cgroup/ruri/";
 	}
@@ -293,7 +293,7 @@ static void ruri_dump_cg_env(struct RURI_CGROUP_ENV *cg_env)
 static void ruri_set_memory_limit(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
 {
 	// Set memory limit for the container.
-	if (ruri_flag("no_cgroup") || ruri_flag("no_memory_cgroup")) {
+	if (ruri_flag(no_cgroup) || ruri_flag(no_memory_cgroup)) {
 		return;
 	}
 	//
@@ -308,7 +308,7 @@ static void ruri_set_memory_limit(const struct RURI_CONTAINER *_Nonnull containe
 		char buf[256] = "";
 		sprintf(buf, "%d", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else if (cg_env->memory.type == RURI_CGROUP_V1) {
@@ -320,12 +320,12 @@ static void ruri_set_memory_limit(const struct RURI_CONTAINER *_Nonnull containe
 		char buf[256] = "";
 		sprintf(buf, "%d", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else {
-		if (container->memory || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No memory cgroup support detected\n");
+		if (container->memory || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No memory cgroup support detected\n");
 		}
 		return;
 	}
@@ -350,14 +350,14 @@ static void ruri_set_memory_limit(const struct RURI_CONTAINER *_Nonnull containe
 		char cgroup_memory_max_path[PATH_MAX] = "";
 		sprintf(cgroup_memory_max_path, "%s%d/memory.max", cg_env->memory.prefix, container->container_id);
 		if (open_and_write(cgroup_memory_max_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v2 memory max limit for %s\n", cgroup_memory_max_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v2 memory max limit for %s\n", cgroup_memory_max_path);
 			return;
 		}
 		// set memory.oom.group
 		char cgroup_memory_oom_group_path[PATH_MAX] = "";
 		sprintf(cgroup_memory_oom_group_path, "%s%d/memory.oom.group", cg_env->memory.prefix, container->container_id);
 		if (open_and_write(cgroup_memory_oom_group_path, "1\n")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v2 memory oom group for %s\n", cgroup_memory_oom_group_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v2 memory oom group for %s\n", cgroup_memory_oom_group_path);
 			return;
 		}
 	} else if (cg_env->memory.type == RURI_CGROUP_V1) {
@@ -375,25 +375,25 @@ static void ruri_set_memory_limit(const struct RURI_CONTAINER *_Nonnull containe
 		char buf[256] = "";
 		sprintf(buf, "%zd\n", memory);
 		if (open_and_write(memory_cgroup_limit_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 memory limit\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 memory limit\n");
 			return;
 		}
 		char memory_cgroup_oom_path[PATH_MAX] = "";
 		sprintf(memory_cgroup_oom_path, "%s%d/memory.oom_control", cg_env->memory.prefix, container->container_id);
 		if (open_and_write(memory_cgroup_oom_path, "0\n")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 memory limit for %s\n", memory_cgroup_oom_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 memory limit for %s\n", memory_cgroup_oom_path);
 			return;
 		}
 	} else {
-		if (container->memory || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No memory cgroup support detected\n");
+		if (container->memory || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No memory cgroup support detected\n");
 		}
 	}
 }
 static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
 {
 	// Set cpuset for the container.
-	if (ruri_flag("no_cgroup") || ruri_flag("no_cpuset_cgroup")) {
+	if (ruri_flag(no_cgroup) || ruri_flag(no_cpuset_cgroup)) {
 		return;
 	}
 	//
@@ -409,7 +409,7 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 		char buf[256] = "";
 		sprintf(buf, "%d", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else if (cg_env->cpuset.type == RURI_CGROUP_V1) {
@@ -421,12 +421,12 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 		char buf[256] = "";
 		sprintf(buf, "%d\n", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else {
-		if (container->cpuset || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No cpuset cgroup support detected\n");
+		if (container->cpuset || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No cpuset cgroup support detected\n");
 		}
 		return;
 	}
@@ -441,7 +441,7 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 		char buf[256] = "";
 		snprintf(buf, sizeof(buf), "%s\n", container->cpuset);
 		if (open_and_write(cgroup_cpuset_cpus_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v2 cpuset limit for %s\n", cgroup_cpuset_cpus_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v2 cpuset limit for %s\n", cgroup_cpuset_cpus_path);
 			return;
 		}
 	} else if (cg_env->cpuset.type == RURI_CGROUP_V1) {
@@ -449,7 +449,7 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 		char cgroup_cpuset_mems_path[PATH_MAX] = "";
 		sprintf(cgroup_cpuset_mems_path, "%s%d/cpuset.mems", cg_env->cpuset.prefix, container->container_id);
 		if (open_and_write(cgroup_cpuset_mems_path, "0\n")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 cpuset mems for %s\n", cgroup_cpuset_mems_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 cpuset mems for %s\n", cgroup_cpuset_mems_path);
 			return;
 		}
 		// Set cpuset.cpus to the value specified by user.
@@ -458,12 +458,12 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 		char buf[256] = "";
 		snprintf(buf, sizeof(buf), "%s\n", container->cpuset);
 		if (open_and_write(cgroup_cpuset_cpus_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 cpuset limit for %s\n", cgroup_cpuset_cpus_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 cpuset limit for %s\n", cgroup_cpuset_cpus_path);
 			return;
 		}
 	} else {
-		if (container->cpuset || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No cpuset cgroup support detected\n");
+		if (container->cpuset || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No cpuset cgroup support detected\n");
 		}
 		return;
 	}
@@ -471,7 +471,7 @@ static void ruri_set_cpuset(const struct RURI_CONTAINER *_Nonnull container, con
 static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
 {
 	// Set cpu percent limit for the container.
-	if (ruri_flag("no_cgroup") || ruri_flag("no_cpupercent_cgroup")) {
+	if (ruri_flag(no_cgroup) || ruri_flag(no_cpupercent_cgroup)) {
 		return;
 	}
 	//
@@ -486,7 +486,7 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 		char buf[256] = "";
 		sprintf(buf, "%d", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else if (cg_env->cpupercent.type == RURI_CGROUP_V1) {
@@ -498,12 +498,12 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 		char buf[256] = "";
 		sprintf(buf, "%d\n", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v1\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v1\n");
 			return;
 		}
 	} else {
-		if (container->cpupercent > 0 || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No cpu cgroup support detected\n");
+		if (container->cpupercent > 0 || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No cpu cgroup support detected\n");
 		}
 		return;
 	}
@@ -518,7 +518,7 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 		char buf[256] = "";
 		sprintf(buf, "%d 100000\n", container->cpupercent * 1000);
 		if (open_and_write(cgroup_cpu_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v2 cpu percent limit\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v2 cpu percent limit\n");
 			return;
 		}
 	} else if (cg_env->cpupercent.type == RURI_CGROUP_V1) {
@@ -527,19 +527,19 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 		char buf[256] = "";
 		sprintf(buf, "%d\n", container->cpupercent * 1000);
 		if (open_and_write(cgroup_cpu_quota_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 cpu percent limit\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 cpu percent limit\n");
 			return;
 		}
 		char cgroup_cpu_period_path[PATH_MAX] = "";
 		sprintf(cgroup_cpu_period_path, "%s%d/cpu.cfs_period_us", cg_env->cpupercent.prefix, container->container_id);
 		sprintf(buf, "%d\n", 100000);
 		if (open_and_write(cgroup_cpu_period_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 cpu percent limit\n");
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 cpu percent limit\n");
 			return;
 		}
 	} else {
-		if (container->cpupercent > 0 || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No cpu cgroup support detected\n");
+		if (container->cpupercent > 0 || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No cpu cgroup support detected\n");
 		}
 		return;
 	}
@@ -547,7 +547,7 @@ static void ruri_set_cpupercent(const struct RURI_CONTAINER *_Nonnull container,
 static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
 {
 	// Set PIDs limit for the container.
-	if (ruri_flag("no_cgroup") || ruri_flag("no_pids_cgroup")) {
+	if (ruri_flag(no_cgroup) || ruri_flag(no_pids_cgroup)) {
 		return;
 	}
 	//
@@ -562,7 +562,7 @@ static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const
 		char buf[256] = "";
 		sprintf(buf, "%d", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else if (cg_env->pids.type == RURI_CGROUP_V1) {
@@ -574,12 +574,12 @@ static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const
 		char buf[256] = "";
 		sprintf(buf, "%d\n", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else {
-		if (container->max_pids > 0 || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No PIDs cgroup support detected\n");
+		if (container->max_pids > 0 || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No PIDs cgroup support detected\n");
 		}
 		return;
 	}
@@ -594,12 +594,12 @@ static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const
 		char buf[256] = "";
 		sprintf(buf, "%d\n", container->max_pids);
 		if (open_and_write(cgroup_pids_max_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set PIDs limit for %s\n", cgroup_pids_max_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set PIDs limit for %s\n", cgroup_pids_max_path);
 			return;
 		}
 	} else {
-		if (container->max_pids > 0 || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No PIDs cgroup support detected\n");
+		if (container->max_pids > 0 || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No PIDs cgroup support detected\n");
 		}
 		return;
 	}
@@ -607,7 +607,7 @@ static void ruri_set_pids(const struct RURI_CONTAINER *_Nonnull container, const
 static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
 {
 	// Set I/O bandwidth limit for the container.
-	if (ruri_flag("no_cgroup") || ruri_flag("no_io_cgroup")) {
+	if (ruri_flag(no_cgroup) || ruri_flag(no_io_cgroup)) {
 		return;
 	}
 	//
@@ -622,7 +622,7 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 		char buf[256] = "";
 		sprintf(buf, "%d", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else if (cg_env->io.type == RURI_CGROUP_V1) {
@@ -634,12 +634,12 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 		char buf[256] = "";
 		sprintf(buf, "%d\n", getpid());
 		if (open_and_write(cgroup_procs_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
 			return;
 		}
 	} else {
-		if (container->io_rbps != NULL || container->io_wbps != NULL || container->io_device != NULL || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No I/O cgroup support detected\n");
+		if (container->io_rbps != NULL || container->io_wbps != NULL || container->io_device != NULL || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No I/O cgroup support detected\n");
 		}
 		return;
 	}
@@ -687,7 +687,7 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 			snprintf(buf + buf_off, sizeof(buf) - buf_off, "\n");
 		}
 		if (open_and_write(cgroup_io_max_path, buf)) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v2 I/O limit for %s\n", cgroup_io_max_path);
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v2 I/O limit for %s\n", cgroup_io_max_path);
 			return;
 		}
 	} else if (cg_env->io.type == RURI_CGROUP_V1) {
@@ -706,7 +706,7 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 			char buf[1024] = "";
 			snprintf(buf, sizeof(buf), "%s %zd\n", container->io_device, rbps);
 			if (open_and_write(cgroup_blkio_read_path, buf)) {
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 I/O read limit for %s\n", cgroup_blkio_read_path);
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 I/O read limit for %s\n", cgroup_blkio_read_path);
 				return;
 			}
 		}
@@ -725,13 +725,13 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 			char buf[1024] = "";
 			snprintf(buf, sizeof(buf), "%s %zd\n", container->io_device, wbps);
 			if (open_and_write(cgroup_blkio_write_path, buf)) {
-				ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}Failed to set cgroup v1 I/O write limit for %s\n", cgroup_blkio_write_path);
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to set cgroup v1 I/O write limit for %s\n", cgroup_blkio_write_path);
 				return;
 			}
 		}
 	} else {
-		if (container->io_rbps != NULL || container->io_wbps != NULL || container->io_device != NULL || ruri_flag("force_panic")) {
-			ruri_warn_on_error(1, 0, !ruri_flag("disable_warnings"), "{red}No I/O cgroup support detected\n");
+		if (container->io_rbps != NULL || container->io_wbps != NULL || container->io_device != NULL || ruri_flag(force_panic)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}No I/O cgroup support detected\n");
 		}
 		return;
 	}
@@ -742,25 +742,25 @@ void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 	 * Set cgroup controller limit.
 	 * Nothing to return, only warnings to show if cgroup is not supported.
 	 */
-	if (ruri_flag("no_cgroup")) {
+	if (ruri_flag(no_cgroup)) {
 		return;
 	}
 	struct RURI_CGROUP_ENV cg_env;
 	ruri_detect_cgroup_env(&cg_env);
 	ruri_dump_cg_env(&cg_env);
-	if (!ruri_flag("no_memory_cgroup")) {
+	if (!ruri_flag(no_memory_cgroup)) {
 		ruri_set_memory_limit(container, &cg_env);
 	}
-	if (!ruri_flag("no_cpuset_cgroup")) {
+	if (!ruri_flag(no_cpuset_cgroup)) {
 		ruri_set_cpuset(container, &cg_env);
 	}
-	if (!ruri_flag("no_cpupercent_cgroup")) {
+	if (!ruri_flag(no_cpupercent_cgroup)) {
 		ruri_set_cpupercent(container, &cg_env);
 	}
-	if (!ruri_flag("no_pids_cgroup")) {
+	if (!ruri_flag(no_pids_cgroup)) {
 		ruri_set_pids(container, &cg_env);
 	}
-	if (!ruri_flag("no_io_cgroup")) {
+	if (!ruri_flag(no_io_cgroup)) {
 		ruri_set_io(container, &cg_env);
 	}
 }
@@ -770,7 +770,7 @@ static bool is_cgroup_v2_mounted()
 	 * Use statfs() to check if cgroup v2 is mounted.
 	 * Return true if cgroup v2 is mounted.
 	 */
-	if (ruri_flag("no_cgroup")) {
+	if (ruri_flag(no_cgroup)) {
 		return false;
 	}
 	struct statfs buf;
@@ -785,7 +785,7 @@ int ruri_try_cgroup_kill(const struct RURI_CONTAINER *_Nonnull container)
 	/*
 	 * Kill all processes in corresponding cgroup v2 structure.
 	 */
-	if (ruri_flag("no_cgroup")) {
+	if (ruri_flag(no_cgroup)) {
 		return 1;
 	}
 	if (!is_cgroup_v2_mounted()) {
@@ -805,7 +805,7 @@ int ruri_try_cgroup_kill(const struct RURI_CONTAINER *_Nonnull container)
 	rmdir(cgroup_path);
 	return 0;
 fail:
-	if (!ruri_flag("disable_warnings")) {
+	if (!ruri_flag(disable_warnings)) {
 		ruri_warning("{yellow}trying to kill container with cgroup v2 failed\n");
 	}
 	return 1;
@@ -816,7 +816,7 @@ bool ruri_pid_in_cgroup(pid_t pid, int container_id)
 	 * Check if the process is in the container by cgroup.
 	 * Return true if the process is in the container.
 	 */
-	if (ruri_flag("no_cgroup")) {
+	if (ruri_flag(no_cgroup)) {
 		return false;
 	}
 	struct RURI_CGROUP_ENV cg_env;
@@ -868,7 +868,7 @@ int ruri_freeze_container(int container_id)
 	 * Freeze (pause) all processes in the container.
 	 * Returns 0 on success, 1 on failure.
 	 */
-	if (ruri_flag("no_cgroup") || ruri_flag("no_freezer_cgroup")) {
+	if (ruri_flag(no_cgroup) || ruri_flag(no_freezer_cgroup)) {
 		return 1;
 	}
 	struct RURI_CGROUP_ENV cg_env;
@@ -897,7 +897,7 @@ int ruri_thaw_container(int container_id)
 	 * Thaw (resume) all processes in the container.
 	 * Returns 0 on success, 1 on failure.
 	 */
-	if (ruri_flag("no_cgroup") || ruri_flag("no_freezer_cgroup")) {
+	if (ruri_flag(no_cgroup) || ruri_flag(no_freezer_cgroup)) {
 		return 1;
 	}
 	struct RURI_CGROUP_ENV cg_env;
