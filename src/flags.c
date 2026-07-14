@@ -62,7 +62,7 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 		.has_gzvm = false,
 		.has_devpts = true,
 		.has_devshm = true,
-		.has_net_tun = false,
+		.has_net_tun = true,
 		// clang-format on
 	};
 	if (req == RURI_QUERY_FLAG) {
