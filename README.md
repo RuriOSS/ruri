@@ -204,6 +204,22 @@ On Macbook Air M4, orbstack, fedora 43:
 hello ruri
 Time: 0.00s
 Max memory: 5936 KB
+[moe-hacker@fedora ruri]$ sudo /usr/bin/time -f "Time: %es\nMax memory: %M KB" echo hello ruri
+hello ruri
+Time: 0.00s
+Max memory: 1516 KB
+```
+
+On Oneplus Ace 5 Ultra, Android 16:
+```
+~/ruri $ sudo $PREFIX/bin/time -f "Time: %es\nMax memory: %M KB" ./ruri --unshare --set-flag no_ipc_ns --set-flag no_pid_ns ../test echo hello ruri
+hello ruri
+Time: 0.02s
+Max memory: 4396 KB
+~/ruri $ sudo $PREFIX/bin/time -f "Time: %es\nMax memory: %M KB" echo hello ruri
+hello ruri
+Time: 0.01s
+Max memory: 6572 KB
 ```
 
 ## Binary size(amd64)
