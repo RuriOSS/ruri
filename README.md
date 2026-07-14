@@ -221,6 +221,7 @@ hello ruri
 Time: 0.01s
 Max memory: 6572 KB
 ```
+Anyway, seems that my compiler and CPU is much more clever than me, as ruri doesn't have any optimization for performance in fact.    
 
 ## Binary size(amd64)
 
