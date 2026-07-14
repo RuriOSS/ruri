@@ -28,6 +28,15 @@
  *
  *
  */
+#include <stddef.h>
+// Bool!!!
+#if __STDC_VERSION__ < 202000L
+#ifndef bool
+#define bool _Bool
+#define true ((_Bool)1u)
+#define false ((_Bool)0u)
+#endif
+#endif // bool
 struct RURI_FLAGS {
 	char *ban_futex_pi;
 	char *wait_before_exec;
