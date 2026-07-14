@@ -526,7 +526,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Just chroot.
 		else if (strcmp(argv[index], "-j") == 0 || strcmp(argv[index], "--just-chroot") == 0) {
-			container->just_chroot = true;
+			ruri_set_flag("just_chroot");
 		}
 		// Force bind-mount host /dev/, /sys/ and /proc/.
 		else if (strcmp(argv[index], "-S") == 0 || strcmp(argv[index], "--host-runtime") == 0) {
@@ -988,7 +988,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					fork_exec = true;
 					break;
 				case 'j':
-					container->just_chroot = true;
+					ruri_set_flag("just_chroot");
 					break;
 				case 'A':
 					container->unmask_dirs = true;

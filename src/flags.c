@@ -221,7 +221,8 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.no_io_cgroup = NULL,
 		.no_freezer_cgroup = NULL,
 		.no_pidfd = NULL,
-		.dev_nodes = NULL
+		.dev_nodes = NULL,
+		.just_chroot = NULL
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -446,6 +447,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		flags.dev_nodes = strdup(flag + strlen("dev_nodes="));
 		ruri_dev_nodes(RURI_SET_FLAG, NULL, 0); // Update dev_nodes struct.
 		return flags.dev_nodes;
+	}
+	if (!strncmp(flag, "just_chroot", strlen("just_chroot"))) {
+		free(flags.just_chroot);
+		flags.just_chroot = true_or_null(flag + strlen("just_chroot"), flag);
+		return flags.just_chroot;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

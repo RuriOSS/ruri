@@ -64,7 +64,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->cpuset = NULL;
 	container->memory = NULL;
 	container->work_dir = NULL;
-	container->just_chroot = false;
 	container->rootfs_source = NULL;
 	container->unmask_dirs = false;
 	container->user = NULL;
@@ -270,7 +269,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// just_chroot.
 	ret = k2v3_add_comment(ret, "Just chroot, do not create runtime dirs.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "just_chroot", container->just_chroot);
+	ret = k2v3_add_config(bool, ret, "just_chroot", ruri_flag(just_chroot));
 	ret = k2v3_add_newline(ret);
 	// unmask_dirs.
 	ret = k2v3_add_comment(ret, "Unmask dirs in /proc and /sys.");
@@ -518,7 +517,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get io_wbps.
 	container->io_wbps = k2v3_get(char, "io_wbps", cache);
 	// Get just_chroot.
-	container->just_chroot = k2v3_get(bool, "just_chroot", cache);
+	if (k2v3_get(bool, "just_chroot", cache)) {
+		ruri_set_flag("just_chroot");
+	}
 	// Get work_dir.
 	container->work_dir = k2v3_get(char, "work_dir", cache);
 	// Get rootfs_source.
@@ -823,9 +824,10 @@ void ruri_correct_config(const char *_Nonnull path)
 	}
 	if (!have_key("just_chroot", buf)) {
 		ruri_warning("{green}No key just_chroot found, set to false\n{clear}");
-		container.just_chroot = false;
 	} else {
-		container.just_chroot = k2v_get_key(bool, "just_chroot", buf);
+		if (k2v_get_key(bool, "just_chroot", buf)) {
+			ruri_set_flag("just_chroot");
+		}
 	}
 	if (!have_key("unmask_dirs", buf)) {
 		ruri_warning("{green}No key unmask_dirs found, set to false\n{clear}");

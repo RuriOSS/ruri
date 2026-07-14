@@ -142,11 +142,11 @@ struct RURI_CONTAINER {
 	bool enable_seccomp_whitelist;
 	// Unshare container.
 	bool enable_unshare;
-	// Useless rootless container support.
+	// If the container is rootless.
 	bool rootless;
 	// Mount host runtime.
 	bool mount_host_runtime;
-	// Container pid for setns(2).
+	// Pid of init process in container, for setns().
 	pid_t ns_pid;
 	// Arch of multi-architecture container.
 	char *_Nullable cross_arch;
@@ -170,8 +170,6 @@ struct RURI_CONTAINER {
 	char *_Nullable io_device;
 	// A number based on the time when creating container.
 	int container_id;
-	// Do not create runtime directory.
-	bool just_chroot;
 	// Work directory.
 	char *_Nullable work_dir;
 	// Rootfs of container will be mount first.
@@ -201,7 +199,7 @@ struct RURI_CONTAINER {
 	char *_Nullable pid_file;
 	// Timeout for watchdog killer.
 	float timeout;
-	// pid_out, pid outside the container.
+	// pid_out, pid outside the container, for syncing pid to timeout daemon and pidfile.
 	pid_t pid_out;
 	// pidfile_fd, fd of pidfile.
 	int pidfile_lock_fd;

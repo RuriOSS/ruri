@@ -73,6 +73,7 @@ struct RURI_FLAGS {
 	char *no_freezer_cgroup;
 	char *no_pidfd;
 	char *dev_nodes;
+	char *just_chroot;
 };
 struct RURI_DEV_NODES {
 	bool has_console;

@@ -971,11 +971,11 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			// Copy qemu binary into container.
 			copy_qemu_binary(container);
 			// Store container info.
-			if (!container->enable_unshare && !container->just_chroot && !ruri_flag(no_rurienv)) {
+			if (!container->enable_unshare && !ruri_flag(just_chroot) && !ruri_flag(no_rurienv)) {
 				ruri_store_info(container);
 			}
 			// If `-S` option is set, bind-mount /dev/, /sys/ and /proc/ from host.
-			if (container->mount_host_runtime && !container->just_chroot) {
+			if (container->mount_host_runtime && !ruri_flag(just_chroot)) {
 				mount_host_runtime(container);
 			}
 			// If `-R` option is set, make / read-only.
@@ -1044,13 +1044,13 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	remove("/.ruri_umounted");
 	rmdir("/.ruri_umounted");
 	// Mount/create system runtime dir/files.
-	if (!container->just_chroot) {
+	if (!ruri_flag(just_chroot)) {
 		init_container(container);
 	}
 	// Hide pid.
 	hidepid(container->hidepid);
 	// Fix /etc/mtab.
-	if (!container->just_chroot) {
+	if (!ruri_flag(just_chroot)) {
 		remove("/etc/mtab");
 		unlink("/etc/mtab");
 		symlink("/proc/mounts", "/etc/mtab");
@@ -1226,7 +1226,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	remove("/.ruri_umounted");
 	rmdir("/.ruri_umounted");
 	// Fix /etc/mtab.
-	if (!container->just_chroot) {
+	if (!ruri_flag(just_chroot)) {
 		remove("/etc/mtab");
 		unlink("/etc/mtab");
 		symlink("/proc/mounts", "/etc/mtab");
