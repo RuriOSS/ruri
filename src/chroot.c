@@ -38,6 +38,7 @@ static bool su_biany_exist(char *_Nonnull container_dir, bool in_container)
 	/*
 	 * In some rootfs, /bin/su is not exist,
 	 * so we need to check it.
+	 * Note: after pivot_root(2) for unshare container, the / is already changed.
 	 */
 	char su_path[PATH_MAX] = { '\0' };
 	if (in_container) {
@@ -63,15 +64,20 @@ static bool su_biany_exist(char *_Nonnull container_dir, bool in_container)
 	close(fd);
 	return true;
 }
-static bool busybox_exists(char *_Nonnull container_dir)
+static bool busybox_exists(char *_Nonnull container_dir, bool in_container)
 {
 	/*
 	 * Check if busybox exists in container.
 	 * This is used for alpine-based container.
+	 * Note: after pivot_root(2) for unshare container, the / is already changed.
 	 */
 	char busybox_path[PATH_MAX] = { '\0' };
-	if (snprintf(busybox_path, sizeof(busybox_path), "%s/bin/busybox", container_dir) >= (int)sizeof(busybox_path)) {
-		ruri_error("{red}Why we are here? QwQ\n");
+	if (in_container) {
+		strcat(busybox_path, "/bin/busybox");
+	} else {
+		if (snprintf(busybox_path, sizeof(busybox_path), "%s/bin/busybox", container_dir) >= (int)sizeof(busybox_path)) {
+			ruri_error("{red}Why we are here? QwQ\n");
+		}
 	}
 	int fd = open(busybox_path, O_RDONLY | O_CLOEXEC);
 	if (fd < 0) {
@@ -95,6 +101,8 @@ static void check_binary(const struct RURI_CONTAINER *_Nonnull container)
 	 * Since ruri use execvp() instead of execv(),
 	 * we will not check for init binary now.
 	 * So, only check for qemu binary.
+	 * As binfmt_misc should be setup before callig first exec() in container,
+	 * this is called before chroot(2) or pivot_root(2), and the / is still the host root dir.
 	 */
 	// Check QEMU path.
 	if (container->cross_arch != NULL) {
@@ -120,21 +128,18 @@ static void generate_machine_id(int container_id)
 {
 	/*
 	 * Generate a unique machine-id for systemd.
-	 *
-	 * Attempts to use /dev/urandom for cryptographically secure randomness.
-	 * Falls back to time-based seeding if /dev/urandom is unavailable.
+	 * This function will be called after chroot(2)/pivot_root(2),
+	 * so the / is the root dir of container.
 	 */
 	ruri_log("{blue}Generating unique machine-id for systemd.\n");
 	char new_machine_id[33];
 	bool use_urandom = false;
-
 	// Try to use /dev/urandom for cryptographically secure random numbers
 	int urandom_fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
 	if (urandom_fd >= 0) {
 		unsigned char random_bytes[16];
 		ssize_t bytes_read = read(urandom_fd, random_bytes, 16);
 		close(urandom_fd);
-
 		if (bytes_read == 16) {
 			// Convert binary to hex string
 			for (int i = 0; i < 16; i++) {
@@ -144,7 +149,6 @@ static void generate_machine_id(int container_id)
 			use_urandom = true;
 		}
 	}
-
 	// Fallback to time-based seeding if /dev/urandom is unavailable or read failed
 	if (!use_urandom) {
 		const char *hex_chars = "0123456789abcdef";
@@ -158,7 +162,6 @@ static void generate_machine_id(int container_id)
 		new_machine_id[32] = '\0';
 		ruri_log("{yellow}Warning: Using time-based fallback for machine-id generation.\n");
 	}
-
 	// Write machine-id to /etc/machine-id
 	remove("/etc/machine-id");
 	unlink("/etc/machine-id");
@@ -170,12 +173,13 @@ static void generate_machine_id(int container_id)
 		ruri_log("{blue}Generated /etc/machine-id: %s\n", new_machine_id);
 	}
 }
-
 static void prepare_systemd_cgroup_scope(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Move PID 1 into a dedicated cgroup subtree before execing systemd.
 	 * This avoids inheriting an invalid parent cgroup such as /init.
+	 * This function will be called after chroot(2)/pivot_root(2),
+	 * so the / is the root dir of container.
 	 */
 	char scope_dir[PATH_MAX] = { 0 };
 	char scope_procs[PATH_MAX] = { 0 };
@@ -202,6 +206,8 @@ static void setup_systemd_runtime(struct RURI_CONTAINER *_Nonnull container)
 	/*
 	 * Setup complete systemd runtime environment.
 	 * This includes all directories and files systemd needs to function.
+	 * This function will be called after chroot(2)/pivot_root(2),
+	 * so the / is the root dir of container.
 	 */
 	// Mount tmpfs for runtime directories.
 	mount("tmpfs", "/run", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, "size=65536k,mode=755");
@@ -242,6 +248,8 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 	 * It'll be run after chroot(2), so `/` is the root dir of container now.
 	 * The device list and permissions are based on common docker containers.
 	 * If -A is not set, we will mask some dirs in /sys and /proc to avoid security issues.
+	 * This function will be called after chroot(2)/pivot_root(2),
+	 * so the / is the root dir of container.
 	 */
 	bool proc_mounted = false;
 	// Use statfs() to ensure /proc is procfs.
@@ -405,7 +413,8 @@ static void mk_char_devs(struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Create char devices specified in container->char_devs[].
-	 * It will be called after chroot(2).
+	 * This function will be called after chroot(2)/pivot_root(2),
+	 * so the / is the root dir of container.
 	 */
 	if (chdir("/dev") == -1) {
 		if (container->char_devs[0] == NULL) {
@@ -429,14 +438,13 @@ static void mk_char_devs(struct RURI_CONTAINER *_Nonnull container)
 		chdir(container->work_dir);
 	}
 }
-// Run before chroot(2), so that init_container() will not take effect.
 static void mount_host_runtime(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * It's unsafe to mount /dev, /proc and /sys from the host.
 	 * But in some cases, we have to do this.
-	 * This function will be called before chroot(2),
-	 * so it's before init_container().
+	 * This function will be called before chroot(2)/pivot_root(2),
+	 * so init_container() will not mount /dev, /proc and /sys again.
 	 */
 	char buf[PATH_MAX] = { '\0' };
 	// Mount /dev.
@@ -497,7 +505,7 @@ static void drop_caps(const struct RURI_CONTAINER *_Nonnull container)
 	/*
 	 * Drop CapBnd and CapAmb as the config in container->drop_caplist[].
 	 * And clear CapInh.
-	 * It will be called after chroot(2).
+	 * It will be called after chroot(2)/pivot_root(2), before execve(2).
 	 */
 #ifndef DISABLE_LIBCAP
 	for (int i = 0; i < RURI_CAP_LAST_CAP + 1; i++) {
@@ -538,6 +546,7 @@ static void set_envs(const struct RURI_CONTAINER *_Nonnull container)
 	 * $PATH and $TMPDIR will also be set here.
 	 * And $SHELL will be set to sh, for compatibility.
 	 * User-specified envs in container->env[] will replace the default envs if they have the same name.
+	 * This function will be called after chroot(2)/pivot_root(2), before execve(2).
 	 */
 	// Set $PATH to the common value in GNU/Linux,
 	// because $PATH in termux is not correct for common GNU/Linux containers.
@@ -562,6 +571,8 @@ static void setup_binfmt_misc(const struct RURI_CONTAINER *_Nonnull container)
 	/*
 	 * For running multi-arch container.
 	 * It need the kernel support binfmt_misc.
+	 * This function will be called after chroot(2)/pivot_root(2),
+	 * so the / is the root dir of container now.
 	 */
 	// Get elf magic header.
 	struct RURI_ELF_MAGIC *magic = ruri_get_magic(container->cross_arch);
@@ -591,7 +602,7 @@ static void mount_rootfs(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Mount rootfs of container.
-	 * It will be called before chroot(2).
+	 * It will be called before chroot(2)/pivot_root(2).
 	 * Rootfs (/) is the first mountpoint.
 	 * Rootfs can also be block device or image file.
 	 */
@@ -602,13 +613,12 @@ static void mount_rootfs(const struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 }
-// Mount other mountpoints.
-// Run before chroot(2).
 static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Mount extra_mountpoint and extra_ro_mountpoint.
-	 * It will be called before chroot(2).
+	 * It will be called before chroot(2)/pivot_root(2),
+	 * so / is on the host now, not the container.
 	 */
 	if (!container->rootless && (container->rootfs_source == NULL)) {
 		// '/' should be a mountpoint in container.
@@ -654,7 +664,9 @@ static void copy_qemu_binary(struct RURI_CONTAINER *container)
 	/*
 	 * Copy qemu binary into container.
 	 * ruri support to use qemu-path in host,
-	 * but, to use qemu, we need to copy qemu binary into container.
+	 * but to use qemu, we need to copy qemu binary into container.
+	 * This function will be called before chroot(2)/pivot_root(2),
+	 * so the / is on the host now, not the container.
 	 */
 	// If -q is not set, return.
 	if (container->qemu_path == NULL) {
@@ -729,7 +741,7 @@ static void change_user(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Change uid and gid.
-	 * It will be called before exec(3).
+	 * It will be called after chroot(2)/pivot_root(2), and before exec(3).
 	 */
 	int res = 0;
 	setgroups(0, NULL);
@@ -844,6 +856,10 @@ static void hidepid(int stat)
 {
 	/*
 	 * Hide pid option for mounting /proc.
+	 * It will be called after /proc is mounted.
+	 * stat = 0: do not hide pid.
+	 * stat = 1: hide pid from other users.
+	 * stat = 2: hide pid from all users.
 	 */
 	if (stat <= 0) {
 		return;
@@ -955,8 +971,14 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			container->command[1] = "-";
 			container->command[2] = NULL;
 		} else {
-			container->command[0] = "/bin/sh";
-			container->command[1] = NULL;
+			if (busybox_exists(container->container_dir, container->enable_unshare && !container->first_init)) {
+				container->command[0] = "/bin/busybox";
+				container->command[1] = "sh";
+				container->command[2] = NULL;
+			} else {
+				container->command[0] = "/bin/sh";
+				container->command[1] = NULL;
+			}
 		}
 	}
 	// Check binary used.
@@ -1071,8 +1093,6 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		close(i);
 	}
-	// Execute command in container.
-	// Use exec(3) function because system(3) may be unavailable now.
 	if (ruri_flag("systemd_init") && container->first_init) {
 		if (getpid() != 1) {
 			ruri_error("{red}Error: systemd mode requires the container to be init process (PID 1) QwQ\n");
@@ -1097,6 +1117,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (ruri_flag("fork_as_init")) {
 		ruri_fork_as_init();
 	}
+	// Execute the command.
 	if (execvp(container->command[0], container->command) == -1) {
 		// Catch exceptions.
 		ruri_pid_file_write(RURI_PID_FILE_PANIC_EXEC, 0);
@@ -1137,12 +1158,12 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	}
 	// Set default command for exec().
 	if (container->command[0] == NULL) {
-		if (su_biany_exist(container->container_dir, container->enable_unshare && !container->first_init) && container->user == NULL) {
+		if (su_biany_exist(container->container_dir, false) && container->user == NULL) {
 			container->command[0] = "/bin/su";
 			container->command[1] = "-";
 			container->command[2] = NULL;
 		} else {
-			if (busybox_exists(container->container_dir)) {
+			if (busybox_exists(container->container_dir, false)) {
 				container->command[0] = "/bin/busybox";
 				container->command[1] = "sh";
 				container->command[2] = NULL;
@@ -1241,7 +1262,6 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		ruri_fork_as_init();
 	}
 	// Execute command in container.
-	// Use exec(3) function because system(3) may be unavailable now.
 	if (execvp(container->command[0], container->command) == -1) {
 		// Catch exceptions.
 		ruri_pid_file_write(RURI_PID_FILE_PANIC_EXEC, 0);
