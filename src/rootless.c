@@ -155,16 +155,45 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		close(open("./dev/gzvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/gzvm", "./dev/gzvm", NULL, MS_BIND, NULL);
 	}
-	mkdir("./dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-	mount("devpts", "./dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
-	symlink("./dev/pts/ptmx", "./dev/ptmx");
+	if (ruri_has_dev("devpts")) {
+		mkdir("./dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+		mount("devpts", "./dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
+		symlink("./dev/pts/ptmx", "./dev/ptmx");
+	}
 	symlink("/proc/self/fd", "./dev/fd");
 	symlink("/proc/self/fd/0", "./dev/stdin");
 	symlink("/proc/self/fd/1", "./dev/stdout");
 	symlink("/proc/self/fd/2", "./dev/stderr");
 	symlink("./dev/null", "./dev/tty0");
-	symlink("./dev/null", "./dev/console");
-	symlink("./dev/null", "./dev/tty");
+	if (ruri_has_dev("tty")) {
+		close(open("./dev/tty", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/tty", "./dev/tty", NULL, MS_BIND, NULL);
+	} else {
+		symlink("./dev/null", "./dev/tty");
+	}
+	if (ruri_has_dev("console")) {
+		close(open("./dev/console", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/console", "./dev/console", NULL, MS_BIND, NULL);
+	} else {
+		symlink("./dev/null", "./dev/console");
+	}
+	if (ruri_has_dev("devshm")) {
+		char *devshm_options = NULL;
+		if (container->memory == NULL) {
+			devshm_options = strdup("mode=1777");
+		} else {
+			devshm_options = ruri_malloc(strlen(container->memory) + strlen("mode=1777") + 114);
+			sprintf(devshm_options, "size=%s,mode=1777", container->memory);
+		}
+		mkdir("./dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+		mount("tmpfs", "./dev/shm", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, devshm_options);
+		free(devshm_options);
+	}
+	if (ruri_has_dev("net_tun")) {
+		mkdir("./dev/net", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+		close(open("./dev/net/tun", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/net/tun", "./dev/net/tun", NULL, MS_BIND, NULL);
+	}
 	// Mount other char devices.
 	if (container->char_devs[0] != NULL) {
 		for (int i = 0; true; i += 3) {
@@ -181,16 +210,6 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 			mount(host_dev, container_dev, NULL, MS_BIND, NULL);
 		}
 	}
-	char *devshm_options = NULL;
-	if (container->memory == NULL) {
-		devshm_options = strdup("mode=1777");
-	} else {
-		devshm_options = ruri_malloc(strlen(container->memory) + strlen("mode=1777") + 114);
-		sprintf(devshm_options, "size=%s,mode=1777", container->memory);
-	}
-	mkdir("./dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-	mount("tmpfs", "./dev/shm", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, devshm_options);
-	free(devshm_options);
 	mount("binfmt_misc", "./proc/sys/fs/binfmt_misc", "binfmt_misc", 0, NULL);
 	if (!container->unmask_dirs) {
 		// Protect some dirs in /proc and /sys.

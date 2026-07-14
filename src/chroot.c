@@ -279,22 +279,20 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		res = mount("tmpfs", "/dev", "tmpfs", MS_NOSUID, "size=65536k,mode=755");
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount devtmpfs, will continue.\n");
 		// Continue mounting some other directories in /dev.
-		res = mkdir("/dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/pts, will continue.\n");
-		res = mount("devpts", "/dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount devpts, will continue.\n");
-		char *devshm_options = NULL;
-		if (container->memory == NULL) {
-			devshm_options = strdup("size=65536k,mode=1777");
-		} else {
-			devshm_options = ruri_malloc(strlen(container->memory) + strlen("mode=1777") + 114);
-			sprintf(devshm_options, "size=%s,mode=1777", container->memory);
+		if (ruri_has_dev("devshm")) {
+			char *devshm_options = NULL;
+			if (container->memory == NULL) {
+				devshm_options = strdup("size=65536k,mode=1777");
+			} else {
+				devshm_options = ruri_malloc(strlen(container->memory) + strlen("mode=1777") + 114);
+				sprintf(devshm_options, "size=%s,mode=1777", container->memory);
+			}
+			res = mkdir("/dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/shm, will continue.\n");
+			res = mount("tmpfs", "/dev/shm", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, devshm_options);
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount /dev/shm, will continue.\n");
+			free(devshm_options);
 		}
-		res = mkdir("/dev/shm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/shm, will continue.\n");
-		res = mount("tmpfs", "/dev/shm", "tmpfs", MS_NOSUID | MS_NOEXEC | MS_NODEV, devshm_options);
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount /dev/shm, will continue.\n");
-		free(devshm_options);
 		// Mount binfmt_misc.
 		res = mount("binfmt_misc", "/proc/sys/fs/binfmt_misc", "binfmt_misc", 0, NULL);
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount binfmt_misc, will continue.\n");
@@ -314,11 +312,17 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/zero, will continue.\n");
 			chmod("/dev/zero", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		}
-		res = symlink("/dev/pts/ptmx", "/dev/ptmx");
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/ptmx, will continue.\n");
-		chown("/dev/ptmx", 0, 5);
-		chmod("/dev/ptmx", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-
+		if (ruri_has_dev("devpts")) {
+			res = mkdir("/dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/pts, will continue.\n");
+			res = mount("devpts", "/dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount devpts, will continue.\n");
+			// /dev/ptmx is a symlink to /dev/pts/ptmx.
+			res = symlink("/dev/pts/ptmx", "/dev/ptmx");
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/ptmx, will continue.\n");
+			chown("/dev/ptmx", 0, 5);
+			chmod("/dev/ptmx", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		}
 		if (ruri_has_dev("random")) {
 			res = mknod("/dev/random", S_IFCHR, makedev(1, 8));
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/random, will continue.\n");
@@ -329,10 +333,12 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/urandom, will continue.\n");
 			chmod("/dev/urandom", S_IRUSR | S_IRGRP | S_IROTH);
 		}
-		res = mkdir("/dev/net", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net, will continue.\n");
-		res = mknod("/dev/net/tun", S_IFCHR, makedev(10, 200));
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net/tun, will continue.\n");
+		if (ruri_has_dev("net_tun")) {
+			res = mkdir("/dev/net", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net, will continue.\n");
+			res = mknod("/dev/net/tun", S_IFCHR, makedev(10, 200));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net/tun, will continue.\n");
+		}
 		if (ruri_has_dev("kvm")) {
 			res = mknod("/dev/kvm", S_IFCHR, makedev(10, 232));
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/kvm, will continue.\n");
@@ -354,15 +360,23 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		symlink("/proc/self/fd/0", "/dev/stdin");
 		symlink("/proc/self/fd/1", "/dev/stdout");
 		symlink("/proc/self/fd/2", "/dev/stderr");
-		remove("/dev/console");
-		unlink("/dev/console");
-		symlink("/dev/null", "/dev/console");
+		if (ruri_has_dev("console")) {
+			res = mknod("/dev/console", S_IFCHR, makedev(5, 1));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/console, will continue.\n");
+			chmod("/dev/console", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		} else {
+			symlink("/dev/null", "/dev/console");
+		}
 		remove("/dev/tty0");
 		unlink("/dev/tty0");
 		symlink("/dev/null", "/dev/tty0");
-		remove("/dev/tty");
-		unlink("/dev/tty");
-		symlink("/dev/null", "/dev/tty");
+		if (ruri_has_dev("tty")) {
+			res = mknod("/dev/tty", S_IFCHR, makedev(5, 0));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/tty, will continue.\n");
+			chmod("/dev/tty", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		} else {
+			symlink("/dev/null", "/dev/tty");
+		}
 		// Setup systemd runtime environment
 		if (ruri_flag("systemd_init")) {
 			setup_systemd_runtime(container);

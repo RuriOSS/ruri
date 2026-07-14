@@ -45,6 +45,9 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 		bool has_kvm;
 		bool has_gunyah;
 		bool has_gzvm;
+		bool has_devpts;
+		bool has_devshm;
+		bool has_net_tun;
 	} dev_nodes = {
 		// clang-format off
 		.has_console = false,
@@ -56,7 +59,10 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 		.has_zero = true,
 		.has_kvm = false,
 		.has_gunyah = false,
-		.has_gzvm = false
+		.has_gzvm = false,
+		.has_devpts = true,
+		.has_devshm = true,
+		.has_net_tun = false,
 		// clang-format on
 	};
 	if (req == RURI_QUERY_FLAG) {
@@ -89,6 +95,15 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 		}
 		if (!strcmp(dev, "gzvm")) {
 			return dev_nodes.has_gzvm;
+		}
+		if (!strcmp(dev, "devpts")) {
+			return dev_nodes.has_devpts;
+		}
+		if (!strcmp(dev, "devshm")) {
+			return dev_nodes.has_devshm;
+		}
+		if (!strcmp(dev, "net_tun")) {
+			return dev_nodes.has_net_tun;
 		}
 		ruri_error("{red}Unknown device: %s\n", dev);
 	}
@@ -134,13 +149,18 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 			dev_nodes.has_urandom = true;
 		} else if (!strcmp(token, "+zero")) {
 			dev_nodes.has_zero = true;
-		}
-		if (!strcmp(token, "+kvm")) {
+		} else if (!strcmp(token, "+kvm")) {
 			dev_nodes.has_kvm = true;
 		} else if (!strcmp(token, "+gunyah")) {
 			dev_nodes.has_gunyah = true;
 		} else if (!strcmp(token, "+gzvm")) {
 			dev_nodes.has_gzvm = true;
+		} else if (!strcmp(token, "+devpts")) {
+			dev_nodes.has_devpts = true;
+		} else if (!strcmp(token, "+devshm")) {
+			dev_nodes.has_devshm = true;
+		} else if (!strcmp(token, "+net_tun")) {
+			dev_nodes.has_net_tun = true;
 		}
 		// -dev logic.
 		else if (!strcmp(token, "-console")) {
@@ -163,6 +183,12 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev)
 			dev_nodes.has_gunyah = false;
 		} else if (!strcmp(token, "-gzvm")) {
 			dev_nodes.has_gzvm = false;
+		} else if (!strcmp(token, "-devpts")) {
+			dev_nodes.has_devpts = false;
+		} else if (!strcmp(token, "-devshm")) {
+			dev_nodes.has_devshm = false;
+		} else if (!strcmp(token, "-net_tun")) {
+			dev_nodes.has_net_tun = false;
 		}
 		// Unknown device logic.
 		else {
