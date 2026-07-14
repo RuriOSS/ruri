@@ -197,16 +197,13 @@ See [Integration](doc/Integration.md) for a guide to integrate ruri into your pr
 Never. You need a netns wrapper, or use `--pid-file` with `empty_net_ns` and `wait_before_exec` flag to setup the empty netns by another process, but ruri will not do it for you, as it can and should surely be decoupled from ruri.    
 # Performance
 
-On Macbook Air M4, orbstack, ubuntu 25.04:
+On Macbook Air M4, orbstack, fedora 43:
 
 ```
-moehacker@studio:~/ruri$ sudo /usr/bin/time -f "Time: %E\nMax memory: %M KB" ./ruri -u ../ubuntu /bin/true
-In ruri() at /home/moehacker/ruri/src/ruri.c line 1419:
-ruri() to run_container(): 250460ns
-In ruri_run_chroot_container() at /home/moehacker/ruri/src/chroot.c line 1041:
-run_container() to exec(): 7798583ns
-Time: 0:00.01
-Max memory: 1944 KB
+[moe-hacker@fedora ruri]$ sudo /usr/bin/time -f "Time: %E\nMax memory: %M KB"  ./ruri -u ../ubuntu/ echo hello ruri
+hello ruri
+Time: 0:00.00
+Max memory: 5932 KB
 ```
 
 ## Binary size(amd64)
