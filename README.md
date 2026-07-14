@@ -221,6 +221,17 @@ hello ruri
 Time: 0.01s
 Max memory: 6572 KB
 ```
+And even, on Pixel Watch 2, Android 17:
+```
+~ $ sudo $PREFIX/bin/time -f "Time: %es\nMax memory: %M KB" ./ruri -u --set-flag no_ipc_ns --set-flag no_pid_ns ./alpine echo hello ruri
+hello ruri
+Time: 0.04s
+Max memory: 1340 KB
+~ $ sudo $PREFIX/bin/time -f "Time: %es\nMax memory: %M KB" echo hello ruri
+hello ruri
+Time: 0.03s
+Max memory: 4576 KB
+```
 Anyway, seems that my compiler and CPU is much more clever than me, as ruri doesn't have any optimization for performance in fact.    
 
 ## Binary size(amd64)
