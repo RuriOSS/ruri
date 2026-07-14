@@ -42,14 +42,14 @@ static char *true_or_null(char *str, char *full_flag)
 	 * panic if the string is anything else.
 	 *
 	 */
+	if (str[0] == 0) {
+		return strdup("true");
+	}
 	if (!strcmp(str, "=true")) {
 		return strdup("true");
 	}
 	if (!strcmp(str, "=false")) {
 		return NULL;
-	}
-	if (!strcmp(str, "")) {
-		return strdup("true");
 	}
 	if (!strcmp(str, "=1")) {
 		return strdup("true");
