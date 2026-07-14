@@ -117,28 +117,38 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	mount("proc", "./proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV, NULL);
 	mkdir("./dev", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 	mount("tmpfs", "./dev", "tmpfs", MS_NOSUID, "size=65536k,mode=755");
-	close(open("./dev/full", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
-	mount("/dev/full", "./dev/full", NULL, MS_BIND, NULL);
-	close(open("./dev/null", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
-	mount("/dev/null", "./dev/null", NULL, MS_BIND, NULL);
-	close(open("./dev/random", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
-	mount("/dev/random", "./dev/random", NULL, MS_BIND, NULL);
-	close(open("./dev/urandom", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
-	mount("/dev/urandom", "./dev/urandom", NULL, MS_BIND, NULL);
-	close(open("./dev/zero", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
-	mount("/dev/zero", "./dev/zero", NULL, MS_BIND, NULL);
-	if (ruri_flag("create_kvm_node")) {
+	if (ruri_has_dev("full")) {
+		close(open("./dev/full", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/full", "./dev/full", NULL, MS_BIND, NULL);
+	}
+	if (ruri_has_dev("null")) {
+		close(open("./dev/null", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/null", "./dev/null", NULL, MS_BIND, NULL);
+	}
+	if (ruri_has_dev("random")) {
+		close(open("./dev/random", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/random", "./dev/random", NULL, MS_BIND, NULL);
+	}
+	if (ruri_has_dev("urandom")) {
+		close(open("./dev/urandom", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/urandom", "./dev/urandom", NULL, MS_BIND, NULL);
+	}
+	if (ruri_has_dev("zero")) {
+		close(open("./dev/zero", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/zero", "./dev/zero", NULL, MS_BIND, NULL);
+	}
+	if (ruri_has_dev("kvm")) {
 		close(open("./dev/kvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/kvm", "./dev/kvm", NULL, MS_BIND, NULL);
 	}
-	if (ruri_flag("create_gunyah_node")) {
+	if (ruri_has_dev("gunyah")) {
 		if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{green} How you made rootless container work on qcom devices? Crazy!");
 		}
 		close(open("./dev/gunyah", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/gunyah", "./dev/gunyah", NULL, MS_BIND, NULL);
 	}
-	if (ruri_flag("create_geniezone_node")) {
+	if (ruri_has_dev("gzvm")) {
 		if (!ruri_flag("disable_warnings")) {
 			ruri_warning("{green} How you made rootless container work on mtk devices? Crazy!");
 		}

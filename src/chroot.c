@@ -299,41 +299,52 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		res = mount("binfmt_misc", "/proc/sys/fs/binfmt_misc", "binfmt_misc", 0, NULL);
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to mount binfmt_misc, will continue.\n");
 		// Create system runtime files in /dev and then fix permissions.
-		res = mknod("/dev/full", S_IFCHR, makedev(1, 7));
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/full, will continue.\n");
-		chmod("/dev/full", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-		res = mknod("/dev/null", S_IFCHR, makedev(1, 3));
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/null, will continue.\n");
-		chmod("/dev/null", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-		res = mknod("/dev/zero", S_IFCHR, makedev(1, 5));
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/zero, will continue.\n");
-		chmod("/dev/zero", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		if (ruri_has_dev("full")) {
+			res = mknod("/dev/full", S_IFCHR, makedev(1, 7));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/full, will continue.\n");
+			chmod("/dev/full", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		}
+		if (ruri_has_dev("null")) {
+			res = mknod("/dev/null", S_IFCHR, makedev(1, 3));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/null, will continue.\n");
+			chmod("/dev/null", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		}
+		if (ruri_has_dev("zero")) {
+			res = mknod("/dev/zero", S_IFCHR, makedev(1, 5));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/zero, will continue.\n");
+			chmod("/dev/zero", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		}
 		res = symlink("/dev/pts/ptmx", "/dev/ptmx");
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/ptmx, will continue.\n");
 		chown("/dev/ptmx", 0, 5);
 		chmod("/dev/ptmx", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-		res = mknod("/dev/random", S_IFCHR, makedev(1, 8));
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/random, will continue.\n");
-		chmod("/dev/random", S_IRUSR | S_IRGRP | S_IROTH);
-		res = mknod("/dev/urandom", S_IFCHR, makedev(1, 9));
-		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/urandom, will continue.\n");
-		chmod("/dev/urandom", S_IRUSR | S_IRGRP | S_IROTH);
+
+		if (ruri_has_dev("random")) {
+			res = mknod("/dev/random", S_IFCHR, makedev(1, 8));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/random, will continue.\n");
+			chmod("/dev/random", S_IRUSR | S_IRGRP | S_IROTH);
+		}
+		if (ruri_has_dev("urandom")) {
+			res = mknod("/dev/urandom", S_IFCHR, makedev(1, 9));
+			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/urandom, will continue.\n");
+			chmod("/dev/urandom", S_IRUSR | S_IRGRP | S_IROTH);
+		}
 		res = mkdir("/dev/net", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net, will continue.\n");
 		res = mknod("/dev/net/tun", S_IFCHR, makedev(10, 200));
 		ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/net/tun, will continue.\n");
-		if (ruri_flag("create_kvm_node")) {
+		if (ruri_has_dev("kvm")) {
 			res = mknod("/dev/kvm", S_IFCHR, makedev(10, 232));
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/kvm, will continue.\n");
 			chmod("/dev/kvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
 		// Gunyah and GenieZone nodes.
-		if (ruri_flag("create_gunyah_node")) {
+		if (ruri_has_dev("gunyah")) {
 			res = mknod("/dev/gunyah", S_IFCHR, makedev(10, 124));
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/gunyah, will continue.\n");
 			chmod("/dev/gunyah", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
-		if (ruri_flag("create_geniezone_node")) {
+		if (ruri_has_dev("gzvm")) {
 			res = mknod("/dev/gzvm", S_IFCHR, makedev(10, 107));
 			ruri_warn_on_error(res, 0, !ruri_flag("disable_warnings"), "{yellow}Warning: Failed to create /dev/gzvm, will continue.\n");
 			chmod("/dev/gzvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);

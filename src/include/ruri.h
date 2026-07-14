@@ -382,6 +382,8 @@ void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container);
 void ruri_panic(int sig);
 void ruri_pid_file_wait_lock(int pidfile_fd);
 void ruri_set_flag(const char *_Nonnull flag);
+bool ruri_dev_nodes(int req, const char *_Nonnull dev);
+bool ruri_has_dev(const char *_Nonnull dev);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

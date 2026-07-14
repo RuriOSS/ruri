@@ -32,7 +32,145 @@
  * Feature flags are used to enable or disable certain features in ruri.
  */
 #include "include/ruri.h"
-static char *true_or_null(char *str, const char *full_flag)
+bool ruri_dev_nodes(int req, const char *_Nonnull dev)
+{
+	static thread_local struct {
+		bool has_console;
+		bool has_full;
+		bool has_null;
+		bool has_random;
+		bool has_tty;
+		bool has_urandom;
+		bool has_zero;
+		bool has_kvm;
+		bool has_gunyah;
+		bool has_gzvm;
+	} dev_nodes = {
+		// clang-format off
+		.has_console = false,
+		.has_full = true,
+		.has_null = true,
+		.has_random = true,
+		.has_tty = false,
+		.has_urandom = true,
+		.has_zero = true,
+		.has_kvm = false,
+		.has_gunyah = false,
+		.has_gzvm = false
+		// clang-format on
+	};
+	if (req == RURI_QUERY_FLAG) {
+		if (!strcmp(dev, "console")) {
+			return dev_nodes.has_console;
+		}
+		if (!strcmp(dev, "full")) {
+			return dev_nodes.has_full;
+		}
+		if (!strcmp(dev, "null")) {
+			return dev_nodes.has_null;
+		}
+		if (!strcmp(dev, "random")) {
+			return dev_nodes.has_random;
+		}
+		if (!strcmp(dev, "tty")) {
+			return dev_nodes.has_tty;
+		}
+		if (!strcmp(dev, "urandom")) {
+			return dev_nodes.has_urandom;
+		}
+		if (!strcmp(dev, "zero")) {
+			return dev_nodes.has_zero;
+		}
+		if (!strcmp(dev, "kvm")) {
+			return dev_nodes.has_kvm;
+		}
+		if (!strcmp(dev, "gunyah")) {
+			return dev_nodes.has_gunyah;
+		}
+		if (!strcmp(dev, "gzvm")) {
+			return dev_nodes.has_gzvm;
+		}
+		ruri_error("{red}Unknown device: %s\n", dev);
+	}
+	if (req != RURI_SET_FLAG) {
+		ruri_error("{red}Unknown request: %d\nThis must be an internal error QwQ", req);
+	}
+	// Parse flag string.
+	char *value = ruri_feature_flag(RURI_QUERY_FLAG, "dev_nodes");
+	if (value == NULL && dev == NULL) {
+		return false;
+	}
+	if (dev) {
+		value = ruri_malloc(strlen(value) + strlen(dev) + 2);
+		strcpy(value, value);
+		strcat(value, ",");
+		strcat(value, dev);
+	} else {
+		value = strdup(value);
+	}
+	char *token = strtok(value, ",");
+	while (token != NULL) {
+		// +dev logic.
+		if (!strcmp(token, "+console")) {
+			dev_nodes.has_console = true;
+		} else if (!strcmp(token, "+full")) {
+			dev_nodes.has_full = true;
+		} else if (!strcmp(token, "+null")) {
+			dev_nodes.has_null = true;
+		} else if (!strcmp(token, "+random")) {
+			dev_nodes.has_random = true;
+		} else if (!strcmp(token, "+tty")) {
+			dev_nodes.has_tty = true;
+		} else if (!strcmp(token, "+urandom")) {
+			dev_nodes.has_urandom = true;
+		} else if (!strcmp(token, "+zero")) {
+			dev_nodes.has_zero = true;
+		}
+		if (!strcmp(token, "+kvm")) {
+			dev_nodes.has_kvm = true;
+		} else if (!strcmp(token, "+gunyah")) {
+			dev_nodes.has_gunyah = true;
+		} else if (!strcmp(token, "+gzvm")) {
+			dev_nodes.has_gzvm = true;
+		}
+		// -dev logic.
+		else if (!strcmp(token, "-console")) {
+			dev_nodes.has_console = false;
+		} else if (!strcmp(token, "-full")) {
+			dev_nodes.has_full = false;
+		} else if (!strcmp(token, "-null")) {
+			dev_nodes.has_null = false;
+		} else if (!strcmp(token, "-random")) {
+			dev_nodes.has_random = false;
+		} else if (!strcmp(token, "-tty")) {
+			dev_nodes.has_tty = false;
+		} else if (!strcmp(token, "-urandom")) {
+			dev_nodes.has_urandom = false;
+		} else if (!strcmp(token, "-zero")) {
+			dev_nodes.has_zero = false;
+		} else if (!strcmp(token, "-kvm")) {
+			dev_nodes.has_kvm = false;
+		} else if (!strcmp(token, "-gunyah")) {
+			dev_nodes.has_gunyah = false;
+		} else if (!strcmp(token, "-gzvm")) {
+			dev_nodes.has_gzvm = false;
+		}
+		// Unknown device logic.
+		else {
+			ruri_error("{red}Unsupported device: %s\n", token);
+			free(value);
+			return false;
+		}
+		token = strtok(NULL, ",");
+	}
+	free(value);
+	return false;
+}
+bool ruri_has_dev(const char *_Nonnull dev)
+{
+	return ruri_dev_nodes(RURI_QUERY_FLAG, dev);
+}
+static char *true_or_null(const char *str, const char *full_flag)
 {
 	/*
 	 * This function is used to convert a string to a boolean value.
@@ -86,9 +224,6 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		char *is_health_check;
 		char *enable_tty_signals;
 		char *skip_setgroups;
-		char *create_kvm_node;
-		char *create_gunyah_node;
-		char *create_geniezone_node;
 		char *empty_net_ns;
 		char *no_reset_pidfile;
 		char *no_logs;
@@ -105,6 +240,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		char *no_io_cgroup;
 		char *no_freezer_cgroup;
 		char *no_pidfd;
+		char *dev_nodes;
 	} flags = { // clang-format off
 		.ban_futex_pi = NULL,
 		.wait_before_exec = NULL,
@@ -124,10 +260,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		.is_health_check = NULL,
 		.enable_tty_signals = NULL,
 		.skip_setgroups = NULL,
-		.create_kvm_node = NULL,
 		.empty_net_ns = NULL,
-		.create_geniezone_node = NULL,
-		.create_gunyah_node = NULL,
 		.no_reset_pidfile = NULL,
 		.no_logs = NULL,
 		.wait_pidfile_lock = NULL,
@@ -142,7 +275,8 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		.no_pids_cgroup = NULL,
 		.no_io_cgroup = NULL,
 		.no_freezer_cgroup = NULL,
-		.no_pidfd = NULL
+		.no_pidfd = NULL,
+		.dev_nodes = NULL
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -200,17 +334,8 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		if (!strcmp(flag, "skip_setgroups")) {
 			return flags.skip_setgroups;
 		}
-		if (!strcmp(flag, "create_kvm_node")) {
-			return flags.create_kvm_node;
-		}
 		if (!strcmp(flag, "empty_net_ns")) {
 			return flags.empty_net_ns;
-		}
-		if (!strcmp(flag, "create_gunyah_node")) {
-			return flags.create_gunyah_node;
-		}
-		if (!strcmp(flag, "create_geniezone_node")) {
-			return flags.create_geniezone_node;
 		}
 		if (!strcmp(flag, "no_reset_pidfile")) {
 			return flags.no_reset_pidfile;
@@ -256,6 +381,9 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		}
 		if (!strcmp(flag, "no_pidfd")) {
 			return flags.no_pidfd;
+		}
+		if (!strcmp(flag, "dev_nodes")) {
+			return flags.dev_nodes;
 		}
 		ruri_error("{red}Unknown flag: %s\n", flag);
 		return "unknown";
@@ -355,9 +483,15 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		return flags.skip_setgroups;
 	}
 	if (!strncmp(flag, "create_kvm_node", strlen("create_kvm_node"))) {
-		free(flags.create_kvm_node);
-		flags.create_kvm_node = true_or_null(flag + strlen("create_kvm_node"), flag);
-		return flags.create_kvm_node;
+		// Update dev_nodes string to include +kvm or -kvm.
+		char *enable_kvm = true_or_null(flag + strlen("create_kvm_node"), flag);
+		if (enable_kvm) {
+			ruri_dev_nodes(RURI_SET_FLAG, "+kvm");
+		} else {
+			ruri_dev_nodes(RURI_SET_FLAG, "-kvm");
+		}
+		free(enable_kvm);
+		return NULL;
 	}
 	if (!strncmp(flag, "empty_net_ns", strlen("empty_net_ns"))) {
 		free(flags.empty_net_ns);
@@ -365,14 +499,26 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		return flags.empty_net_ns;
 	}
 	if (!strncmp(flag, "create_gunyah_node", strlen("create_gunyah_node"))) {
-		free(flags.create_gunyah_node);
-		flags.create_gunyah_node = true_or_null(flag + strlen("create_gunyah_node"), flag);
-		return flags.create_gunyah_node;
+		// Update dev_nodes string to include +gunyah or -gunyah.
+		char *enable_gunyah = true_or_null(flag + strlen("create_gunyah_node"), flag);
+		if (enable_gunyah) {
+			ruri_dev_nodes(RURI_SET_FLAG, "+gunyah");
+		} else {
+			ruri_dev_nodes(RURI_SET_FLAG, "-gunyah");
+		}
+		free(enable_gunyah);
+		return NULL;
 	}
 	if (!strncmp(flag, "create_geniezone_node", strlen("create_geniezone_node"))) {
-		free(flags.create_geniezone_node);
-		flags.create_geniezone_node = true_or_null(flag + strlen("create_geniezone_node"), flag);
-		return flags.create_geniezone_node;
+		// Update dev_nodes string to include +gzvm or -gzvm.
+		char *enable_gzvm = true_or_null(flag + strlen("create_geniezone_node"), flag);
+		if (enable_gzvm) {
+			ruri_dev_nodes(RURI_SET_FLAG, "+gzvm");
+		} else {
+			ruri_dev_nodes(RURI_SET_FLAG, "-gzvm");
+		}
+		free(enable_gzvm);
+		return NULL;
 	}
 	if (!strncmp(flag, "no_reset_pidfile", strlen("no_reset_pidfile"))) {
 		free(flags.no_reset_pidfile);
@@ -448,6 +594,16 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag)
 		free(flags.no_pidfd);
 		flags.no_pidfd = true_or_null(flag + strlen("no_pidfd"), flag);
 		return flags.no_pidfd;
+	}
+	if (!strncmp(flag, "dev_nodes=", strlen("dev_nodes="))) {
+		free(flags.dev_nodes);
+		if (strlen(flag) == strlen("dev_nodes=")) {
+			flags.dev_nodes = NULL;
+			return flags.dev_nodes;
+		}
+		flags.dev_nodes = strdup(flag + strlen("dev_nodes="));
+		ruri_dev_nodes(RURI_SET_FLAG, NULL); // Update dev_nodes struct.
+		return flags.dev_nodes;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

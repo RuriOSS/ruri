@@ -574,10 +574,10 @@ Current supported boolean flags:
 - `systemd_init`: The internal implementation of `--systemd`, will enable systemd init support in the container.
 - `enable_tty_signals`: The internal implementation of `--enable-tty-signals`, will not mask SIGTTIN and SIGTTOU signals in the container.
 - `skip_setgroups`: The internal implementation of `--skip-setgroups`, will skip setgroups() call when changing the user in the container.
-- `make_kvm_node`: The internal implementation of `--use-kvm`, will create /dev/kvm in the container.
+- `make_kvm_node`: Will be converted to `dev_nodes=+kvm`.
 - `empty_net_ns`: The internal implementation of `--no-network`, will disable network in the container.
-- `create_gunyah_node`: Will create /dev/gunyah in the container, for compatibility with Qcom gunyah hypervisor.
-- `create_geniezone_node`: Will create /dev/gzvm in the container, for compatibility with MTK geniezone hypervisor.
+- `create_gunyah_node`: Will be converted to `dev_nodes=+gunyah`.
+- `create_geniezone_node`: Will be converted to `dev_nodes=+gzvm`.
 - `no_reset_pidfile`: will keep writing to the pidfile without cleaning it. For debugging.
 - `no_logs`: ruri will auto convert `ruri_no_logs` env to this flag, and will disable all logs. For debugging.
 - `wait_pidfile_lock`: As pidfile is updated asynchronously, this flag will make sure the pidfile is updated before exiting.    
@@ -594,6 +594,10 @@ Current supported boolean flags:
 - `no_freezer_cgroup`: Disable all freezer cgroup based features.
 - `no_pidfd`: Disable all pidfd based features, for debugging.
 - `meow`: An easter egg. It will print "meow" and exit.
+
+A kv flag can be set with `flag_name=value`, and the value will be a string.
+Current supported kv flags:
+- `dev_nodes`: A comma-separated list to override default device nodes in the container. For example, `dev_nodes=+kvm,-full` means create /dev/kvm but disable /dev/full in the container.    
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    
 
