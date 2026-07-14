@@ -57,7 +57,7 @@ static char *true_or_null(char *str, char *full_flag)
 	if (!strcmp(str, "=0")) {
 		return NULL;
 	}
-	ruri_error("{red}Unknown flag: %s\n", full_flag);
+	ruri_error("{red}Unknown flag: %s, for value `%s`\n", full_flag, str);
 }
 // Feature flags.
 char *ruri_feature_flag(int req, char *_Nonnull flag)
@@ -315,15 +315,15 @@ char *ruri_feature_flag(int req, char *_Nonnull flag)
 		flags.disable_warnings = true_or_null(flag + strlen("disable_warnings"), flag);
 		return flags.disable_warnings;
 	}
-	if (!strncmp(flag, "auto_umount", strlen("auto_umount"))) {
-		free(flags.auto_umount);
-		flags.auto_umount = true_or_null(flag + strlen("auto_umount"), flag);
-		return flags.auto_umount;
-	}
 	if (!strncmp(flag, "auto_umount_on_panic", strlen("auto_umount_on_panic"))) {
 		free(flags.auto_umount_on_panic);
 		flags.auto_umount_on_panic = true_or_null(flag + strlen("auto_umount_on_panic"), flag);
 		return flags.auto_umount_on_panic;
+	}
+	if (!strncmp(flag, "auto_umount", strlen("auto_umount"))) {
+		free(flags.auto_umount);
+		flags.auto_umount = true_or_null(flag + strlen("auto_umount"), flag);
+		return flags.auto_umount;
 	}
 	if (!strncmp(flag, "systemd_init", strlen("systemd_init"))) {
 		free(flags.systemd_init);
