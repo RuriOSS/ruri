@@ -465,7 +465,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Set no_new_privs bit.
 		else if (strcmp(argv[index], "-n") == 0 || strcmp(argv[index], "--no-new-privs") == 0) {
-			container->no_new_privs = true;
+			ruri_set_flag("no_new_privs");
 		}
 		// Do not store .rurienv file.
 		else if (strcmp(argv[index], "-N") == 0 || strcmp(argv[index], "--no-rurienv") == 0) {
@@ -964,7 +964,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					container->enable_unshare = true;
 					break;
 				case 'n':
-					container->no_new_privs = true;
+					ruri_set_flag("no_new_privs");
 					break;
 				case 'N':
 					ruri_set_flag("no_rurienv");

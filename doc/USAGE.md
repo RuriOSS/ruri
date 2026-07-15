@@ -598,6 +598,7 @@ Current supported boolean flags:
 - `use_host_runtime`: The internal implementation of `--host-runtime`, will bind-mount /dev/, /sys/, and /proc/ from host.
 - `no_mask_paths`: The internal implementation of `--unmask-dirs`, will not mask sensitive paths in /proc and /sys.
 - `read_only_rootfs`: The internal implementation of `--read-only`, will mount / as read-only.
+- `no_new_privs`: The internal implementation of `--no-new-privs`, will set NO_NEW_PRIVS flag.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.

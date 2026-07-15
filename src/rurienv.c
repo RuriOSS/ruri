@@ -152,7 +152,7 @@ static char *build_container_info(const struct RURI_CONTAINER *_Nonnull containe
 #endif
 	// no_new_privs.
 	ret = k2v3_add_comment(ret, "Set NO_NEW_PRIVS bit.");
-	ret = k2v3_add_config(bool, ret, "no_new_privs", container->no_new_privs);
+	ret = k2v3_add_config(bool, ret, "no_new_privs", ruri_flag(no_new_privs));
 	// enable_seccomp.
 	ret = k2v3_add_comment(ret, "Enable built-in seccomp profile.");
 	ret = k2v3_add_config(bool, ret, "enable_seccomp", container->enable_default_seccomp);
@@ -421,10 +421,13 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 			ruri_warning("{yellow}.rurienv detected, drop_caplist changed{clear}\n");
 		}
 	}
+	bool backup_no_new_privs = ruri_flag(no_new_privs);
 	// Get no_new_privs.
-	container->no_new_privs = k2v3_get(bool, "no_new_privs", cache);
+	if (k2v3_get(bool, "no_new_privs", cache)) {
+		ruri_set_flag("no_new_privs");
+	}
 	// Check if no_new_privs changed.
-	if (backup->no_new_privs != container->no_new_privs) {
+	if (backup_no_new_privs != ruri_flag(no_new_privs)) {
 		if (!ruri_flag(disable_warnings)) {
 			ruri_warning("{yellow}.rurienv detected, no_new_privs changed{clear}\n");
 		}

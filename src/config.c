@@ -46,7 +46,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	cap_value_t nullcaplist[2] = { RURI_INIT_VALUE };
 	ruri_build_caplist(container->drop_caplist, false, nullcaplist, nullcaplist);
 	container->enable_default_seccomp = false;
-	container->no_new_privs = false;
 	container->enable_unshare = false;
 	container->rootless = false;
 	container->command[0] = NULL;
@@ -170,7 +169,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// no_new_privs.
 	ret = k2v3_add_comment(ret, "Set NO_NEW_PRIVS bit.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "no_new_privs", container->no_new_privs);
+	ret = k2v3_add_config(bool, ret, "no_new_privs", ruri_flag(no_new_privs));
 	ret = k2v3_add_newline(ret);
 	// enable_unshare.
 	ret = k2v3_add_comment(ret, "Enable unshare feature.");
@@ -471,7 +470,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	}
 #endif
 	// Get no_new_privs.
-	container->no_new_privs = k2v3_get(bool, "no_new_privs", cache);
+	if (k2v3_get(bool, "no_new_privs", cache)) {
+		ruri_set_flag("no_new_privs");
+	}
 	// Get enable_seccomp.
 	container->enable_default_seccomp = k2v3_get(bool, "enable_seccomp", cache);
 	// Get enable_seccomp_whitelist.
@@ -714,9 +715,10 @@ void ruri_correct_config(const char *_Nonnull path)
 	}
 	if (!have_key("no_new_privs", buf)) {
 		ruri_warning("{green}No key no_new_privs found, set to false\n{clear}");
-		container.no_new_privs = false;
 	} else {
-		container.no_new_privs = k2v_get_key(bool, "no_new_privs", buf);
+		if (k2v_get_key(bool, "no_new_privs", buf)) {
+			ruri_set_flag("no_new_privs");
+		}
 	}
 	if (!have_key("enable_seccomp", buf)) {
 		ruri_warning("{green}No key enable_seccomp found, set to false\n{clear}");

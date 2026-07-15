@@ -135,8 +135,6 @@ struct RURI_CONTAINER {
 	char *_Nonnull extra_ro_mountpoint[RURI_MAX_MOUNTPOINTS + 2];
 	// Environment variables.
 	char *_Nonnull env[RURI_MAX_ENVS + 2];
-	// Set NO_NEW_PRIV bit.
-	bool no_new_privs;
 	// Enable built-in seccomp profile.
 	bool enable_default_seccomp;
 	bool enable_seccomp_whitelist;

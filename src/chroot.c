@@ -1105,7 +1105,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// Set NO_NEW_PRIVS Flag.
 	// It requires Linux3.5 or later.
 	// It will make sudo unavailable in container.
-	if (container->no_new_privs) {
+	if (ruri_flag(no_new_privs)) {
 		prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
 	}
 	if (!ruri_flag(systemd_init)) {
@@ -1264,7 +1264,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	// Set NO_NEW_PRIVS Flag.
 	// It requires Linux3.5 or later.
 	// It will make sudo unavailable in container.
-	if (container->no_new_privs) {
+	if (ruri_flag(no_new_privs)) {
 		prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
 	}
 	if (!ruri_flag(systemd_init)) {
