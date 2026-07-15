@@ -597,6 +597,7 @@ Current supported boolean flags:
 - `ruri_dbg`: Enable ruri debug mode, will print logs and do other debug stuff. For debugging.
 - `use_host_runtime`: The internal implementation of `--host-runtime`, will bind-mount /dev/, /sys/, and /proc/ from host.
 - `no_mask_paths`: The internal implementation of `--unmask-dirs`, will not mask sensitive paths in /proc and /sys.
+- `read_only_rootfs`: The internal implementation of `--read-only`, will mount / as read-only.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.

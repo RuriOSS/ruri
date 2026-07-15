@@ -534,7 +534,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Mount / as read-only.
 		else if (strcmp(argv[index], "-R") == 0 || strcmp(argv[index], "--read-only") == 0) {
-			container->ro_root = true;
+			ruri_set_flag("read_only_root");
 		}
 		// No network.
 		else if (strcmp(argv[index], "-x") == 0 || strcmp(argv[index], "--no-network") == 0) {
@@ -679,7 +679,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 							container->extra_ro_mountpoint[i + 1] = NULL;
 							if (container->rootfs_source == NULL) {
 								container->rootfs_source = strdup(argv[index - 1]);
-								container->ro_root = true;
+								ruri_set_flag("read_only_rootfs");
 							} else {
 								ruri_error("{red}You can only mount one source to / QwQ\n");
 							}
@@ -979,7 +979,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					ruri_set_flag("use_host_runtime");
 					break;
 				case 'R':
-					container->ro_root = true;
+					ruri_set_flag("read_only_rootfs");
 					break;
 				case 'w':
 					ruri_set_flag("disable_warnings");
@@ -1197,7 +1197,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 										container->extra_ro_mountpoint[i + 1] = NULL;
 										if (container->rootfs_source == NULL) {
 											container->rootfs_source = strdup(argv[index - 1]);
-											container->ro_root = true;
+											ruri_set_flag("read_only_rootfs");
 										} else {
 											ruri_error("{red}You can only mount one source to / QwQ\n");
 										}

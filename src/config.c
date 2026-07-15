@@ -59,7 +59,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 #ifdef DISABLE_RURIENV
 	ruri_set_flag("no_rurienv");
 #endif
-	container->ro_root = false;
 	container->cpuset = NULL;
 	container->memory = NULL;
 	container->work_dir = NULL;
@@ -295,7 +294,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// ro_root.
 	ret = k2v3_add_comment(ret, "Make / read-only.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "ro_root", container->ro_root);
+	ret = k2v3_add_config(bool, ret, "ro_root", ruri_flag(read_only_rootfs));
 	ret = k2v3_add_newline(ret);
 	// no_network.
 	ret = k2v3_add_comment(ret, "Disable network.");
@@ -490,7 +489,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 		ruri_set_flag("use_host_runtime");
 	}
 	// Get ro_root.
-	container->ro_root = k2v3_get(bool, "ro_root", cache);
+	if (k2v3_get(bool, "ro_root", cache)) {
+		ruri_set_flag("read_only_rootfs");
+	}
 	// Get no_warnings.
 	if (k2v3_get(bool, "no_warnings", cache)) {
 		ruri_set_flag("disable_warnings");
@@ -773,9 +774,10 @@ void ruri_correct_config(const char *_Nonnull path)
 #endif
 	if (!have_key("ro_root", buf)) {
 		ruri_warning("{green}No key ro_root found, set to false\n{clear}");
-		container.ro_root = false;
 	} else {
-		container.ro_root = k2v_get_key(bool, "ro_root", buf);
+		if (k2v_get_key(bool, "ro_root", buf)) {
+			ruri_set_flag("read_only_rootfs");
+		}
 	}
 	if (!have_key("hidepid", buf)) {
 		ruri_warning("{green}No key hidepid found, set to default value\n{clear}");

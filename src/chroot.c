@@ -265,7 +265,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		mkdir("/sys", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		mkdir("/proc", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		mkdir("/dev", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
-		if (container->ro_root) {
+		if (ruri_flag(read_only_rootfs)) {
 			res = mount("proc", "/proc", "proc", MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_RDONLY, NULL);
 			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount procfs as read-only, will continue.\n");
 			res = mount("sysfs", "/sys", "sysfs", MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_RDONLY, NULL);
@@ -984,7 +984,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 				mount_host_runtime(container);
 			}
 			// If `-R` option is set, make / read-only.
-			if (container->ro_root) {
+			if (ruri_flag(read_only_rootfs)) {
 				mount(container->container_dir, container->container_dir, NULL, MS_BIND | MS_REMOUNT | MS_RDONLY, NULL);
 			}
 		} else {
@@ -1188,7 +1188,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	// Copy qemu binary into container.
 	copy_qemu_binary(container);
 	// If `-R` option is set, make / read-only.
-	if (container->ro_root) {
+	if (ruri_flag(read_only_rootfs)) {
 		mount(container->container_dir, container->container_dir, NULL, MS_BIND | MS_REMOUNT | MS_RDONLY, NULL);
 	}
 	// Set default command for exec().

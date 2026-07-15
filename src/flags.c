@@ -227,6 +227,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.ruri_dbg = NULL,
 		.use_host_runtime = NULL,
 		.no_mask_paths = NULL,
+		.read_only_rootfs = NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -471,6 +472,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		free(flags.no_mask_paths);
 		flags.no_mask_paths = true_or_null(flag + strlen("no_mask_paths"), flag);
 		return flags.no_mask_paths;
+	}
+	if (!strncmp(flag, "read_only_rootfs", strlen("read_only_rootfs"))) {
+		free(flags.read_only_rootfs);
+		flags.read_only_rootfs = true_or_null(flag + strlen("read_only_rootfs"), flag);
+		return flags.read_only_rootfs;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

@@ -150,8 +150,6 @@ struct RURI_CONTAINER {
 	char *_Nullable cross_arch;
 	// Path of QEMU binary.
 	char *_Nullable qemu_path;
-	// Mount / as read-only.
-	bool ro_root;
 	// Cpuset.
 	char *_Nullable cpuset;
 	// Memory.

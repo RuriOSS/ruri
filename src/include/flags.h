@@ -77,6 +77,7 @@ struct RURI_FLAGS {
 	char *ruri_dbg;
 	char *use_host_runtime;
 	char *no_mask_paths;
+	char *read_only_rootfs;
 };
 struct RURI_DEV_NODES {
 	bool has_console;
