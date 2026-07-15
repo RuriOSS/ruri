@@ -49,7 +49,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->no_new_privs = false;
 	container->enable_unshare = false;
 	container->rootless = false;
-	container->mount_host_runtime = false;
 	container->command[0] = NULL;
 	container->env[0] = NULL;
 	container->extra_mountpoint[0] = NULL;
@@ -279,7 +278,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// mount_host_runtime.
 	ret = k2v3_add_comment(ret, "Mount runtime dirs from the host.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "mount_host_runtime", container->mount_host_runtime);
+	ret = k2v3_add_config(bool, ret, "mount_host_runtime", ruri_flag(use_host_runtime));
 	ret = k2v3_add_newline(ret);
 	// work_dir.
 	ret = k2v3_add_comment(ret, "Work directory.");
@@ -488,7 +487,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get rootless.
 	container->rootless = k2v3_get(bool, "rootless", cache);
 	// Get mount_host_runtime.
-	container->mount_host_runtime = k2v3_get(bool, "mount_host_runtime", cache);
+	if (k2v3_get(bool, "mount_host_runtime", cache)) {
+		ruri_set_flag("use_host_runtime");
+	}
 	// Get ro_root.
 	container->ro_root = k2v3_get(bool, "ro_root", cache);
 	// Get no_warnings.
@@ -742,9 +743,10 @@ void ruri_correct_config(const char *_Nonnull path)
 	}
 	if (!have_key("mount_host_runtime", buf)) {
 		ruri_warning("{green}No key mount_host_runtime found, set to false\n{clear}");
-		container.mount_host_runtime = false;
 	} else {
-		container.mount_host_runtime = k2v_get_key(bool, "mount_host_runtime", buf);
+		if (k2v_get_key(bool, "mount_host_runtime", buf)) {
+			ruri_set_flag("use_host_runtime");
+		}
 	}
 	if (!have_key("qemu_path", buf)) {
 		ruri_warning("{green}No key qemu_path found, set to NULL\n{clear}");

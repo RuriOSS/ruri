@@ -980,7 +980,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 				ruri_store_info(container);
 			}
 			// If `-S` option is set, bind-mount /dev/, /sys/ and /proc/ from host.
-			if (container->mount_host_runtime && !ruri_flag(just_chroot)) {
+			if (ruri_flag(use_host_runtime) && !ruri_flag(just_chroot)) {
 				mount_host_runtime(container);
 			}
 			// If `-R` option is set, make / read-only.

@@ -144,8 +144,6 @@ struct RURI_CONTAINER {
 	bool enable_unshare;
 	// If the container is rootless.
 	bool rootless;
-	// Mount host runtime.
-	bool mount_host_runtime;
 	// Pid of init process in container, for setns().
 	pid_t ns_pid;
 	// Arch of multi-architecture container.

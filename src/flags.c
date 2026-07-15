@@ -225,6 +225,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.dev_nodes = NULL,
 		.just_chroot = NULL,
 		.ruri_dbg = NULL,
+		.use_host_runtime = NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -459,6 +460,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		free(flags.ruri_dbg);
 		flags.ruri_dbg = true_or_null(flag + strlen("ruri_dbg"), flag);
 		return flags.ruri_dbg;
+	}
+	if (!strncmp(flag, "use_host_runtime", strlen("use_host_runtime"))) {
+		free(flags.use_host_runtime);
+		flags.use_host_runtime = true_or_null(flag + strlen("use_host_runtime"), flag);
+		return flags.use_host_runtime;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

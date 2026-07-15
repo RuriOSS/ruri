@@ -172,7 +172,7 @@ static void check_container(const struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: mountpoint path is too long QwQ\n");
 		}
 	}
-	if (ruri_flag(systemd_init) && container->mount_host_runtime) {
+	if (ruri_flag(systemd_init) && ruri_flag(use_host_runtime)) {
 		ruri_error("{red}Error: --systemd should not run with --mount-host-runtime QwQ\n");
 	}
 	// If container_dir/.rurienv and container_dir/.ruri_umounted both exists, panic.
@@ -530,7 +530,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Force bind-mount host /dev/, /sys/ and /proc/.
 		else if (strcmp(argv[index], "-S") == 0 || strcmp(argv[index], "--host-runtime") == 0) {
-			container->mount_host_runtime = true;
+			ruri_set_flag("use_host_runtime");
 		}
 		// Mount / as read-only.
 		else if (strcmp(argv[index], "-R") == 0 || strcmp(argv[index], "--read-only") == 0) {
@@ -976,7 +976,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					privileged = true;
 					break;
 				case 'S':
-					container->mount_host_runtime = true;
+					ruri_set_flag("use_host_runtime");
 					break;
 				case 'R':
 					container->ro_root = true;
