@@ -473,7 +473,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		}
 		// Unmask dirs in /proc and /sys.
 		else if (strcmp(argv[index], "-A") == 0 || strcmp(argv[index], "--unmask-dirs") == 0) {
-			container->unmask_dirs = true;
+			ruri_set_flag("no_mask_paths");
 		}
 		// User.
 		else if (strcmp(argv[index], "-E") == 0 || strcmp(argv[index], "--user") == 0) {
@@ -991,7 +991,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 					ruri_set_flag("just_chroot");
 					break;
 				case 'A':
-					container->unmask_dirs = true;
+					ruri_set_flag("no_mask_paths");
 					break;
 				case 'x':
 					ruri_set_flag("empty_net_ns");

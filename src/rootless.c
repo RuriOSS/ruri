@@ -211,7 +211,7 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	mount("binfmt_misc", "./proc/sys/fs/binfmt_misc", "binfmt_misc", 0, NULL);
-	if (!container->unmask_dirs) {
+	if (!ruri_flag(no_mask_paths)) {
 		// Protect some dirs in /proc and /sys.
 		mount("./proc/bus", "./proc/bus", NULL, MS_BIND | MS_REC, NULL);
 		mount("./proc/bus", "./proc/bus", NULL, MS_BIND | MS_RDONLY | MS_REMOUNT, NULL);

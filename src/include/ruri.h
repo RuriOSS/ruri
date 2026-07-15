@@ -172,8 +172,6 @@ struct RURI_CONTAINER {
 	char *_Nullable work_dir;
 	// Rootfs of container will be mount first.
 	char *_Nullable rootfs_source;
-	// Unmask dirs in /proc and /sys.
-	bool unmask_dirs;
 	// User.
 	char *_Nullable user;
 	// Hostname.

@@ -46,6 +46,7 @@
     - `just_chroot`: The internal implementation of `--just-chroot`, will just chroot into the container without creating runtime directories.    
     - `ruri_dbg`: Enable ruri debug mode, will print logs and do other debug stuff. For debugging.
     - `use_host_runtime`: The internal implementation of `--host-runtime`, will bind-mount /dev/, /sys/, and /proc/ from host.
+    - `no_mask_paths`: The internal implementation of `--unmask-dirs`, will not mask sensitive paths in /proc and /sys.
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
   * Auto detect device major and minor number when major is set to 0 in `--char-dev` option.

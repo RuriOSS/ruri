@@ -381,7 +381,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		if (ruri_flag(systemd_init)) {
 			setup_systemd_runtime(container);
 		}
-		if (!container->unmask_dirs) {
+		if (!ruri_flag(no_mask_paths)) {
 			// Mask some directories/files that we don't want the container modify it.
 			mount("tmpfs", "/proc/asound", "tmpfs", MS_RDONLY, NULL);
 			mount("tmpfs", "/proc/acpi", "tmpfs", MS_RDONLY, NULL);

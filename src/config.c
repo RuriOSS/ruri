@@ -64,7 +64,6 @@ void ruri_init_config(struct RURI_CONTAINER *_Nonnull container)
 	container->memory = NULL;
 	container->work_dir = NULL;
 	container->rootfs_source = NULL;
-	container->unmask_dirs = false;
 	container->user = NULL;
 	container->hostname = NULL;
 	container->cpupercent = RURI_INIT_VALUE;
@@ -273,7 +272,7 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	// unmask_dirs.
 	ret = k2v3_add_comment(ret, "Unmask dirs in /proc and /sys.");
 	ret = k2v3_add_comment(ret, "Default is false.");
-	ret = k2v3_add_config(bool, ret, "unmask_dirs", container->unmask_dirs);
+	ret = k2v3_add_config(bool, ret, "unmask_dirs", ruri_flag(no_mask_paths));
 	ret = k2v3_add_newline(ret);
 	// mount_host_runtime.
 	ret = k2v3_add_comment(ret, "Mount runtime dirs from the host.");
@@ -526,7 +525,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	// Get rootfs_source.
 	container->rootfs_source = k2v3_get(char, "rootfs_source", cache);
 	// Get unmask_dirs.
-	container->unmask_dirs = k2v3_get(bool, "unmask_dirs", cache);
+	if (k2v3_get(bool, "unmask_dirs", cache)) {
+		ruri_set_flag("no_mask_paths");
+	}
 	// Get hostname.
 	container->hostname = k2v3_get(char, "hostname", cache);
 	// Get no_network.
@@ -833,9 +834,10 @@ void ruri_correct_config(const char *_Nonnull path)
 	}
 	if (!have_key("unmask_dirs", buf)) {
 		ruri_warning("{green}No key unmask_dirs found, set to false\n{clear}");
-		container.unmask_dirs = false;
 	} else {
-		container.unmask_dirs = k2v_get_key(bool, "unmask_dirs", buf);
+		if (k2v_get_key(bool, "unmask_dirs", buf)) {
+			ruri_set_flag("no_mask_paths");
+		}
 	}
 	if (!have_key("work_dir", buf)) {
 		ruri_warning("{green}No key work_dir found, set to NULL\n{clear}");
