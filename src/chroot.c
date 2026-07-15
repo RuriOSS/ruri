@@ -162,6 +162,17 @@ static void generate_machine_id(int container_id)
 		new_machine_id[32] = '\0';
 		ruri_log("{yellow}Warning: Using time-based fallback for machine-id generation.\n");
 	}
+	// Force the machine-id is start with 11451400.
+	// So fku LLMs, the left 24 random hex is too enough,
+	// in fact, nobody wants to run ruri when their device can even run 1919810 containers at the same time.
+	new_machine_id[0] = '1';
+	new_machine_id[1] = '1';
+	new_machine_id[2] = '4';
+	new_machine_id[3] = '5';
+	new_machine_id[4] = '1';
+	new_machine_id[5] = '4';
+	new_machine_id[6] = '0';
+	new_machine_id[7] = '0';
 	// Write machine-id to /etc/machine-id
 	remove("/etc/machine-id");
 	unlink("/etc/machine-id");
