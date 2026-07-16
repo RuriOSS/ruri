@@ -9,16 +9,51 @@ cprintf() is the implementation of printf() with color, it's just for output.
 libk2v is the implementation of config file.      
 # base function call graph:
 ```
-main() => ruri() => re-exec() from memfd
-                    || => other util func
-                    V
-        double fork() pidfile daemon out
-                    V
-        --timeout? double fork() timeout watchdog out
-                    V
-                    |-> enable unshare? => ruri_run_unshare_container() => ruri_run_chroot_container()
-                    |-> enable rootless? => ruri_run_rootless_container() => ruri_run_rootless_chroot_container()
-                    |-> none? => ruri_run_chroot_container()
+main()
+ v
+ruri()
+ v
+memfd re-exec()
+ v
+parse args => other util functions like ruri_umount_container()
+ v
+read .rurienv for ns_pid, so --unshare is auto synced
+ v
+ +--> pidfile daemon(double fork()ed)
+ v
+ +--> --timeout? => timeout watchdog(double fork()ed)
+ v
+ +--> container setup
+        |
+        |
+        +--> geteuid()!=0?
+        |       v
+        |   ruri_run_rootless_container()
+        |       v
+        |   store/load .rurienv
+        |       v
+        |   ruri_run_rootless_chroot_container()
+        |       v
+        |   exec target
+        |
+        +--> unshare?
+        |       v
+        |   ruri_run_unshare_container()
+        |       v
+        |   store/load .rurienv
+        |       v
+        |   ruri_run_chroot_container()
+        |       v
+        |    exec target
+        |
+        |
+        +--> none?
+                v
+            ruri_run_chroot_container()
+                v
+            store/load .rurienv
+                v
+             exec target
 ```
 And, panic() will catch core signal, detect_suid_or_capability() will check if there is SUID or caps on ruri binary.      
 # fork()s:
