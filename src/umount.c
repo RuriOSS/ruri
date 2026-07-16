@@ -117,23 +117,28 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 	// find & kill other process.
 	ruri_kill_container(container);
 	ruri_log("{base}Umounting container...\n");
-	char infofile[PATH_MAX] = { '\0' };
-	if (snprintf(infofile, sizeof(infofile), "%s/.rurienv", container_dir) >= (int)sizeof(infofile)) {
-		ruri_error("{red}Error: container directory path is too long QwQ\n");
-	}
-	// Umount .rurienv file.
-	umount2(infofile, MNT_DETACH | MNT_FORCE);
-	int fd = open(infofile, O_RDONLY | O_CLOEXEC);
-	// Unset immutable flag on .rurienv.
-	int attr = 0;
-	if (fd >= 0) {
-		ioctl(fd, FS_IOC_GETFLAGS, &attr);
-		attr &= ~FS_IMMUTABLE_FL;
-		ioctl(fd, FS_IOC_SETFLAGS, &attr);
-		remove(infofile);
-		close(fd);
+	if (!ruri_flag(outside_rurienv)) {
+		char infofile[PATH_MAX] = { '\0' };
+		if (snprintf(infofile, sizeof(infofile), "%s/.rurienv", container_dir) >= (int)sizeof(infofile)) {
+			ruri_error("{red}Error: container directory path is too long QwQ\n");
+		}
+		// Umount .rurienv file.
+		umount2(infofile, MNT_DETACH | MNT_FORCE);
+		int fd = open(infofile, O_RDONLY | O_CLOEXEC);
+		// Unset immutable flag on .rurienv.
+		int attr = 0;
+		if (fd >= 0) {
+			ioctl(fd, FS_IOC_GETFLAGS, &attr);
+			attr &= ~FS_IMMUTABLE_FL;
+			ioctl(fd, FS_IOC_SETFLAGS, &attr);
+			remove(infofile);
+			close(fd);
+		} else {
+			ruri_warning("{yellow}Warning: .rurienv does not exist\n");
+		}
 	} else {
-		ruri_warning("{yellow}Warning: .rurienv does not exist\n");
+		ftruncate(ruri_env_fd(-1), 0);
+		lseek(ruri_env_fd(-1), 0, SEEK_SET);
 	}
 	// Create a `.ruri_umounted` file.
 	char umounted_file[PATH_MAX] = { '\0' };

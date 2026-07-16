@@ -422,6 +422,11 @@ void ruri_run_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 	ruri_log("{base}ns pid: %d\n", container->ns_pid);
 	// Check if we have joined the container's namespaces.
 	if (unshare_pid == 0) {
+		// Close rurienv_fd, as we don't need it anymore.
+		if (ruri_env_fd(-1) >= 0) {
+			close(ruri_env_fd(-1));
+			ruri_env_fd(-114);
+		}
 		// Write RURI_PID_{PID} to the timeout_pid_fd.
 		if (container->timeout_pid_fd >= 0) {
 			char pid_str[64] = { 0 };

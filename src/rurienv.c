@@ -90,18 +90,38 @@ pid_t ruri_get_ns_pid(const char *_Nonnull container_dir)
 	 * If not, return RURI_INIT_VALUE.
 	 * If .rurienv does not exist, return RURI_INIT_VALUE.
 	 */
-	char file[PATH_MAX] = { '\0' };
-	if (snprintf(file, sizeof(file), "%s/.rurienv", container_dir) >= (int)sizeof(file)) {
-		ruri_error("{red}QwQ? Why we are here?\n");
-	}
-	// If .rurienv file does not exist.
-	if (access(file, F_OK) != 0) {
-		return RURI_INIT_VALUE;
-	}
-	// Read .rurienv file.
-	char *buf = k2v3_open_file(file, 65536);
-	if (buf == NULL) {
-		return RURI_INIT_VALUE;
+	char *buf = NULL;
+	if (ruri_flag(outside_rurienv)) {
+		if (ruri_env_fd(-1) < 0) {
+			ruri_error("{red}Error: rurienv_fd is not open QwQ\n");
+		}
+		struct stat st;
+		if (fstat(ruri_env_fd(-1), &st) < 0) {
+			ruri_error("{red}Error: failed to fstat rurienv_fd QwQ\n");
+		}
+		if (st.st_size < 0) {
+			ruri_error("{red}Error: rurienv_fd has negative size QwQ\n");
+		}
+		if (st.st_size == 0) {
+			return RURI_INIT_VALUE;
+		}
+		buf = ruri_malloc(st.st_size + 1);
+		read(ruri_env_fd(-1), buf, st.st_size);
+		buf[st.st_size] = '\0';
+	} else {
+		char file[PATH_MAX] = { '\0' };
+		if (snprintf(file, sizeof(file), "%s/.rurienv", container_dir) >= (int)sizeof(file)) {
+			ruri_error("{red}QwQ? Why we are here?\n");
+		}
+		// If .rurienv file does not exist.
+		if (access(file, F_OK) != 0) {
+			return RURI_INIT_VALUE;
+		}
+		// Read .rurienv file.
+		buf = k2v3_open_file(file, 65536);
+		if (buf == NULL) {
+			return RURI_INIT_VALUE;
+		}
 	}
 	k2v3_cache cache = k2v3_parse(buf);
 	pid_t ret = k2v3_get(int, "ns_pid", cache);
@@ -247,6 +267,25 @@ void ruri_store_info(const struct RURI_CONTAINER *_Nonnull container)
 	 */
 	// Format container info.
 	char *info = build_container_info(container);
+	if (ruri_flag(outside_rurienv)) {
+		// Just write to ruri_env_fd(-1) if it's open.
+		if (ruri_env_fd(-1) >= 0) {
+			lseek(ruri_env_fd(-1), 0, SEEK_SET);
+			if (ftruncate(ruri_env_fd(-1), 0) < 0) {
+				free(info);
+				ruri_error("{red}Error: failed to truncate .rurienv file QwQ\n");
+			}
+			if (write(ruri_env_fd(-1), info, strlen(info)) < 0) {
+				free(info);
+				ruri_error("{red}Error: failed to write to .rurienv file QwQ\n");
+			}
+			fsync(ruri_env_fd(-1));
+			free(info);
+			return;
+		}
+		free(info);
+		ruri_error("{red}Error: rurienv_fd is not open QwQ\n");
+	}
 	char file[PATH_MAX] = { '\0' };
 	if (snprintf(file, sizeof(file), "%s/.rurienv", container->container_dir) >= (int)sizeof(file)) {
 		free(info);
@@ -309,12 +348,35 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 	 * and return a struct with malloc()ed memory.
 	 */
 	k2v3_stop_at_warning(1);
+	char *buf = NULL;
 	char file[PATH_MAX] = { '\0' };
-	if (snprintf(file, sizeof(file), "%s/.rurienv", container_dir) >= (int)sizeof(file)) {
-		ruri_error("{red}QwQ? Why we are here?\n");
+	if (ruri_flag(outside_rurienv)) {
+		if (ruri_env_fd(-1) < 0) {
+			ruri_error("{red}Error: rurienv_fd is not open QwQ\n");
+		}
+		lseek(ruri_env_fd(-1), 0, SEEK_SET);
+		struct stat st;
+		if (fstat(ruri_env_fd(-1), &st) < 0) {
+			ruri_error("{red}Error: failed to fstat rurienv_fd QwQ\n");
+		}
+		if (st.st_size < 0) {
+			ruri_error("{red}Error: rurienv_fd has negative size QwQ\n");
+		}
+		if (st.st_size == 0) {
+			buf = NULL;
+		} else {
+			buf = ruri_malloc(st.st_size + 1);
+			read(ruri_env_fd(-1), buf, st.st_size);
+			buf[st.st_size] = '\0';
+		}
+	} else {
+		char file[PATH_MAX] = { '\0' };
+		if (snprintf(file, sizeof(file), "%s/.rurienv", container_dir) >= (int)sizeof(file)) {
+			ruri_error("{red}QwQ? Why we are here?\n");
+		}
+		// Read .rurienv file.
+		buf = k2v3_open_file(file, 65536);
 	}
-	// Read .rurienv file.
-	char *buf = k2v3_open_file(file, 65536);
 	if (buf == NULL) {
 		// Return a malloc()ed struct for ruri_umount_container() and ruri_container_ps().
 		if (container == NULL) {
@@ -359,19 +421,24 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 		ruri_log("{base}pid %d is not a ruri process.\n", k2v3_get(int, "ns_pid", cache));
 		free(buf);
 		// Unset immutable flag of .rurienv.
-		umount2(file, MNT_DETACH | MNT_FORCE);
-		int fd = open(file, O_RDONLY | O_CLOEXEC);
-		if (fd < 0 && !ruri_flag(disable_warnings)) {
-			ruri_warning("{yellow}Open .rurienv failed{clear}\n");
-			return container;
+		if (!ruri_flag(outside_rurienv)) {
+			umount2(file, MNT_DETACH | MNT_FORCE);
+			int fd = open(file, O_RDONLY | O_CLOEXEC);
+			if (fd < 0 && !ruri_flag(disable_warnings)) {
+				ruri_warning("{yellow}Open .rurienv failed{clear}\n");
+				return container;
+			}
+			int attr = 0;
+			ioctl(fd, FS_IOC_GETFLAGS, &attr);
+			attr &= ~FS_IMMUTABLE_FL;
+			ioctl(fd, FS_IOC_SETFLAGS, &attr);
+			close(fd);
+			remove(file);
+			k2v3_free_cache(&cache);
+		} else {
+			lseek(ruri_env_fd(-1), 0, SEEK_SET);
+			ftruncate(ruri_env_fd(-1), 0);
 		}
-		int attr = 0;
-		ioctl(fd, FS_IOC_GETFLAGS, &attr);
-		attr &= ~FS_IMMUTABLE_FL;
-		ioctl(fd, FS_IOC_SETFLAGS, &attr);
-		close(fd);
-		remove(file);
-		k2v3_free_cache(&cache);
 		return container;
 	}
 	// Rootless container will only get ns_pid, work_dir and user.

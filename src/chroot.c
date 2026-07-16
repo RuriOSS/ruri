@@ -1113,7 +1113,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			}
 		} else {
 			// If container already mounted, sync the config.
-			if (!ruri_flag(no_rurienv)) {
+			if (!ruri_flag(no_rurienv) && !container->enable_unshare) {
 				ruri_read_info(container, container->container_dir);
 			}
 		}
@@ -1149,6 +1149,10 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			continue;
 		}
 		close(i);
+	}
+	// Close ruri_env_fd, we don't need it anymore.
+	if (ruri_env_fd(-1) >= 0) {
+		close(ruri_env_fd(-1));
 	}
 	// chroot(2) into container, or use pivot_root(2) if `-u` is set.
 	if (!container->enable_unshare) {

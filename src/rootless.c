@@ -576,6 +576,11 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	} else if (pid < 0) {
 		ruri_error("{red}Fork error QwQ?\n");
 	} else {
+		// Close rurienv_fd if it's open.
+		if (ruri_env_fd(-1) >= 0) {
+			close(ruri_env_fd(-1));
+			ruri_env_fd(-114);
+		}
 		close(sync_pipe_2[1]);
 		char pid_text[32] = { '\0' };
 		ssize_t n = read(sync_pipe_2[0], pid_text, 31);

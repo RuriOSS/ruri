@@ -230,6 +230,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.read_only_rootfs = NULL,
 		.no_new_privs = NULL,
 		.rlimits = NULL,
+		.outside_rurienv = NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -495,6 +496,21 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		flags.rlimits = strdup(flag + strlen("rlimits="));
 		return flags.rlimits;
 	}
+	if (!strncmp(flag, "outside_rurienv=", strlen("outside_rurienv="))) {
+		free(flags.outside_rurienv);
+		if (strlen(flag) == strlen("outside_rurienv=")) {
+			flags.outside_rurienv = NULL;
+			return flags.outside_rurienv;
+		}
+		flags.outside_rurienv = strdup(flag + strlen("outside_rurienv="));
+		int fd = open(flags.outside_rurienv, O_CREAT | O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR);
+		if (fd >= 0) {
+			ruri_env_fd(fd);
+		} else {
+			ruri_error("{red}Error: failed to open outside_rurienv fd QwQ\n");
+		}
+		return flags.outside_rurienv;
+	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
 }
@@ -521,4 +537,16 @@ char **ruri_flags_buf(int req, const char *_Nonnull flag)
 		return buf;
 	}
 	return NULL;
+}
+int ruri_env_fd(int fd)
+{
+	/*
+	 * Store the fd of the rurienv file, so we can use it later.
+	 */
+	static thread_local int env_fd = RURI_INIT_VALUE;
+	if (fd == -1) {
+		return env_fd;
+	}
+	env_fd = fd;
+	return env_fd;
 }
