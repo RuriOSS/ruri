@@ -9,7 +9,8 @@ cprintf() is the implementation of printf() with color, it's just for output.
 libk2v is the implementation of config file.      
 # base function call graph:
 ```
-main() => ruri() => || => other util func
+main() => ruri() => re-exec() from memfd
+                    || => other util func
                     V
         double fork() pidfile daemon out
                     V
