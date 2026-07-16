@@ -509,6 +509,13 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		} else {
 			ruri_error("{red}Error: failed to open outside_rurienv fd QwQ\n");
 		}
+		char *rurienv_realpath = realpath(flags.outside_rurienv, NULL);
+		if (rurienv_realpath) {
+			free(flags.outside_rurienv);
+			flags.outside_rurienv = rurienv_realpath;
+		} else {
+			ruri_error("{red}Error: failed to get realpath of outside_rurienv QwQ\n");
+		}
 		return flags.outside_rurienv;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
