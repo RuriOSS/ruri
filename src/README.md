@@ -9,10 +9,15 @@ cprintf() is the implementation of printf() with color, it's just for output.
 libk2v is the implementation of config file.      
 # base function call graph:
 ```
-main() => ruri() =>|| => other util func
-                   |- enable unshare? => ruri_run_unshare_container() => ruri_run_chroot_container()
-                   |- enable rootless? => ruri_run_rootless_container() => ruri_run_rootless_chroot_container()
-                   |- none? => ruri_run_chroot_container()
+main() => ruri() => || => other util func
+                    V
+        double fork() pidfile daemon out
+                    V
+        --timeout? double fork() timeout watchdog out
+                    V
+                    |-> enable unshare? => ruri_run_unshare_container() => ruri_run_chroot_container()
+                    |-> enable rootless? => ruri_run_rootless_container() => ruri_run_rootless_chroot_container()
+                    |-> none? => ruri_run_chroot_container()
 ```
 And, panic() will catch core signal, detect_suid_or_capability() will check if there is SUID or caps on ruri binary.      
 # fork()s:
