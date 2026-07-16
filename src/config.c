@@ -428,6 +428,21 @@ char *ruri_container_info_to_k2v(const struct RURI_CONTAINER *_Nonnull container
 	ret = k2v3_add_comment(ret, "Default is false.");
 	ret = k2v3_add_config(bool, ret, "systemd_mode", ruri_flag(systemd_init));
 	ret = k2v3_add_newline(ret);
+	// Enabled flags.
+	ret = k2v3_add_comment(ret, "Enabled flags.");
+	ret = k2v3_add_comment(ret, "For example, [\"flag1\",\"flag2\"] is valid.");
+	ret = k2v3_add_comment(ret, "Set it to empty to disable.");
+	char **enabled_flags = ruri_flags_buf(RURI_QUERY_FLAG, NULL);
+	size_t flag_count = 0;
+	if (enabled_flags == NULL) {
+		enabled_flags = malloc(sizeof(char *));
+		enabled_flags[0] = NULL;
+	}
+	while (enabled_flags[flag_count] != NULL) {
+		flag_count++;
+	}
+	ret = k2v3_add_config(char_array, ret, "enabled_flags", enabled_flags, flag_count);
+	ret = k2v3_add_newline(ret);
 	return ret;
 }
 void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_Nonnull path)
@@ -437,6 +452,9 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	 * and set container config.
 	 */
 	k2v3_stop_at_warning(1);
+	if (access(path, F_OK) != 0) {
+		ruri_error("{red}Config file not found: %s\n{clear}", path);
+	}
 	char *buf = k2v3_open_file(path, 65536);
 	k2v3_cache cache = k2v3_parse(buf);
 	if (buf == NULL) {
@@ -599,8 +617,14 @@ void ruri_read_config(struct RURI_CONTAINER *_Nonnull container, const char *_No
 	if (k2v3_get(bool, "systemd_mode", cache)) {
 		ruri_set_flag("systemd_init");
 	}
+	// Get enabled_flags.
+	char *enabled_flags[128] = { NULL };
+	int flaglen = k2v3_get(char_array, "enabled_flags", cache, enabled_flags, 128);
+	for (int i = 0; i < flaglen; i++) {
+		ruri_set_flag(enabled_flags[i]);
+		free(enabled_flags[i]);
+	}
 	free(buf);
-	k2v3_dump(cache);
 	k2v3_free_cache(&cache);
 	buf = ruri_container_info_to_k2v(container);
 	ruri_log("{base}Container config in %s:{cyan}\n", path);

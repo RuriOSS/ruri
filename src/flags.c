@@ -242,6 +242,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		ruri_error("{red}Unknown request: %d\nThis must be an internal error QwQ", req);
 		return NULL;
 	}
+	ruri_flags_buf(RURI_SET_FLAG, flag);
 	if (!strncmp(flag, "ban_futex_pi", strlen("ban_futex_pi"))) {
 		free(flags.ban_futex_pi);
 		flags.ban_futex_pi = true_or_null(flag + strlen("ban_futex_pi"), flag);
@@ -500,4 +501,25 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 void ruri_set_flag(const char *_Nonnull flag)
 {
 	ruri_feature_flag(RURI_SET_FLAG, flag, 0);
+}
+char **ruri_flags_buf(int req, const char *_Nonnull flag)
+{
+	static thread_local char **buf = NULL;
+	static thread_local size_t buf_size = 0;
+	if (req == RURI_QUERY_FLAG) {
+		return buf;
+	}
+	if (req == RURI_SET_FLAG) {
+		if (!buf) {
+			buf_size++;
+			buf = malloc(sizeof(char *) * (buf_size + 1));
+		} else {
+			buf_size++;
+			buf = realloc(buf, sizeof(char *) * (buf_size + 1));
+		}
+		buf[buf_size - 1] = strdup(flag);
+		buf[buf_size] = NULL;
+		return buf;
+	}
+	return NULL;
 }

@@ -367,6 +367,7 @@ void ruri_panic(int sig);
 void ruri_pid_file_wait_lock(int pidfile_fd);
 void ruri_set_flag(const char *_Nonnull flag);
 bool ruri_dev_nodes(int req, const char *_Nonnull dev, size_t offset);
+char **ruri_flags_buf(int req, const char *_Nonnull flag);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗
