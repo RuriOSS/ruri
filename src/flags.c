@@ -231,6 +231,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.no_new_privs = NULL,
 		.rlimits = NULL,
 		.outside_rurienv = NULL,
+		.rw_rurienv = NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -517,6 +518,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 			ruri_error("{red}Error: failed to get realpath of outside_rurienv QwQ\n");
 		}
 		return flags.outside_rurienv;
+	}
+	if (!strncmp(flag, "rw_rurienv", strlen("rw_rurienv"))) {
+		free(flags.rw_rurienv);
+		flags.rw_rurienv = true_or_null(flag + strlen("rw_rurienv"), flag);
+		return flags.rw_rurienv;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

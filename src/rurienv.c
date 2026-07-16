@@ -313,8 +313,8 @@ void ruri_store_info(const struct RURI_CONTAINER *_Nonnull container)
 		ioctl(fd, FS_IOC_GETFLAGS, &attr);
 		attr &= ~FS_IMMUTABLE_FL;
 		ioctl(fd, FS_IOC_SETFLAGS, &attr);
-		remove(file);
 		close(fd);
+		remove(file);
 	}
 	// Creat .rurienv file and open it.
 	fd = open(file, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IWUSR | S_IRUSR);
@@ -327,15 +327,17 @@ void ruri_store_info(const struct RURI_CONTAINER *_Nonnull container)
 		free(info);
 		ruri_error("{red}Error: failed to write to .rurienv file QwQ\n");
 	}
-	// Set immutable flag on .rurienv file.
-	attr = 0;
-	ioctl(fd, FS_IOC_GETFLAGS, &attr);
-	attr |= FS_IMMUTABLE_FL;
-	ioctl(fd, FS_IOC_SETFLAGS, &attr);
-	close(fd);
-	// Mount the .rurienv file as read-only.
-	mount(file, file, NULL, MS_BIND | MS_REC, NULL);
-	mount(file, file, NULL, MS_REMOUNT | MS_RDONLY | MS_BIND, NULL);
+	if (!ruri_flag(rw_rurienv)) {
+		// Set immutable flag on .rurienv file.
+		attr = 0;
+		ioctl(fd, FS_IOC_GETFLAGS, &attr);
+		attr |= FS_IMMUTABLE_FL;
+		ioctl(fd, FS_IOC_SETFLAGS, &attr);
+		close(fd);
+		// Mount the .rurienv file as read-only.
+		mount(file, file, NULL, MS_BIND | MS_REC, NULL);
+		mount(file, file, NULL, MS_REMOUNT | MS_RDONLY | MS_BIND, NULL);
+	}
 	free(info);
 }
 // Read .rurienv file.

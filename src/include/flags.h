@@ -81,6 +81,7 @@ struct __attribute__((packed, aligned(1))) RURI_FLAGS {
 	char *no_new_privs;
 	char *rlimits;
 	char *outside_rurienv;
+	char *rw_rurienv;
 };
 struct __attribute__((packed, aligned(1))) RURI_DEV_NODES {
 	bool has_console;
