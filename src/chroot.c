@@ -601,6 +601,117 @@ static void set_envs(const struct RURI_CONTAINER *_Nonnull container)
 		setenv(container->env[i], container->env[i + 1], 1);
 	}
 }
+// Run at start of ruri_run_chroot_container().
+static void setup_rlimits(void)
+{
+	/*
+	 * Parse rlimit config, with format:
+	 * <resource_name>:<soft_limit>:<hard_limit>
+	 * or <resource_name>:<limit>, means soft_limit=hard_limit=limit.
+	 * Multiple rlimit configs can be separated by comma.
+	 * if the soft_limit or hard_limit is -1, it means RLIM_INFINITY.
+	 * Supported resource names:
+	 * as => RLIMIT_AS
+	 * core => RLIMIT_CORE
+	 * cpu => RLIMIT_CPU
+	 * data => RLIMIT_DATA
+	 * fsize => RLIMIT_FSIZE
+	 * locks => RLIMIT_LOCKS
+	 * memlock => RLIMIT_MEMLOCK
+	 * msgqueue => RLIMIT_MSGQUEUE
+	 * nice => RLIMIT_NICE
+	 * nofile => RLIMIT_NOFILE
+	 * nproc => RLIMIT_NPROC
+	 * rss => RLIMIT_RSS
+	 * rtprio => RLIMIT_RTPRIO
+	 * rtime => RLIMIT_RTTIME
+	 * sigpending => RLIMIT_SIGPENDING
+	 * stack => RLIMIT_STACK
+	 */
+	char *rlimit_conf = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, rlimits));
+	if (!rlimit_conf) {
+		return;
+	}
+	// Split rlimit_conf by comma.
+	char *rlimit_conf_copy = strdup(rlimit_conf);
+	char *rlimit_conf_token = strtok(rlimit_conf_copy, ",");
+	while (rlimit_conf_token != NULL) {
+		char *resource_name = strtok(rlimit_conf_token, ":");
+		char *soft_limit_str = strtok(NULL, ":");
+		char *hard_limit_str = strtok(NULL, ":");
+		if (resource_name == NULL || soft_limit_str == NULL) {
+			ruri_error("{red}Error: Invalid rlimit config: %s\n", rlimit_conf_token);
+		}
+		// If hard_limit_str is NULL, set it to soft_limit_str.
+		if (hard_limit_str == NULL) {
+			hard_limit_str = soft_limit_str;
+		}
+		// Convert soft_limit_str and hard_limit_str to rlim_t.
+		rlim_t soft_limit = 0;
+		rlim_t hard_limit = 0;
+		char *endptr = NULL;
+		if (!strcmp(soft_limit_str, "-1")) {
+			soft_limit = RLIM_INFINITY;
+		} else {
+			soft_limit = strtoul(soft_limit_str, &endptr, 10);
+			if (*endptr != '\0') {
+				ruri_error("{red}Error: Invalid soft limit: %s\n", soft_limit_str);
+			}
+		}
+		if (!strcmp(hard_limit_str, "-1")) {
+			hard_limit = RLIM_INFINITY;
+		} else {
+			hard_limit = strtoul(hard_limit_str, &endptr, 10);
+			if (*endptr != '\0') {
+				ruri_error("{red}Error: Invalid hard limit: %s\n", hard_limit_str);
+			}
+		}
+		// Set rlimit.
+		struct rlimit rl;
+		rl.rlim_cur = soft_limit;
+		rl.rlim_max = hard_limit;
+		int resource = 0;
+		if (!strcmp(resource_name, "as")) {
+			resource = RLIMIT_AS;
+		} else if (!strcmp(resource_name, "core")) {
+			resource = RLIMIT_CORE;
+		} else if (!strcmp(resource_name, "cpu")) {
+			resource = RLIMIT_CPU;
+		} else if (!strcmp(resource_name, "data")) {
+			resource = RLIMIT_DATA;
+		} else if (!strcmp(resource_name, "fsize")) {
+			resource = RLIMIT_FSIZE;
+		} else if (!strcmp(resource_name, "locks")) {
+			resource = RLIMIT_LOCKS;
+		} else if (!strcmp(resource_name, "memlock")) {
+			resource = RLIMIT_MEMLOCK;
+		} else if (!strcmp(resource_name, "msgqueue")) {
+			resource = RLIMIT_MSGQUEUE;
+		} else if (!strcmp(resource_name, "nice")) {
+			resource = RLIMIT_NICE;
+		} else if (!strcmp(resource_name, "nofile")) {
+			resource = RLIMIT_NOFILE;
+		} else if (!strcmp(resource_name, "nproc")) {
+			resource = RLIMIT_NPROC;
+		} else if (!strcmp(resource_name, "rss")) {
+			resource = RLIMIT_RSS;
+		} else if (!strcmp(resource_name, "rtprio")) {
+			resource = RLIMIT_RTPRIO;
+		} else if (!strcmp(resource_name, "rtime")) {
+			resource = RLIMIT_RTTIME;
+		} else if (!strcmp(resource_name, "sigpending")) {
+			resource = RLIMIT_SIGPENDING;
+		} else if (!strcmp(resource_name, "stack")) {
+			resource = RLIMIT_STACK;
+		} else {
+			ruri_error("{red}Error: Invalid resource name: %s\n", resource_name);
+		}
+		if (setrlimit(resource, &rl) != 0) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to set rlimit for %s: soft=%lu, hard=%lu\n", resource_name, soft_limit, hard_limit);
+		}
+		rlimit_conf_token = strtok(NULL, ",");
+	}
+}
 // Run after init_container().
 static void setup_binfmt_misc(const struct RURI_CONTAINER *_Nonnull container)
 {
@@ -941,6 +1052,8 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	 * It will run container as the config in CONTAINER struct.
 	 */
 	ruri_proc_mark(RURI_CHROOT);
+	// Set rlimits.
+	setup_rlimits();
 	// Close pidfile_lock_fd.
 	if (container->pidfile_lock_fd >= 0) {
 		close(container->pidfile_lock_fd);
@@ -1175,6 +1288,8 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	 *
 	 * This function is modified from ruri_run_chroot_container().
 	 */
+	// Set rlimits.
+	setup_rlimits();
 	// Close pidfile_lock_fd.
 	if (container->pidfile_lock_fd >= 0) {
 		close(container->pidfile_lock_fd);

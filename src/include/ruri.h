@@ -61,6 +61,7 @@
 #include <linux/magic.h>
 #include <sys/personality.h>
 #include <sys/statfs.h>
+#include <sys/resource.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>

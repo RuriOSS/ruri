@@ -229,6 +229,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.no_mask_paths = NULL,
 		.read_only_rootfs = NULL,
 		.no_new_privs = NULL,
+		.rlimits = NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -483,6 +484,15 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		free(flags.no_new_privs);
 		flags.no_new_privs = true_or_null(flag + strlen("no_new_privs"), flag);
 		return flags.no_new_privs;
+	}
+	if (!strncmp(flag, "rlimits=", strlen("rlimits="))) {
+		free(flags.rlimits);
+		if (strlen(flag) == strlen("rlimits=")) {
+			flags.rlimits = NULL;
+			return flags.rlimits;
+		}
+		flags.rlimits = strdup(flag + strlen("rlimits="));
+		return flags.rlimits;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
