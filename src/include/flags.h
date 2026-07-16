@@ -99,5 +99,6 @@ struct __attribute__((packed, aligned(1))) RURI_DEV_NODES {
 // For ruri_feature_flag().
 #define RURI_SET_FLAG (114)
 #define RURI_QUERY_FLAG (-514)
+#define ruri_set_flag(flag) ruri_feature_flag(RURI_SET_FLAG, flag, 0)
 #define ruri_flag(flag) (ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, flag)) != NULL)
 #define ruri_has_dev(dev) (ruri_dev_nodes(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_DEV_NODES, has_##dev)) != false)

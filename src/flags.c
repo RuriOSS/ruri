@@ -498,12 +498,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
 }
-void ruri_set_flag(const char *_Nonnull flag)
-{
-	ruri_feature_flag(RURI_SET_FLAG, flag, 0);
-}
 char **ruri_flags_buf(int req, const char *_Nonnull flag)
 {
+	/*
+	 * Save the flag to a char** buffer, so we can dump the record later.
+	 */
 	static thread_local char **buf = NULL;
 	static thread_local size_t buf_size = 0;
 	if (req == RURI_QUERY_FLAG) {
