@@ -307,6 +307,11 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	if (!ruri_flag(no_rurienv)) {
 		ruri_read_info(container, container->container_dir);
 	}
+	// Close rurienv_fd, we can reopen it later if needed.
+	if (ruri_env_fd(-1) >= 0) {
+		close(ruri_env_fd(-1));
+		ruri_env_fd(-114);
+	}
 	bool container_initlized = false;
 	if (container->ns_pid > 0) {
 		container_initlized = true;
@@ -522,6 +527,15 @@ void ruri_run_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 	}
 	pid_t pid = fork();
 	if (pid > 0) {
+		// Reopen rurienv_fd, as we closed it before.
+		if (ruri_flag(outside_rurienv)) {
+			int fd = open(ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, outside_rurienv)), O_RDWR | O_CLOEXEC);
+			if (fd >= 0) {
+				ruri_env_fd(fd);
+			} else {
+				ruri_error("{red}Error: failed to open outside_rurienv fd QwQ\n");
+			}
+		}
 		// close read end of pipe.
 		close(sync_pipe_2[0]);
 		if (!set_id_map_succeed) {

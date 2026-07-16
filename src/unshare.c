@@ -118,11 +118,13 @@ static pid_t init_unshare_container(struct RURI_CONTAINER *_Nonnull container)
 		if (!ruri_flag(no_rurienv)) {
 			container->ns_pid = unshare_pid;
 			// Reopen rurienv_fd, as we closed it before.
-			int fd = open(ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, outside_rurienv)), O_RDWR | O_CLOEXEC);
-			if (fd >= 0) {
-				ruri_env_fd(fd);
-			} else {
-				ruri_error("{red}Error: failed to open outside_rurienv fd QwQ\n");
+			if (ruri_flag(outside_rurienv)) {
+				int fd = open(ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, outside_rurienv)), O_RDWR | O_CLOEXEC);
+				if (fd >= 0) {
+					ruri_env_fd(fd);
+				} else {
+					ruri_error("{red}Error: failed to open outside_rurienv fd QwQ\n");
+				}
 			}
 			ruri_store_info(container);
 		} else if (!ruri_flag(disable_warnings)) {
