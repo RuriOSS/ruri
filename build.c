@@ -26,6 +26,126 @@
  * SOFTWARE.
  *
  */
+// SPDX-License-Identifier: MIT
+/*
+ *
+ * This file is part of catsh, with ABSOLUTELY NO WARRANTY.
+ *
+ * MIT License
+ *
+ * Copyright (c) 2025 Moe-hacker
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ *
+ */
+#ifndef __linux__
+#error "This code is intended to be compiled on Linux systems only."
+#endif
+#define _GNU_SOURCE
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <poll.h>
+#include <sys/stat.h>
+#include <stdint.h>
+#include <time.h>
+// Bool!!!
+#if __STDC_VERSION__ < 202000L
+#ifndef bool
+#define bool _Bool
+#define true ((_Bool)1u)
+#define false ((_Bool)0u)
+#endif
+#endif
+// Bionic does not have memfd_create()
+#ifdef __ANDROID__
+#define memfd_create(...) syscall(SYS_memfd_create, __VA_ARGS__)
+#endif
+#define cth_debug(x) \
+	do {         \
+		x    \
+	} while (0)
+#define cth_log(format, ...)                                                                                                  \
+	{                                                                                                                     \
+		struct timeval tv;                                                                                            \
+		gettimeofday(&tv, NULL);                                                                                      \
+		fprintf(stderr, "[%ld.%06ld] in %s() in %s line %d:\n", tv.tv_sec, tv.tv_usec, __func__, __FILE__, __LINE__); \
+		fprintf(stderr, format, ##__VA_ARGS__);                                                                       \
+	}
+#define CTH_EXIT_FAILURE 114
+#define CTH_EXIT_SUCCESS 0
+#define CTH_VERSION_MAJOR 0
+#define CTH_VERSION_MINOR 9
+#define CTH_VERSION_PATCH 3
+#define CTH_VERSION_STRING "0.9.3"
+// 128 MiB, for output capturing, should be enough for most cases. Can be changed in the future if needed.
+#define CTH_MAX_OUTPUT_SIZE (1024 * 1024 * 128)
+struct __attribute__((packed, aligned(1))) cth_result {
+	uint32_t cth_version;
+	size_t struct_size;
+	bool exited;
+	int exit_code;
+	char *stdout_ret;
+	char *stderr_ret;
+	pid_t pid;
+	// Deprecated, always -1.
+	pid_t ppid;
+	// In microseconds, for more accurate time measurement. Deprecated, use time_used_ms instead.
+	useconds_t time_used;
+	// New sections for non-blocking exec.
+	// Just overuse memfd magic!
+	int stat_fd;
+	int stdout_fd;
+	int stderr_fd;
+	int time_fd;
+	// Time used in milliseconds.
+	uint64_t time_used_ms;
+	// Reserved space for future expansion, should be zeroed.
+	uint8_t reserved[256 - sizeof(int) - sizeof(int) - sizeof(int) - sizeof(int) - sizeof(uint64_t)];
+};
+#define CTH_VERSION ((CTH_VERSION_MAJOR << 16) | (CTH_VERSION_MINOR << 8) | (CTH_VERSION_PATCH))
+#define CTH_ABI_COMPATIBLE(res) ((res) != NULL && (res)->cth_version <= CTH_VERSION && (res)->struct_size == sizeof(struct cth_result))
+int cth_add_arg(char ***argv, char *arg);
+void cth_free_argv(char ***argv);
+void cth_free_result(struct cth_result **res);
+struct cth_result *cth_exec(char **argv, char *input, bool block, bool get_output);
+int cth_fork_rexec_self(char *const argv[]);
+int cth_exec_command(char **argv);
+int cth_wait(struct cth_result **res);
+void *cth_init_argv(void);
+struct cth_result *cth_exec_with_file_input(char **argv, int fd, bool block, bool get_output, void (*progress)(float, int), int progress_line_num);
+void cth_show_progress(float progress, int line_num);
+#define CTH_EXEC_SUCCEED(res) ((res) != NULL && (res)->exited && ((res)->exit_code == 0))
+#define CTH_EXEC_FAILED(res) ((res) != NULL && (res)->exited && ((res)->exit_code != 0))
+#define CTH_EXEC_RUNNING(res) ((res) != NULL && !(res)->exited)
+#define CTH_EXEC_CANNOT_RUN(res) ((res) == NULL)
 //
 // This program is a new build system for ruri
 // It does not depend on any external build system.
@@ -68,72 +188,6 @@
 #endif
 #endif
 #define ERROR_NUM 114
-/////////////////////
-///////catsh.h///////
-/////////////////////
-#include <errno.h>
-#include <limits.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <poll.h>
-#include <sys/stat.h>
-#include <stdint.h>
-#include <fcntl.h>
-#define cth_debug(x) \
-	do {         \
-		x    \
-	} while (0)
-#define cth_log(format, ...)                                                                                                  \
-	{                                                                                                                     \
-		struct timeval tv;                                                                                            \
-		gettimeofday(&tv, NULL);                                                                                      \
-		fprintf(stderr, "[%ld.%06ld] in %s() in %s line %d:\n", tv.tv_sec, tv.tv_usec, __func__, __FILE__, __LINE__); \
-		fprintf(stderr, format, ##__VA_ARGS__);                                                                       \
-	}
-#define CTH_EXIT_FAILURE 114
-#define CTH_EXIT_SUCCESS 0
-#define CTH_VERSION_MAJOR 0
-#define CTH_VERSION_MINOR 6
-#define CTH_VERSION_PATCH 1
-#define CTH_VERSION_STRING "0.6.1"
-struct __attribute__((packed, aligned(1))) cth_result {
-	uint32_t cth_version;
-	size_t struct_size;
-	bool exited;
-	int exit_code;
-	char *stdout_ret;
-	char *stderr_ret;
-	pid_t pid;
-	pid_t ppid;
-	useconds_t time_used;
-	uint8_t reserved[256];
-};
-#define CTH_VERSION ((CTH_VERSION_MAJOR << 16) | (CTH_VERSION_MINOR << 8) | (CTH_VERSION_PATCH))
-#define CTH_ABI_COMPATIBLE(res) ((res) != NULL && (res)->cth_version <= CTH_VERSION && (res)->struct_size == sizeof(struct cth_result))
-int cth_add_arg(char ***argv, char *arg);
-void cth_free_argv(char ***argv);
-void cth_free_result(struct cth_result **res);
-struct cth_result *cth_exec(char **argv, char *input, bool block, bool get_output);
-int cth_fork_rexec_self(char *const argv[]);
-int cth_exec_command(char **argv);
-// TODO: non-blocking exec
-int cth_wait(struct cth_result **res);
-void *cth_init_argv(void);
-struct cth_result *cth_exec_with_file_input(char **argv, int fd, bool block, bool get_output, void (*progress)(float, int), int progress_line_num);
-void cth_show_progress(float progress, int line_num);
-#define CTH_EXEC_SUCCEED(res) ((res) != NULL && (res)->exited && ((res)->exit_code == 0))
-#define CTH_EXEC_FAILED(res) ((res) != NULL && (res)->exited && ((res)->exit_code != 0))
-#define CTH_EXEC_RUNNING(res) ((res) != NULL && !(res)->exited)
-#define CTH_EXEC_CANNOT_RUN(res) ((res) == NULL)
-/////////////////////
-///////catsh.h///////
-/////////////////////
 #define error(...)                                                                       \
 	{                                                                                \
 		fprintf(stderr, "Error in %s:%s%d: ", __FILE__, __FUNCTION__, __LINE__); \
@@ -720,9 +774,6 @@ void dev_cflags(void)
 	check_and_add_cflag("-Wl,-z,norelro", false);
 	check_and_add_cflag("-Wl,-z,execstack", false);
 	check_and_add_cflag("-fno-stack-protector", false);
-	check_and_add_cflag("-Wall", false);
-	check_and_add_cflag("-Wextra", false);
-	check_and_add_cflag("-pedantic", false);
 	check_and_add_cflag("-Wconversion", false);
 	check_and_add_cflag("-Wno-newline-eof", false);
 	check_and_add_cflag("-Wno-gnu-zero-variadic-macro-arguments", false);
@@ -810,11 +861,54 @@ int main(int argc, char **argv)
 	printf("But this program has Super Neko Powers! >w<\n");
 	return 0;
 }
-
-/////////////////////
-///////catsh.c///////
-/////////////////////
-static struct cth_result *cth_new(pid_t pid, pid_t ppid)
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// SPDX-License-Identifier: MIT
+/*
+ *
+ * This file is part of catsh, with ABSOLUTELY NO WARRANTY.
+ *
+ * MIT License
+ *
+ * Copyright (c) 2025 Moe-hacker
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ *
+ */
+static struct cth_result *cth_new(void)
 {
 	/*
 	 * Allocate and initialize a new cth_result structure.
@@ -828,11 +922,16 @@ static struct cth_result *cth_new(pid_t pid, pid_t ppid)
 	res->exit_code = -1;
 	res->stdout_ret = NULL;
 	res->stderr_ret = NULL;
-	res->pid = pid;
-	res->ppid = ppid;
+	res->pid = -1;
+	res->ppid = -1;
 	res->time_used = 0;
 	res->cth_version = CTH_VERSION;
 	res->struct_size = sizeof(struct cth_result);
+	res->stat_fd = -1;
+	res->stdout_fd = -1;
+	res->stderr_fd = -1;
+	res->time_fd = -1;
+	res->time_used_ms = 0;
 	memset(res->reserved, 0, sizeof(res->reserved));
 	return res;
 }
@@ -902,11 +1001,6 @@ void *cth_init_argv(void)
 	 */
 	return NULL;
 }
-static struct cth_result *cth_exec_nonblock(char **argv, char *input, bool get_output)
-{
-	// TODO
-	return NULL;
-}
 static struct cth_result *cth_exec_block_without_stdio(char **argv)
 {
 	/*
@@ -958,6 +1052,8 @@ static struct cth_result *cth_exec_block_without_stdio(char **argv)
 	gettimeofday(&end_time, NULL);
 	// Calculate time used in microseconds.
 	res->time_used = (end_time.tv_sec - start_time.tv_sec) * 1000000 + (end_time.tv_usec - start_time.tv_usec);
+	// Calculate time used in ms.
+	res->time_used_ms = (end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000;
 	// Get exit code.
 	res->exited = true;
 	if (WIFEXITED(status)) {
@@ -997,404 +1093,161 @@ static size_t pipe_buf_size(int fd)
 	}
 	return (size_t)size;
 }
-static struct cth_result *cth_exec_block(char **argv, char *input, bool get_output)
+static struct cth_result *cth_exec_block(char **argv, char *input, bool get_output);
+static struct cth_result *cth_exec_nonblock(char **argv, char *input, bool get_output)
 {
-	/*
-	 * Exec the command in blocking mode, with optional stdin input and stdout/stderr capture.
-	 * argv: The command and its arguments, NULL-terminated array of strings.
-	 * input: The input to be passed to the command's stdin, can be NULL.
-	 * get_output: If true, capture stdout and stderr output.
-	 * Returns a cth_result structure on success, NULL on failure.
-	 * The caller is responsible for freeing the result using cth_free_result().
-	 */
-	struct timeval start_time, end_time;
-	gettimeofday(&start_time, NULL);
-	// For the simplest case, just exec without stdio redirection
-	if (input == NULL && !get_output) {
-		return cth_exec_block_without_stdio(argv);
-	}
-	// Create pipes for stdin, stdout, stderr.
-	int stdin_pipe[2] = { -1, -1 };
-	int stdout_pipe[2] = { -1, -1 };
-	int stderr_pipe[2] = { -1, -1 };
-	if (input != NULL) {
-		if (pipe(stdin_pipe) < 0) {
-			return NULL;
+	char memfd_name[32];
+	// Never mind, memfd does not really need a unique name, and we will not search it by name as well.
+	// NOLINTBEGIN
+	srand((unsigned int)time(NULL));
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_stdout_%d", rand());
+	int stdout_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_stderr_%d", rand());
+	int stderr_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_stat_%d", rand());
+	int stat_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_pid_%d", rand());
+	int pid_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_time_%d", rand());
+	int time_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	// NOLINTEND
+	if (stdout_fd < 0 || stderr_fd < 0 || stat_fd < 0 || pid_fd < 0 || time_fd < 0) {
+		if (stdout_fd >= 0) {
+			close(stdout_fd);
 		}
-		// Set write end of stdin pipe to non-blocking.
-		int flags = fcntl(stdin_pipe[1], F_GETFL, 0);
-		if (flags != -1) {
-			fcntl(stdin_pipe[1], F_SETFL, flags | O_NONBLOCK);
+		if (stderr_fd >= 0) {
+			close(stderr_fd);
 		}
-	}
-	if (get_output) {
-		if (pipe(stdout_pipe) < 0) {
-			if (stdin_pipe[0] != -1) {
-				close(stdin_pipe[0]);
-				close(stdin_pipe[1]);
-			}
-			return NULL;
+		if (stat_fd >= 0) {
+			close(stat_fd);
 		}
-		if (pipe(stderr_pipe) < 0) {
-			if (stdin_pipe[0] != -1) {
-				close(stdin_pipe[0]);
-				close(stdin_pipe[1]);
-			}
-			if (stdout_pipe[0] != -1) {
-				close(stdout_pipe[0]);
-				close(stdout_pipe[1]);
-			}
-			return NULL;
+		if (time_fd >= 0) {
+			close(time_fd);
 		}
+		if (pid_fd >= 0) {
+			close(pid_fd);
+		}
+		return NULL;
 	}
 	pid_t pid = fork();
-	// Error handling.
 	if (pid < 0) {
-		if (stdin_pipe[0] != -1) {
-			close(stdin_pipe[0]);
-			close(stdin_pipe[1]);
-		}
-		if (stdout_pipe[0] != -1) {
-			close(stdout_pipe[0]);
-			close(stdout_pipe[1]);
-		}
-		if (stderr_pipe[0] != -1) {
-			close(stderr_pipe[0]);
-			close(stderr_pipe[1]);
-		}
 		return NULL;
 	}
-	if (pid == 0) {
-		// Child process.
-		if (input != NULL) {
-			close(stdin_pipe[1]);
-			dup2(stdin_pipe[0], STDIN_FILENO);
-			close(stdin_pipe[0]);
-		} else {
-			int fd = open("/dev/null", O_RDONLY);
-			if (fd >= 0) {
-				dup2(fd, STDIN_FILENO);
-				if (fd > 2) {
-					close(fd);
+	if (pid > 0) {
+		waitpid(pid, NULL, 0);
+		struct cth_result *res = cth_new();
+		res->stat_fd = stat_fd;
+		res->stdout_fd = stdout_fd;
+		res->stderr_fd = stderr_fd;
+		res->time_fd = time_fd;
+		// Wait pid_fd, and get pid.
+		char pid_buf[32];
+		while (true) {
+			lseek(pid_fd, 0, SEEK_SET);
+			ssize_t n = read(pid_fd, pid_buf, sizeof(pid_buf) - 1);
+			if (n > 0) {
+				pid_buf[n] = 0;
+				char *endptr;
+				res->pid = (pid_t)strtoul(pid_buf, &endptr, 10);
+				if (endptr == pid_buf || *endptr != 0) {
+					// Invalid pid, treat as error.
+					close(pid_fd);
+					close(stat_fd);
+					close(stdout_fd);
+					close(stderr_fd);
+					free(res);
+					return NULL;
 				}
+				break;
+			} else if ((n < 0 && errno == EINTR) || n == 0) {
+				continue;
+			} else if (n < 0) {
+				// error, give up.
+				close(pid_fd);
+				close(stat_fd);
+				close(stdout_fd);
+				close(stderr_fd);
+				free(res);
+				return NULL;
 			}
 		}
-		if (get_output) {
-			close(stdout_pipe[0]);
-			dup2(stdout_pipe[1], STDOUT_FILENO);
-			close(stdout_pipe[1]);
-			close(stderr_pipe[0]);
-			dup2(stderr_pipe[1], STDERR_FILENO);
-			close(stderr_pipe[1]);
-		} else {
-			int fd = open("/dev/null", O_WRONLY);
-			if (fd >= 0) {
-				dup2(fd, STDOUT_FILENO);
-				dup2(fd, STDERR_FILENO);
-				if (fd > 2) {
-					close(fd);
-				}
-			}
-		}
-		execvp(argv[0], argv);
-		close(STDIN_FILENO);
-		close(STDOUT_FILENO);
-		close(STDERR_FILENO);
+		close(pid_fd);
+		return res;
+	}
+	pid_t exec_pid = fork();
+	if (exec_pid < 0) {
+		write(pid_fd, "CTH_ERROR", 9);
 		_exit(CTH_EXIT_FAILURE);
 	}
-	// Parent process.
-	// Close unused pipe ends.
-	if (input != NULL) {
-		close(stdin_pipe[0]);
+	if (exec_pid > 0) {
+		_exit(CTH_EXIT_SUCCESS);
+	}
+	char pid_str[32];
+	snprintf(pid_str, sizeof(pid_str), "%d", getpid());
+	write(pid_fd, pid_str, strlen(pid_str));
+	struct cth_result *exec_res = cth_exec_block(argv, input, get_output);
+	if (exec_res == NULL) {
+		write(stat_fd, "CTH_ERROR", 9);
+		_exit(CTH_EXIT_FAILURE);
 	}
 	if (get_output) {
-		close(stdout_pipe[1]);
-		close(stderr_pipe[1]);
-	}
-	struct cth_result *res = cth_new(pid, -1);
-	if (res == NULL) {
-		// Free pipes
-		if (input != NULL) {
-			close(stdin_pipe[1]);
-		}
-		if (get_output) {
-			close(stdout_pipe[0]);
-			close(stderr_pipe[0]);
-		}
-		return NULL;
-	}
-	// Buffers for stdout and stderr.
-	char *stdout_buf = NULL;
-	char *stderr_buf = NULL;
-	size_t stdout_size = 0;
-	size_t stderr_size = 0;
-	size_t stdout_cap = 0;
-	size_t stderr_cap = 0;
-	size_t BUF_CHUNK = 4096;
-	if (get_output) {
-		BUF_CHUNK = pipe_buf_size(stdout_pipe[0]);
-		BUF_CHUNK = BUF_CHUNK > 0 ? BUF_CHUNK : 4096;
-		size_t BUF_CHUNK_NEW = pipe_buf_size(stderr_pipe[0]);
-		if (BUF_CHUNK_NEW > 0 && BUF_CHUNK_NEW < BUF_CHUNK) {
-			BUF_CHUNK = BUF_CHUNK_NEW;
-		}
-	}
-	if (input != NULL) {
-		size_t BUF_CHUNK_NEW = pipe_buf_size(stdin_pipe[1]);
-		if (BUF_CHUNK_NEW > 0 && BUF_CHUNK_NEW < BUF_CHUNK) {
-			BUF_CHUNK = BUF_CHUNK_NEW;
-		}
-	}
-	// poll loop to handle stdin, stdout, stderr.
-	struct pollfd pfds[3];
-	int nfds = 0;
-	int stdin_idx = -1;
-	int stdout_idx = -1;
-	int stderr_idx = -1;
-	if (input != NULL) {
-		pfds[nfds].fd = stdin_pipe[1];
-		pfds[nfds].events = POLLOUT;
-		stdin_idx = nfds++;
-	}
-	if (get_output) {
-		pfds[nfds].fd = stdout_pipe[0];
-		pfds[nfds].events = POLLIN;
-		stdout_idx = nfds++;
-		pfds[nfds].fd = stderr_pipe[0];
-		pfds[nfds].events = POLLIN;
-		stderr_idx = nfds++;
-	}
-	ssize_t input_written = 0;
-	ssize_t input_len = input ? (ssize_t)strlen(input) : 0;
-	// Loop until all fds are closed.
-	while (nfds > 0) {
-		// Check if child exited before poll
-		int status = 0;
-		pid_t wait_ret = waitpid(pid, &status, WNOHANG);
-		if (wait_ret == pid) {
-			res->exited = true;
-			if (WIFEXITED(status)) {
-				res->exit_code = WEXITSTATUS(status);
-			} else if (WIFSIGNALED(status)) {
-				res->exit_code = 128 + WTERMSIG(status);
-			} else {
-				res->exit_code = -1;
-			}
-			// Continue reading stdout/stderr
-			if (get_output && stdout_idx != -1) {
-				ssize_t n;
-				while ((n = read(stdout_pipe[0], stdout_buf ? stdout_buf + stdout_size : NULL, BUF_CHUNK)) > 0) {
-					if (stdout_cap - stdout_size < (size_t)n) {
-						stdout_cap = stdout_cap ? stdout_cap * 2 : BUF_CHUNK;
-						stdout_buf = realloc(stdout_buf, stdout_cap);
-					}
-					memcpy(stdout_buf + stdout_size, stdout_buf + stdout_size, n);
-					stdout_size += n;
-				}
-				close(stdout_pipe[0]);
-				stdout_idx = -1;
-			}
-			if (get_output && stderr_idx != -1) {
-				ssize_t n;
-				while ((n = read(stderr_pipe[0], stderr_buf ? stderr_buf + stderr_size : NULL, BUF_CHUNK)) > 0) {
-					if (stderr_cap - stderr_size < (size_t)n) {
-						stderr_cap = stderr_cap ? stderr_cap * 2 : BUF_CHUNK;
-						stderr_buf = realloc(stderr_buf, stderr_cap);
-					}
-					memcpy(stderr_buf + stderr_size, stderr_buf + stderr_size, n);
-					stderr_size += n;
-				}
-				close(stderr_pipe[0]);
-				stderr_idx = -1;
-			}
-			if (input != NULL && stdin_idx != -1) {
-				close(stdin_pipe[1]);
-				stdin_idx = -1;
-			}
-			// Set output buffers to result (if any data was read)
-			if (get_output) {
-				if (stdout_buf) {
-					stdout_buf = realloc(stdout_buf, stdout_size + 1);
-					stdout_buf[stdout_size] = 0;
-					res->stdout_ret = stdout_buf;
-				}
-				if (stderr_buf) {
-					stderr_buf = realloc(stderr_buf, stderr_size + 1);
-					stderr_buf[stderr_size] = 0;
-					res->stderr_ret = stderr_buf;
+		if (exec_res->stdout_ret) {
+			lseek(stdout_fd, 0, SEEK_SET);
+			// Buffered write to stdout_fd, as the output can be large.
+			size_t total_written = 0;
+			size_t to_write = strlen(exec_res->stdout_ret);
+			while (total_written < to_write) {
+				ssize_t n = write(stdout_fd, exec_res->stdout_ret + total_written, to_write - total_written);
+				if (n > 0) {
+					total_written += n;
+				} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+					// write buffer full, wait for it to be available.
+					struct pollfd pfd;
+					pfd.fd = stdout_fd;
+					pfd.events = POLLOUT;
+					poll(&pfd, 1, -1);
+				} else {
+					// error, give up writing.
+					break;
 				}
 			}
-			return res;
 		}
-		int ret = poll(pfds, nfds, -1);
-		if (ret < 0 && errno == EINTR) {
-			continue;
-		}
-		if (ret < 0) {
-			break;
-		}
-		// Write to stdin.
-		if (input != NULL && stdin_idx != -1 && (pfds[stdin_idx].revents & POLLOUT)) {
-			size_t remain = input_len - input_written;
-			size_t chunk = remain > BUF_CHUNK ? BUF_CHUNK : remain;
-			ssize_t n = write(stdin_pipe[1], input + input_written, chunk);
-			if (n > 0) {
-				input_written += n;
-				if (input_written >= input_len) {
-					close(stdin_pipe[1]);
-					// remove stdin_idx from pfds.
-					for (int i = stdin_idx + 1; i < nfds; ++i) {
-						pfds[i - 1] = pfds[i];
-					}
-					nfds--;
-					// update indexes.
-					if (stdout_idx > stdin_idx) {
-						stdout_idx--;
-					}
-					if (stderr_idx > stdin_idx) {
-						stderr_idx--;
-					}
-					stdin_idx = -1;
+		if (exec_res->stderr_ret) {
+			lseek(stderr_fd, 0, SEEK_SET);
+			// Buffered write to stderr_fd, as the output can be large.
+			size_t total_written = 0;
+			size_t to_write = strlen(exec_res->stderr_ret);
+			while (total_written < to_write) {
+				ssize_t n = write(stderr_fd, exec_res->stderr_ret + total_written, to_write - total_written);
+				if (n > 0) {
+					total_written += n;
+				} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+					// write buffer full, wait for it to be available.
+					struct pollfd pfd;
+					pfd.fd = stderr_fd;
+					pfd.events = POLLOUT;
+					poll(&pfd, 1, -1);
+				} else {
+					// error, give up writing.
+					break;
 				}
-			} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-				// write buffer full, skip this round, wait for next poll.
-				continue;
-			} else {
-				close(stdin_pipe[1]);
-				// remove stdin_idx from pfds.
-				for (int i = stdin_idx + 1; i < nfds; ++i) {
-					pfds[i - 1] = pfds[i];
-				}
-				nfds--;
-				if (stdout_idx > stdin_idx) {
-					stdout_idx--;
-				}
-				if (stderr_idx > stdin_idx) {
-					stderr_idx--;
-				}
-				stdin_idx = -1;
 			}
-		}
-		// POLLHUP or POLLERR for stdin.
-		if (input != NULL && stdin_idx != -1 && (pfds[stdin_idx].revents & (POLLHUP | POLLERR))) {
-			close(stdin_pipe[1]);
-			// remove stdin_idx from pfds.
-			for (int i = stdin_idx + 1; i < nfds; ++i) {
-				pfds[i - 1] = pfds[i];
-			}
-			nfds--;
-			if (stdout_idx > stdin_idx) {
-				stdout_idx--;
-			}
-			if (stderr_idx > stdin_idx) {
-				stderr_idx--;
-			}
-			stdin_idx = -1;
-		}
-		// Read from stdout.
-		if (get_output && stdout_idx != -1 && (pfds[stdout_idx].revents & POLLIN)) {
-			if (stdout_cap - stdout_size < BUF_CHUNK) {
-				stdout_cap = stdout_cap ? stdout_cap * 2 : BUF_CHUNK;
-				stdout_buf = realloc(stdout_buf, stdout_cap);
-			}
-			ssize_t n = read(stdout_pipe[0], stdout_buf + stdout_size, BUF_CHUNK);
-			if (n > 0) {
-				stdout_size += n;
-			} else {
-				close(stdout_pipe[0]);
-				// remove stdout_idx from pfds.
-				for (int i = stdout_idx + 1; i < nfds; ++i) {
-					pfds[i - 1] = pfds[i];
-				}
-				nfds--;
-				if (stderr_idx > stdout_idx) {
-					stderr_idx--;
-				}
-				stdout_idx = -1;
-			}
-		}
-		// POLLHUP or POLLERR for stdout.
-		if (get_output && stdout_idx != -1 && (pfds[stdout_idx].revents & (POLLHUP | POLLERR))) {
-			close(stdout_pipe[0]);
-			// remove stdout_idx from pfds.
-			for (int i = stdout_idx + 1; i < nfds; ++i) {
-				pfds[i - 1] = pfds[i];
-			}
-			nfds--;
-			if (stderr_idx > stdout_idx) {
-				stderr_idx--;
-			}
-			stdout_idx = -1;
-		}
-		// Read from stderr.
-		if (get_output && stderr_idx != -1 && (pfds[stderr_idx].revents & POLLIN)) {
-			if (stderr_cap - stderr_size < BUF_CHUNK) {
-				stderr_cap = stderr_cap ? stderr_cap * 2 : BUF_CHUNK;
-				stderr_buf = realloc(stderr_buf, stderr_cap);
-			}
-			ssize_t n = read(stderr_pipe[0], stderr_buf + stderr_size, BUF_CHUNK);
-			if (n > 0) {
-				stderr_size += n;
-			} else {
-				close(stderr_pipe[0]);
-				// remove stderr_idx from pfds.
-				for (int i = stderr_idx + 1; i < nfds; ++i) {
-					pfds[i - 1] = pfds[i];
-				}
-				nfds--;
-				stderr_idx = -1;
-			}
-		}
-		// POLLHUP or POLLERR for stderr.
-		if (get_output && stderr_idx != -1 && (pfds[stderr_idx].revents & (POLLHUP | POLLERR))) {
-			close(stderr_pipe[0]);
-			// remove stderr_idx from pfds.
-			for (int i = stderr_idx + 1; i < nfds; ++i) {
-				pfds[i - 1] = pfds[i];
-			}
-			nfds--;
-			stderr_idx = -1;
-		}
-		// Check if all fds are closed.
-		if ((stdin_idx == -1) && (stdout_idx == -1) && (stderr_idx == -1)) {
-			break;
+			// Read from stderr_fd to make sure the data is consumed by parent process, to avoid child process being blocked on write.
+			char buf[1024];
+			lseek(stderr_fd, 0, SEEK_SET);
+			int tt = read(stderr_fd, buf, sizeof(buf));
+			buf[tt] = 0;
 		}
 	}
-	// Parent process, wait for child to exit.
-	int status = 0;
-	// Wait for child process, handle EINTR
-	while (waitpid(pid, &status, 0) < 0) {
-		if (errno == EINTR) {
-			continue;
-		}
-		break;
-	}
-	gettimeofday(&end_time, NULL);
-	// Calculate time used in microseconds.
-	res->time_used = (end_time.tv_sec - start_time.tv_sec) * 1000000 + (end_time.tv_usec - start_time.tv_usec);
-	res->exited = true;
-	if (WIFEXITED(status)) {
-		res->exit_code = WEXITSTATUS(status);
-	} else if (WIFSIGNALED(status)) {
-		res->exit_code = 128 + WTERMSIG(status);
-	} else {
-		res->exit_code = -1;
-	}
-	// Set output buffers to result.
-	if (get_output) {
-		// Make sure buffers are null-terminated.
-		if (stdout_buf) {
-			stdout_buf = realloc(stdout_buf, stdout_size + 1);
-			stdout_buf[stdout_size] = 0;
-			res->stdout_ret = stdout_buf;
-		}
-		if (stderr_buf) {
-			stderr_buf = realloc(stderr_buf, stderr_size + 1);
-			stderr_buf[stderr_size] = 0;
-			res->stderr_ret = stderr_buf;
-		}
-	}
-	return res;
+	char time_used_ms[128];
+	snprintf(time_used_ms, sizeof(time_used_ms), "%llu", (unsigned long long)exec_res->time_used_ms);
+	lseek(time_fd, 0, SEEK_SET);
+	write(time_fd, time_used_ms, strlen(time_used_ms));
+	char stat_str[32];
+	snprintf(stat_str, sizeof(stat_str), "%d", exec_res->exit_code);
+	lseek(stat_fd, 0, SEEK_SET);
+	write(stat_fd, stat_str, strlen(stat_str));
+	_exit(CTH_EXIT_SUCCESS);
 }
 // API function.
 struct cth_result *cth_exec(char **argv, char *input, bool block, bool get_output)
@@ -1416,9 +1269,7 @@ struct cth_result *cth_exec(char **argv, char *input, bool block, bool get_outpu
 	if (block) {
 		return cth_exec_block(argv, input, get_output);
 	}
-	// TODO
-	cth_debug(printf("cth_exec: non-blocking mode not implemented yet\n"););
-	return NULL;
+	return cth_exec_nonblock(argv, input, get_output);
 }
 // API function.
 int cth_exec_command(char **argv)
@@ -1438,8 +1289,108 @@ int cth_exec_command(char **argv)
 }
 int cth_wait(struct cth_result **res)
 {
-	// TODO
-	return -1;
+	if (res == NULL || *res == NULL) {
+		return -1;
+	}
+	struct cth_result *r = *res;
+	// Get r->stat_fd, read exit code from it.
+	if (r->stat_fd >= 0) {
+		char stat_buf[32];
+		lseek(r->stat_fd, 0, SEEK_SET);
+		ssize_t n = read(r->stat_fd, stat_buf, sizeof(stat_buf) - 1);
+		if (n > 0) {
+			stat_buf[n] = 0;
+			char *endptr;
+			int exit_code = (int)strtol(stat_buf, &endptr, 10);
+			if (endptr != stat_buf && *endptr == 0) {
+				r->exit_code = exit_code;
+				r->exited = true;
+				close(r->stat_fd);
+				// read time used from r->time_fd.
+				if (r->time_fd >= 0) {
+					char time_buf[128];
+					lseek(r->time_fd, 0, SEEK_SET);
+					ssize_t tn = read(r->time_fd, time_buf, sizeof(time_buf) - 1);
+					if (tn > 0) {
+						time_buf[tn] = 0;
+						char *endptr;
+						long long time_used_ms = strtoll(time_buf, &endptr, 10);
+						if (endptr != time_buf && *endptr == 0) {
+							r->time_used_ms = (uint64_t)time_used_ms;
+							r->time_used = r->time_used_ms * 1000; // convert ms to us.
+						}
+					}
+					close(r->time_fd);
+				}
+				// read stdout and stderr from their fds if needed.
+				if (r->stdout_fd >= 0) {
+					lseek(r->stdout_fd, 0, SEEK_SET);
+					char *stdout_buf = NULL;
+					size_t stdout_size = 0;
+					size_t BUF_CHUNK = 4096;
+					while (true) {
+						if (stdout_size + BUF_CHUNK > CTH_MAX_OUTPUT_SIZE) {
+							// Limit stdout buffer to CTH_MAX_OUTPUT_SIZE.
+							break;
+						}
+						stdout_buf = realloc(stdout_buf, stdout_size + BUF_CHUNK);
+						ssize_t n = read(r->stdout_fd, stdout_buf + stdout_size, BUF_CHUNK);
+						if (n > 0) {
+							stdout_size += n;
+						} else if (n < 0 && errno == EINTR) {
+							continue;
+						} else {
+							break;
+						}
+					}
+					if (stdout_buf) {
+						stdout_buf = realloc(stdout_buf, stdout_size + 1);
+						stdout_buf[stdout_size] = 0;
+						r->stdout_ret = stdout_buf;
+					} else {
+						r->stdout_ret = NULL;
+					}
+					close(r->stdout_fd);
+					r->stdout_fd = -1;
+				}
+				if (r->stderr_fd >= 0) {
+					lseek(r->stderr_fd, 0, SEEK_SET);
+					char *stderr_buf = NULL;
+					size_t stderr_size = 0;
+					size_t BUF_CHUNK = 4096;
+					while (true) {
+						if (stderr_size + BUF_CHUNK > CTH_MAX_OUTPUT_SIZE) {
+							// Limit stderr buffer to CTH_MAX_OUTPUT_SIZE.
+							break;
+						}
+						stderr_buf = realloc(stderr_buf, stderr_size + BUF_CHUNK);
+						ssize_t n = read(r->stderr_fd, stderr_buf + stderr_size, BUF_CHUNK);
+						if (n > 0) {
+							stderr_size += n;
+						} else if (n < 0 && errno == EINTR) {
+							continue;
+						} else {
+							break;
+						}
+					}
+					if (stderr_buf) {
+						stderr_buf = realloc(stderr_buf, stderr_size + 1);
+						stderr_buf[stderr_size] = 0;
+						r->stderr_ret = stderr_buf;
+					} else {
+						r->stderr_ret = NULL;
+					}
+					close(r->stderr_fd);
+					r->stderr_fd = -1;
+				}
+			} else {
+				r->exit_code = -1;
+			}
+		} else {
+			r->exit_code = -1;
+		}
+	}
+	return r->exit_code;
 }
 int cth_fork_rexec_self(char *const argv[])
 {
@@ -1486,10 +1437,22 @@ static struct cth_result *cth_exec_block_with_file_input(char **argv, int input_
 	if (input_fd < 0) {
 		return NULL;
 	}
-	// Create pipes for stdin, stdout, stderr.
+	// Create pipes for stdin.
 	int stdin_pipe[2] = { -1, -1 };
-	int stdout_pipe[2] = { -1, -1 };
-	int stderr_pipe[2] = { -1, -1 };
+	// Create memfd for stdout and stderr.
+	// No O_CLOEXEC, as we will write to them in child process.
+	int stdout_fd = open("/dev/null", O_RDWR);
+	int stderr_fd = open("/dev/null", O_RDWR);
+	if (get_output) {
+		close(stdout_fd);
+		close(stderr_fd);
+		stdout_fd = memfd_create("cth_stdout", MFD_ALLOW_SEALING);
+		stderr_fd = memfd_create("cth_stderr", MFD_ALLOW_SEALING);
+		ftruncate(stdout_fd, CTH_MAX_OUTPUT_SIZE);
+		ftruncate(stderr_fd, CTH_MAX_OUTPUT_SIZE);
+		fcntl(stdout_fd, F_ADD_SEALS, F_SEAL_GROW);
+		fcntl(stderr_fd, F_ADD_SEALS, F_SEAL_GROW);
+	}
 	if (pipe(stdin_pipe) < 0) {
 		return NULL;
 	}
@@ -1498,26 +1461,6 @@ static struct cth_result *cth_exec_block_with_file_input(char **argv, int input_
 	if (flags != -1) {
 		fcntl(stdin_pipe[1], F_SETFL, flags | O_NONBLOCK);
 	}
-	if (get_output) {
-		if (pipe(stdout_pipe) < 0) {
-			if (stdin_pipe[0] != -1) {
-				close(stdin_pipe[0]);
-				close(stdin_pipe[1]);
-			}
-			return NULL;
-		}
-		if (pipe(stderr_pipe) < 0) {
-			if (stdin_pipe[0] != -1) {
-				close(stdin_pipe[0]);
-				close(stdin_pipe[1]);
-			}
-			if (stdout_pipe[0] != -1) {
-				close(stdout_pipe[0]);
-				close(stdout_pipe[1]);
-			}
-			return NULL;
-		}
-	}
 	pid_t pid = fork();
 	// Error handling.
 	if (pid < 0) {
@@ -1525,14 +1468,8 @@ static struct cth_result *cth_exec_block_with_file_input(char **argv, int input_
 			close(stdin_pipe[0]);
 			close(stdin_pipe[1]);
 		}
-		if (stdout_pipe[0] != -1) {
-			close(stdout_pipe[0]);
-			close(stdout_pipe[1]);
-		}
-		if (stderr_pipe[0] != -1) {
-			close(stderr_pipe[0]);
-			close(stderr_pipe[1]);
-		}
+		close(stdout_fd);
+		close(stderr_fd);
 		return NULL;
 	}
 	if (pid == 0) {
@@ -1541,12 +1478,10 @@ static struct cth_result *cth_exec_block_with_file_input(char **argv, int input_
 		dup2(stdin_pipe[0], STDIN_FILENO);
 		close(stdin_pipe[0]);
 		if (get_output) {
-			close(stdout_pipe[0]);
-			dup2(stdout_pipe[1], STDOUT_FILENO);
-			close(stdout_pipe[1]);
-			close(stderr_pipe[0]);
-			dup2(stderr_pipe[1], STDERR_FILENO);
-			close(stderr_pipe[1]);
+			dup2(stdout_fd, STDOUT_FILENO);
+			dup2(stderr_fd, STDERR_FILENO);
+			close(stdout_fd);
+			close(stderr_fd);
 		} else {
 			int fd = open("/dev/null", O_WRONLY);
 			if (fd >= 0) {
@@ -1564,262 +1499,61 @@ static struct cth_result *cth_exec_block_with_file_input(char **argv, int input_
 		_exit(CTH_EXIT_FAILURE);
 	}
 	// Parent process.
-	if (get_output) {
-		close(stdout_pipe[1]);
-		close(stderr_pipe[1]);
-	}
-	struct cth_result *res = cth_new(pid, -1);
+	close(stdin_pipe[0]);
+	struct cth_result *res = cth_new();
+	res->pid = pid;
 	if (res == NULL) {
 		// Free pipes
 		close(stdin_pipe[0]);
 		close(stdin_pipe[1]);
-		if (get_output) {
-			close(stdout_pipe[0]);
-			close(stderr_pipe[0]);
-		}
+		close(stdout_fd);
+		close(stderr_fd);
 		return NULL;
 	}
 	// Prgoress callback setup
 	float progress_total = 0.0f;
-	// Buffers for stdout and stderr.
-	char *stdout_buf = NULL;
-	char *stderr_buf = NULL;
-	size_t stdout_size = 0;
-	size_t stderr_size = 0;
-	size_t stdout_cap = 0;
-	size_t stderr_cap = 0;
-	size_t BUF_CHUNK = 1024 * 4;
-	char input_buf[BUF_CHUNK + 1];
-	// poll loop to handle stdin, stdout, stderr.
-	struct pollfd pfds[3];
-	int nfds = 0;
-	int stdin_idx = -1;
-	int stdout_idx = -1;
-	int stderr_idx = -1;
-	pfds[nfds].fd = stdin_pipe[1];
-	pfds[nfds].events = POLLOUT;
-	stdin_idx = nfds++;
-	if (get_output) {
-		pfds[nfds].fd = stdout_pipe[0];
-		pfds[nfds].events = POLLIN;
-		stdout_idx = nfds++;
-		pfds[nfds].fd = stderr_pipe[0];
-		pfds[nfds].events = POLLIN;
-		stderr_idx = nfds++;
-	}
-	ssize_t input_written = 0;
-	ssize_t input_len = 0;
+	// Get the size of input_fd, if possible.
 	struct stat st;
-	if (fstat(input_fd, &st) == 0) {
-		if (S_ISREG(st.st_mode) || S_ISFIFO(st.st_mode)) {
-			input_len = st.st_size;
-		}
+	if (fstat(input_fd, &st) == 0 && S_ISREG(st.st_mode)) {
+		progress_total = (float)st.st_size;
 	}
-	// Loop until all fds are closed.
-	while (nfds > 0) {
-		// Check if child exited before poll
-		int status = 0;
-		pid_t wait_ret = waitpid(pid, &status, WNOHANG);
-		if (wait_ret == pid) {
-			res->exited = true;
-			if (WIFEXITED(status)) {
-				res->exit_code = WEXITSTATUS(status);
-			} else if (WIFSIGNALED(status)) {
-				res->exit_code = 128 + WTERMSIG(status);
-			} else {
-				res->exit_code = -1;
-			}
-			// Continue reading stdout/stderr
-			if (get_output && stdout_idx != -1) {
-				ssize_t n;
-				while ((n = read(stdout_pipe[0], stdout_buf ? stdout_buf + stdout_size : NULL, BUF_CHUNK)) > 0) {
-					if (stdout_cap - stdout_size < (size_t)n) {
-						stdout_cap = stdout_cap ? stdout_cap * 2 : BUF_CHUNK;
-						stdout_buf = realloc(stdout_buf, stdout_cap);
-					}
-					if (stdout_buf == NULL) {
-						// realloc failed
+	// Write input to stdin pipe, handle EAGAIN and EINTR.
+	size_t pipe_size = pipe_buf_size(stdin_pipe[1]);
+	if (pipe_size == 0) {
+		pipe_size = 65536; // Fallback to 64KB if we cannot get pipe size.
+	}
+	if (input_fd >= 0) {
+		signal(SIGPIPE, SIG_IGN); // Ignore SIGPIPE, handle EPIPE error instead.
+		char buf[pipe_size];
+		ssize_t n;
+		while ((n = read(input_fd, buf, sizeof(buf))) > 0) {
+			ssize_t total_written = 0;
+			while (total_written < n) {
+				errno = 0;
+				ssize_t written = write(stdin_pipe[1], buf + total_written, n - total_written);
+				// For EPIPE, break.
+				if (errno == EPIPE) {
+					break;
+				}
+				if (written < 0) {
+					if (errno == EAGAIN || errno == EINTR) {
+						continue;
+					} else {
 						break;
 					}
-					memcpy(stdout_buf + stdout_size, stdout_buf + stdout_size, n);
-					stdout_size += n;
 				}
-				close(stdout_pipe[0]);
-				stdout_idx = -1;
-			}
-			if (get_output && stderr_idx != -1) {
-				ssize_t n = 0;
-				while ((n = read(stderr_pipe[0], stderr_buf ? stderr_buf + stderr_size : NULL, BUF_CHUNK)) > 0) {
-					if (stderr_cap - stderr_size < (size_t)n) {
-						stderr_cap = stderr_cap ? stderr_cap * 2 : BUF_CHUNK;
-						stderr_buf = realloc(stderr_buf, stderr_cap);
-					}
-					memcpy(stderr_buf + stderr_size, stderr_buf + stderr_size, n);
-					stderr_size += n;
-				}
-				close(stderr_pipe[0]);
-				stderr_idx = -1;
-			}
-			if (stdin_idx != -1) {
-				close(stdin_pipe[1]);
-				stdin_idx = -1;
-			}
-			// Set output buffers to result (if any data was read)
-			if (get_output) {
-				if (stdout_buf) {
-					stdout_buf = realloc(stdout_buf, stdout_size + 1);
-					stdout_buf[stdout_size] = 0;
-					res->stdout_ret = stdout_buf;
-				}
-				if (stderr_buf) {
-					stderr_buf = realloc(stderr_buf, stderr_size + 1);
-					stderr_buf[stderr_size] = 0;
-					res->stderr_ret = stderr_buf;
+				total_written += written;
+				if (progress != NULL && progress_total > 0.0f) {
+					progress((float)total_written / progress_total, progress_line_num);
 				}
 			}
-			return res;
-		}
-		int ret = poll(pfds, nfds, -1);
-		if (ret < 0 && errno == EINTR) {
-			continue;
-		}
-		if (ret < 0) {
-			break;
-		}
-		if (progress != NULL) {
-			float progress_now = (float)input_written / (float)(input_len ? input_len : 1);
-			if (progress_now - 0.005f > progress_total) {
-				progress(progress_now, progress_line_num);
-				progress_total = progress_now;
-			}
-		}
-		// Write to stdin.
-		if (stdin_idx != -1 && (pfds[stdin_idx].revents & POLLOUT)) {
-			ssize_t r = read(input_fd, input_buf, BUF_CHUNK);
-			if (r > 0) {
-				ssize_t n = write(stdin_pipe[1], input_buf, r);
-				if (n > 0) {
-					input_written += n;
-				} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-					continue;
-				} else {
-					close(stdin_pipe[1]);
-					for (int i = stdin_idx + 1; i < nfds; ++i) {
-						pfds[i - 1] = pfds[i];
-					}
-					nfds--;
-					if (stdout_idx > stdin_idx) {
-						stdout_idx--;
-					}
-					if (stderr_idx > stdin_idx) {
-						stderr_idx--;
-					}
-					stdin_idx = -1;
-				}
-			} else if (r == 0 || (r < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
-				// EOF or read error (not EAGAIN): close stdin_pipe[1] and remove from poll
-				close(stdin_pipe[1]);
-				for (int i = stdin_idx + 1; i < nfds; ++i) {
-					pfds[i - 1] = pfds[i];
-				}
-				nfds--;
-				if (stdout_idx > stdin_idx) {
-					stdout_idx--;
-				}
-				if (stderr_idx > stdin_idx) {
-					stderr_idx--;
-				}
-				stdin_idx = -1;
-			}
-		}
-		// POLLHUP or POLLERR for stdin.
-		if (stdin_idx != -1 && (pfds[stdin_idx].revents & (POLLHUP | POLLERR))) {
-			close(stdin_pipe[1]);
-			// remove stdin_idx from pfds.
-			for (int i = stdin_idx + 1; i < nfds; ++i) {
-				pfds[i - 1] = pfds[i];
-			}
-			nfds--;
-			if (stdout_idx > stdin_idx) {
-				stdout_idx--;
-			}
-			if (stderr_idx > stdin_idx) {
-				stderr_idx--;
-			}
-			stdin_idx = -1;
-		}
-		// Read from stdout.
-		if (get_output && stdout_idx != -1 && (pfds[stdout_idx].revents & POLLIN)) {
-			if (stdout_cap - stdout_size < BUF_CHUNK) {
-				stdout_cap = stdout_cap ? stdout_cap * 2 : BUF_CHUNK;
-				stdout_buf = realloc(stdout_buf, stdout_cap);
-			}
-			ssize_t n = read(stdout_pipe[0], stdout_buf + stdout_size, BUF_CHUNK);
-			if (n > 0) {
-				stdout_size += n;
-			} else {
-				close(stdout_pipe[0]);
-				// remove stdout_idx from pfds.
-				for (int i = stdout_idx + 1; i < nfds; ++i) {
-					pfds[i - 1] = pfds[i];
-				}
-				nfds--;
-				if (stderr_idx > stdout_idx) {
-					stderr_idx--;
-				}
-				stdout_idx = -1;
-			}
-		}
-		// POLLHUP or POLLERR for stdout.
-		if (get_output && stdout_idx != -1 && (pfds[stdout_idx].revents & (POLLHUP | POLLERR))) {
-			close(stdout_pipe[0]);
-			// remove stdout_idx from pfds.
-			for (int i = stdout_idx + 1; i < nfds; ++i) {
-				pfds[i - 1] = pfds[i];
-			}
-			nfds--;
-			if (stderr_idx > stdout_idx) {
-				stderr_idx--;
-			}
-			stdout_idx = -1;
-		}
-		// Read from stderr.
-		if (get_output && stderr_idx != -1 && (pfds[stderr_idx].revents & POLLIN)) {
-			if (stderr_cap - stderr_size < BUF_CHUNK) {
-				stderr_cap = stderr_cap ? stderr_cap * 2 : BUF_CHUNK;
-				stderr_buf = realloc(stderr_buf, stderr_cap);
-			}
-			ssize_t n = read(stderr_pipe[0], stderr_buf + stderr_size, BUF_CHUNK);
-			if (n > 0) {
-				stderr_size += n;
-			} else {
-				close(stderr_pipe[0]);
-				// remove stderr_idx from pfds.
-				for (int i = stderr_idx + 1; i < nfds; ++i) {
-					pfds[i - 1] = pfds[i];
-				}
-				nfds--;
-				stderr_idx = -1;
-			}
-		}
-		// POLLHUP or POLLERR for stderr.
-		if (get_output && stderr_idx != -1 && (pfds[stderr_idx].revents & (POLLHUP | POLLERR))) {
-			close(stderr_pipe[0]);
-			// remove stderr_idx from pfds.
-			for (int i = stderr_idx + 1; i < nfds; ++i) {
-				pfds[i - 1] = pfds[i];
-			}
-			nfds--;
-			stderr_idx = -1;
-		}
-		// Check if all fds are closed.
-		if ((stdin_idx == -1) && (stdout_idx == -1) && (stderr_idx == -1)) {
-			if (progress != NULL) {
-				progress(1.0f, progress_line_num);
-			}
-			break;
 		}
 	}
+	if (progress != NULL) {
+		progress(1.0f, progress_line_num);
+	}
+	close(stdin_pipe[1]);
+	close(stdin_pipe[0]);
 	// Parent process, wait for child to exit.
 	int status = 0;
 	// Wait for child process, handle EINTR
@@ -1832,6 +1566,8 @@ static struct cth_result *cth_exec_block_with_file_input(char **argv, int input_
 	gettimeofday(&end_time, NULL);
 	// Calculate time used in microseconds.
 	res->time_used = (end_time.tv_sec - start_time.tv_sec) * 1000000 + (end_time.tv_usec - start_time.tv_usec);
+	// Calculate time used in milliseconds.
+	res->time_used_ms = (end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000;
 	res->exited = true;
 	if (WIFEXITED(status)) {
 		res->exit_code = WEXITSTATUS(status);
@@ -1840,24 +1576,257 @@ static struct cth_result *cth_exec_block_with_file_input(char **argv, int input_
 	} else {
 		res->exit_code = -1;
 	}
-	// Set output buffers to result.
+	// Read stdout and stderr from memfd if get_output is true.
 	if (get_output) {
-		// Make sure buffers are null-terminated.
-		if (stdout_buf) {
-			stdout_buf = realloc(stdout_buf, stdout_size + 1);
-			stdout_buf[stdout_size] = 0;
-			res->stdout_ret = stdout_buf;
+		lseek(stdout_fd, 0, SEEK_SET);
+		lseek(stderr_fd, 0, SEEK_SET);
+		// Read stdout
+		char *stdout_buf = NULL;
+		size_t stdout_size = 0;
+		size_t BUF_CHUNK = 4096;
+		while (true) {
+			if (stdout_size + BUF_CHUNK > CTH_MAX_OUTPUT_SIZE) {
+				// Limit stdout buffer to CTH_MAX_OUTPUT_SIZE.
+				break;
+			}
+			char buf[BUF_CHUNK];
+			ssize_t n = read(stdout_fd, buf, sizeof(buf));
+			if (n <= 0) {
+				break;
+			}
+			if (stdout_buf == NULL) {
+				stdout_buf = strdup(buf);
+			} else {
+				size_t old_len = strlen(stdout_buf);
+				stdout_buf = realloc(stdout_buf, old_len + n + 1);
+				memcpy(stdout_buf + old_len, buf, n);
+				stdout_buf[old_len + n] = 0;
+			}
+			stdout_size += n;
 		}
-		if (stderr_buf) {
-			stderr_buf = realloc(stderr_buf, stderr_size + 1);
-			stderr_buf[stderr_size] = 0;
-			res->stderr_ret = stderr_buf;
+		res->stdout_ret = stdout_buf;
+		// Read stderr
+		char *stderr_buf = NULL;
+		size_t stderr_size = 0;
+		while (true) {
+			if (stderr_size + BUF_CHUNK > CTH_MAX_OUTPUT_SIZE) {
+				// Limit stderr buffer to CTH_MAX_OUTPUT_SIZE.
+				break;
+			}
+			char buf[BUF_CHUNK];
+			ssize_t n = read(stderr_fd, buf, sizeof(buf));
+			if (n <= 0) {
+				break;
+			}
+			if (stderr_buf == NULL) {
+				stderr_buf = strdup(buf);
+			} else {
+				size_t old_len = strlen(stderr_buf);
+				stderr_buf = realloc(stderr_buf, old_len + n + 1);
+				memcpy(stderr_buf + old_len, buf, n);
+				stderr_buf[old_len + n] = 0;
+			}
+			stderr_size += n;
 		}
+		res->stderr_ret = stderr_buf;
 	}
 	if (progress != NULL) {
 		progress(-1.0, progress_line_num);
 	}
 	return res;
+}
+static struct cth_result *cth_exec_block(char **argv, char *input, bool get_output)
+{
+	/*
+	 * Exec the command in blocking mode, with optional stdin input and stdout/stderr capture.
+	 * argv: The command and its arguments, NULL-terminated array of strings.
+	 * input: The input to be passed to the command's stdin, can be NULL.
+	 * get_output: If true, capture stdout and stderr output.
+	 * Returns a cth_result structure on success, NULL on failure.
+	 * The caller is responsible for freeing the result using cth_free_result().
+	 */
+	struct timeval start_time, end_time;
+	gettimeofday(&start_time, NULL);
+	// For the simplest case, just exec without stdio redirection
+	if (input == NULL && !get_output) {
+		return cth_exec_block_without_stdio(argv);
+	}
+	// Open input as file, and use cth_exec_block_with_file_input.
+	int input_fd = -1;
+	if (input != NULL) {
+		input_fd = memfd_create("cth_input", MFD_CLOEXEC);
+		if (input_fd < 0) {
+			return NULL;
+		}
+		write(input_fd, input, strlen(input));
+		lseek(input_fd, 0, SEEK_SET);
+	} else {
+		// Get an empty memfd for input.
+		input_fd = memfd_create("cth_input_empty", MFD_CLOEXEC);
+		if (input_fd < 0) {
+			return NULL;
+		}
+	}
+	struct cth_result *res = cth_exec_block_with_file_input(argv, input_fd, get_output, NULL, 0);
+	if (input_fd >= 0) {
+		close(input_fd);
+	}
+	return res;
+}
+static struct cth_result *cth_exec_nonblock_with_file_input(char **argv, int input_fd, bool get_output, void (*progress)(float, int), int progress_line_num)
+{
+	char memfd_name[32];
+	// Never mind, memfd does not really need a unique name, and we will not search it by name as well.
+	// NOLINTBEGIN
+	srand((unsigned int)time(NULL));
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_stdout_%d", rand());
+	int stdout_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_stderr_%d", rand());
+	int stderr_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_stat_%d", rand());
+	int stat_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_pid_%d", rand());
+	int pid_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	snprintf(memfd_name, sizeof(memfd_name), "cth_memfd_time_%d", rand());
+	int time_fd = memfd_create(memfd_name, MFD_CLOEXEC);
+	// NOLINTEND
+	if (stdout_fd < 0 || stderr_fd < 0 || stat_fd < 0 || pid_fd < 0 || time_fd < 0) {
+		if (stdout_fd >= 0) {
+			close(stdout_fd);
+		}
+		if (stderr_fd >= 0) {
+			close(stderr_fd);
+		}
+		if (stat_fd >= 0) {
+			close(stat_fd);
+		}
+		if (time_fd >= 0) {
+			close(time_fd);
+		}
+		if (pid_fd >= 0) {
+			close(pid_fd);
+		}
+		return NULL;
+	}
+	pid_t pid = fork();
+	if (pid < 0) {
+		return NULL;
+	}
+	if (pid > 0) {
+		waitpid(pid, NULL, 0);
+		struct cth_result *res = cth_new();
+		res->stat_fd = stat_fd;
+		res->stdout_fd = stdout_fd;
+		res->stderr_fd = stderr_fd;
+		res->time_fd = time_fd;
+		// Wait pid_fd, and get pid.
+		char pid_buf[32];
+		while (true) {
+			lseek(pid_fd, 0, SEEK_SET);
+			ssize_t n = read(pid_fd, pid_buf, sizeof(pid_buf) - 1);
+			if (n > 0) {
+				pid_buf[n] = 0;
+				char *endptr;
+				res->pid = (pid_t)strtoul(pid_buf, &endptr, 10);
+				if (endptr == pid_buf || *endptr != 0) {
+					// Invalid pid, treat as error.
+					close(pid_fd);
+					close(stat_fd);
+					close(stdout_fd);
+					close(stderr_fd);
+					free(res);
+					return NULL;
+				}
+				break;
+			} else if ((n < 0 && errno == EINTR) || n == 0) {
+				continue;
+			} else if (n < 0) {
+				// error, give up.
+				close(pid_fd);
+				close(stat_fd);
+				close(stdout_fd);
+				close(stderr_fd);
+				free(res);
+				return NULL;
+			}
+		}
+		close(pid_fd);
+		return res;
+	}
+	pid_t exec_pid = fork();
+	if (exec_pid < 0) {
+		write(pid_fd, "CTH_ERROR", 9);
+		_exit(CTH_EXIT_FAILURE);
+	}
+	if (exec_pid > 0) {
+		_exit(CTH_EXIT_SUCCESS);
+	}
+	char pid_str[32];
+	snprintf(pid_str, sizeof(pid_str), "%d", getpid());
+	write(pid_fd, pid_str, strlen(pid_str));
+	struct cth_result *exec_res = cth_exec_block_with_file_input(argv, input_fd, get_output, progress, progress_line_num);
+	if (exec_res == NULL) {
+		write(stat_fd, "CTH_ERROR", 9);
+		_exit(CTH_EXIT_FAILURE);
+	}
+	if (get_output) {
+		if (exec_res->stdout_ret) {
+			lseek(stdout_fd, 0, SEEK_SET);
+			// Buffered write to stdout_fd, as the output can be large.
+			size_t total_written = 0;
+			size_t to_write = strlen(exec_res->stdout_ret);
+			while (total_written < to_write) {
+				ssize_t n = write(stdout_fd, exec_res->stdout_ret + total_written, to_write - total_written);
+				if (n > 0) {
+					total_written += n;
+				} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+					// write buffer full, wait for it to be available.
+					struct pollfd pfd;
+					pfd.fd = stdout_fd;
+					pfd.events = POLLOUT;
+					poll(&pfd, 1, -1);
+				} else {
+					// error, give up writing.
+					break;
+				}
+			}
+		}
+		if (exec_res->stderr_ret) {
+			lseek(stderr_fd, 0, SEEK_SET);
+			// Buffered write to stderr_fd, as the output can be large.
+			size_t total_written = 0;
+			size_t to_write = strlen(exec_res->stderr_ret);
+			while (total_written < to_write) {
+				ssize_t n = write(stderr_fd, exec_res->stderr_ret + total_written, to_write - total_written);
+				if (n > 0) {
+					total_written += n;
+				} else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+					// write buffer full, wait for it to be available.
+					struct pollfd pfd;
+					pfd.fd = stderr_fd;
+					pfd.events = POLLOUT;
+					poll(&pfd, 1, -1);
+				} else {
+					// error, give up writing.
+					break;
+				}
+			}
+			// Read from stderr_fd to make sure the data is consumed by parent process, to avoid child process being blocked on write.
+			char buf[1024];
+			lseek(stderr_fd, 0, SEEK_SET);
+			int tt = read(stderr_fd, buf, sizeof(buf));
+			buf[tt] = 0;
+		}
+	}
+	char time_used_ms[128];
+	snprintf(time_used_ms, sizeof(time_used_ms), "%llu", (unsigned long long)exec_res->time_used_ms);
+	lseek(time_fd, 0, SEEK_SET);
+	write(time_fd, time_used_ms, strlen(time_used_ms));
+	char stat_str[32];
+	snprintf(stat_str, sizeof(stat_str), "%d", exec_res->exit_code);
+	lseek(stat_fd, 0, SEEK_SET);
+	write(stat_fd, stat_str, strlen(stat_str));
+	_exit(CTH_EXIT_SUCCESS);
 }
 // API function.
 struct cth_result *cth_exec_with_file_input(char **argv, int fd, bool block, bool get_output, void (*progress)(float, int), int progress_line_num)
@@ -1884,9 +1853,7 @@ struct cth_result *cth_exec_with_file_input(char **argv, int fd, bool block, boo
 	if (block) {
 		return cth_exec_block_with_file_input(argv, fd, get_output, progress, progress_line_num);
 	}
-	// TODO
-	cth_debug(printf("cth_exec_with_file_input: non-blocking mode not implemented yet\n"););
-	return NULL;
+	return cth_exec_nonblock_with_file_input(argv, fd, get_output, progress, progress_line_num);
 }
 void cth_show_progress(float progress, int line_num)
 {
@@ -1931,6 +1898,3 @@ void cth_show_progress(float progress, int line_num)
 		printf("\033[%dB", line_num);
 	}
 }
-/////////////////////
-///////catsh.c///////
-/////////////////////

@@ -258,7 +258,7 @@ struct RURI_CONTAINER {
 	do {                                                                                               \
 		if (ruri_flag(ruri_perf)) {                                                                \
 			cfprintf(stderr, "{green}In %s() at %s line %d:\n", __func__, __FILE__, __LINE__); \
-			cfprintf(stderr, format, ##__VA_ARGS__);                                            \
+			cfprintf(stderr, format, ##__VA_ARGS__);                                           \
 		}                                                                                          \
 	} while (0)
 extern int RURI_PWD_ERRNO;

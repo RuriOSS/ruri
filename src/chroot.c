@@ -1204,7 +1204,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		umount2("/sys/fs/cgroup", MNT_DETACH | MNT_FORCE);
 		mkdir("/sys/fs/cgroup", 0755);
-		int cgroup_mount_flags = MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME;
+		unsigned int cgroup_mount_flags = MS_NOSUID | MS_NODEV | MS_NOEXEC | MS_RELATIME;
 		int mount_ret = mount("cgroup2", "/sys/fs/cgroup", "cgroup2", cgroup_mount_flags, NULL);
 		if (mount_ret < 0) {
 			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to mount cgroup2: %s\n", strerror(errno));

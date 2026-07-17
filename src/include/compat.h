@@ -75,7 +75,12 @@
 #ifndef pidfd_open // pidfd_open
 static inline int pidfd_open(pid_t pid, unsigned int flags)
 {
-	return syscall(SYS_pidfd_open, pid, flags);
+	long res = syscall(SYS_pidfd_open, pid, flags);
+	if (res < 0) {
+		errno = (int)(-res);
+		return -1;
+	}
+	return (int)res;
 }
 #endif // pidfd_open
 #ifndef SYS_pidfd_send_signal // SYS_pidfd_send_signal
@@ -84,6 +89,11 @@ static inline int pidfd_open(pid_t pid, unsigned int flags)
 #ifndef pidfd_send_signal // pidfd_send_signal
 static inline int pidfd_send_signal(int pidfd, int sig, siginfo_t *info, unsigned int flags)
 {
-	return syscall(SYS_pidfd_send_signal, pidfd, sig, info, flags);
+	long res = syscall(SYS_pidfd_send_signal, pidfd, sig, info, flags);
+	if (res < 0) {
+		errno = (int)(-res);
+		return -1;
+	}
+	return (int)res;
 }
 #endif // pidfd_send_signal
