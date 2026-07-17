@@ -52,6 +52,7 @@
     - `rlimits`: A comma-separated list to set rlimits in the container. For example, `rlimits=nproc:16:32,core:1` means set RLIMIT_NPROC to 16 (soft) and 32 (hard), and set RLIMIT_CORE to 1 (soft) and 1 (hard).
     - `outside_rurienv`: Use outside .rurienv file instead of the one in the container. For example, `outside_rurienv=/tmp/rurienv` means use `/tmp/rurienv` instead of `/.rurienv` in the container.
     - `rw_rurienv`: make .rurienv rw, will not set immutable flag and ro bind-mount on it.
+    - `ruri_perf`: enable profiling log, only for debugging.
 
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.

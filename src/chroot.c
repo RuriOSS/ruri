@@ -1256,7 +1256,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 			ruri_error("{red}Error: systemd mode requires the container to be init process (PID 1) QwQ\n");
 		}
 	}
-	ruri_profile_log("run_container() to exec(): %lldns\n", ruri_diff_time());
+	ruri_profile_log("{green}run_container() to exec(): %lld ns\n", ruri_diff_time());
 	if (ruri_flag(wait_before_exec)) {
 		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);
 		// Wait for SIGUSR1 signal before execvp().

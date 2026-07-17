@@ -35,7 +35,6 @@
  * maybe I will rewrite it one day, I hope.
  */
 // For profiling.
-#ifdef RURI_PROFILING
 long long ruri_diff_time(void)
 {
 	static thread_local long long last_nsec = 0;
@@ -51,12 +50,6 @@ long long ruri_diff_time(void)
 		return 0;
 	}
 }
-#else
-long long ruri_diff_time(void)
-{
-	return 0;
-}
-#endif
 static void ruri_meow(void)
 {
 	char *meows[] = { "(=￣ω￣=)", "(=^‥^=)", "≽^•⩊•^≼", "^•ω•^=", "₍^ >ヮ<^₎", "~(=^‥^)", "/ᐠ｡ꞈ｡ᐟ\\", "/ᐠ .ᆺ. ᐟ\\ﾉ", "₍^. .^₎⟆", "ᓚ₍⑅^..^₎♡", "/ᐠ - ˕ -マ", "^. .^₎Ⳋ", "/ᐠ ¬`‸´¬ マ", "⚞ • ⚟", "/ᐠ ˵> ˕ <˵マ", "ᗜ⩊ᗜ", "(˵◝ ⩊  ◜˵マ", "(•˕ •マ.ᐟ", NULL };
@@ -1575,7 +1568,7 @@ int ruri(int argc, char **argv)
 	check_container(container);
 	// unset $LD_PRELOAD.
 	unsetenv("LD_PRELOAD");
-	ruri_profile_log("ruri() to run_container(): %lldns\n", ruri_diff_time());
+	ruri_profile_log("{green}ruri() to run_container(): %lld ns\n", ruri_diff_time());
 	// Daemon for pidfile.
 	if (!ruri_flag(no_pidfile_daemon)) {
 		ruri_setup_pid_file_daemon(container);

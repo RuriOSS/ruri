@@ -600,6 +600,7 @@ Current supported boolean flags:
 - `read_only_rootfs`: The internal implementation of `--read-only`, will mount / as read-only.
 - `no_new_privs`: The internal implementation of `--no-new-privs`, will set NO_NEW_PRIVS flag.
 - `rw_rurienv`: make .rurienv rw, will not set immutable flag and ro bind-mount on it.
+- `ruri_perf`: enable profiling log, only for debugging.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.

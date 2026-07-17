@@ -254,23 +254,13 @@ struct RURI_CONTAINER {
 		}                                                                                                                                                   \
 	} while (0)
 // Profiling log system.
-#if defined(RURI_PROFILING)
-#define ruri_profile_log(format, ...)                                                              \
-	do {                                                                                       \
-		cfprintf(stderr, "{green}In %s() at %s line %d:\n", __func__, __FILE__, __LINE__); \
-		fprintf(stderr, format, ##__VA_ARGS__);                                            \
+#define ruri_profile_log(format, ...)                                                                      \
+	do {                                                                                               \
+		if (ruri_flag(ruri_perf)) {                                                                \
+			cfprintf(stderr, "{green}In %s() at %s line %d:\n", __func__, __FILE__, __LINE__); \
+			cfprintf(stderr, format, ##__VA_ARGS__);                                            \
+		}                                                                                          \
 	} while (0)
-#else
-#define ruri_profile_log(format, ...)
-#endif
-#define ruri_malloc(size)                        \
-	({                                       \
-		void *ruri_ptr__ = malloc(size); \
-		if (!ruri_ptr__) {               \
-			ruri_panic(-114);        \
-		}                                \
-		ruri_ptr__;                      \
-	})
 extern int RURI_PWD_ERRNO;
 enum RURI_PROC_TYPE {
 	RURI_QUERY,
@@ -368,6 +358,14 @@ void ruri_pid_file_wait_lock(int pidfile_fd);
 bool ruri_dev_nodes(int req, const char *_Nonnull dev, size_t offset);
 char **ruri_flags_buf(int req, const char *_Nonnull flag);
 int ruri_env_fd(int fd);
+static inline void *ruri_malloc(size_t size)
+{
+	void *ruri_ptr__ = malloc(size);
+	if (!ruri_ptr__) {
+		ruri_panic(-114);
+	}
+	return ruri_ptr__;
+}
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗

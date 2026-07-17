@@ -232,6 +232,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.rlimits = NULL,
 		.outside_rurienv = NULL,
 		.rw_rurienv = NULL,
+		.ruri_perf = NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -523,6 +524,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		free(flags.rw_rurienv);
 		flags.rw_rurienv = true_or_null(flag + strlen("rw_rurienv"), flag);
 		return flags.rw_rurienv;
+	}
+	if (!strncmp(flag, "ruri_perf", strlen("ruri_perf"))) {
+		free(flags.ruri_perf);
+		flags.ruri_perf = true_or_null(flag + strlen("ruri_perf"), flag);
+		return flags.ruri_perf;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

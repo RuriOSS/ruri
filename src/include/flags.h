@@ -82,6 +82,7 @@ struct __attribute__((packed, aligned(1))) RURI_FLAGS {
 	char *rlimits;
 	char *outside_rurienv;
 	char *rw_rurienv;
+	char *ruri_perf;
 };
 struct __attribute__((packed, aligned(1))) RURI_DEV_NODES {
 	bool has_console;
