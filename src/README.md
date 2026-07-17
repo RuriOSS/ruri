@@ -21,7 +21,7 @@ read .rurienv for ns_pid, so --unshare is auto synced
  v
  +--> pidfile daemon(double fork()ed)
  v
- +--> --timeout? => timeout watchdog(double fork()ed)
+ +--> --timeout? => timeout watchdog (double fork()ed) => get RURI_PID_XXXX and watch => timeout? kill container : just exit
  v
  +--> container setup
         |
@@ -35,6 +35,7 @@ read .rurienv for ns_pid, so --unshare is auto synced
         |   ruri_run_rootless_chroot_container()
         |       v
         |   exec target
+        |
         |
         +--> unshare?
         |       v
@@ -54,6 +55,25 @@ read .rurienv for ns_pid, so --unshare is auto synced
             store/load .rurienv
                 v
              exec target
+```
+```
+ruri()
+ v
+pidfile daemon(double fork()ed) => write RURI_INIT_XXXX => write RURI_PID_FILE_XXXX => auto_umount? umount : just exit
+ v
+chroot/unshare/rootless fork(), to #1: parent, #2: child
+ v
+#2 wait_before_exec? write RURI_PID_FILE_WAIT_EXEC
+ v
+#2 write RURI_PID_FILE_PID_XXXX to daemon
+ v
+#2 exec() target
+ v
+#1 waitpid() end
+ v
+#1 write RURI_EXITED_XXXX stat to daemon
+ v
+#1 exit() as same stat of #2
 ```
 And, panic() will catch core signal, detect_suid_or_capability() will check if there is SUID or caps on ruri binary.      
 # fork()s:
