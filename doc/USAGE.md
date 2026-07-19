@@ -57,10 +57,9 @@ Try to correct an incomplete config file.
 | Option | Description |
 |--------|-------------|
 | `--freeze [container_dir/config]` | Freeze (pause) a container via cgroup freezer|
-|--------|-------------|
 | `--thaw [container_dir/config]` | Thaw (resume) a frozen container via cgroup freezer|
 
-*NOTE:* Needs freezer cgroup support.
+*NOTE:* Experimental. Needs freezer cgroup support.
 
 ## Arguments
 
