@@ -5,14 +5,10 @@ export TEST_NO=11
 export DESCRIPTION="Test if --freeze/--thaw options work properly"
 show_test_description
 
-# Skip if cgroup (and freezer) is not available on this host.
-if [[ ! -f /sys/fs/cgroup/cgroup.controllers ]]; then
-    echo -e "${YELLOW}cgroup v2 not mounted, skipping test #${TEST_NO}${CLEAR}"
-    pass_test
-    exit 0
-fi
-if ! grep -qw freezer /sys/fs/cgroup/cgroup.controllers 2>/dev/null; then
-    if [[ ! -d /sys/fs/cgroup/freezer ]]; then
+# Skip if no cgroup freezer is available on this host
+# (cgroup v2 freezer, v1 at /sys/fs/cgroup/freezer, or Android /dev/freezer).
+if [[ ! -f /sys/fs/cgroup/cgroup.controllers ]] || ! grep -qw freezer /sys/fs/cgroup/cgroup.controllers 2>/dev/null; then
+    if [[ ! -f /sys/fs/cgroup/freezer/freezer.state && ! -f /dev/freezer/freezer.state ]]; then
         echo -e "${YELLOW}cgroup freezer controller not available, skipping test #${TEST_NO}${CLEAR}"
         pass_test
         exit 0

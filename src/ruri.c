@@ -1569,7 +1569,6 @@ int ruri(int argc, char **argv)
 	// Default flags.
 	ruri_set_flag("no_pids_cgroup");
 	ruri_set_flag("no_io_cgroup");
-	ruri_set_flag("no_freezer_cgroup");
 	// init profiling time.
 	ruri_diff_time();
 	// Detect SUID or capability.
