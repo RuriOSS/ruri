@@ -28,7 +28,7 @@ Depending on the type of source, different mount strategies are applied:
     If the source is a block device (e.g., `/dev/sdb1`), it will be mounted directly at the target.
 
 4. **Other Regular Files**  
-    If the source is a file that is not a recognized image, it will be bind-mounted as a file at the target.
+    If the source is a file that is not a recognized image, or if it has `BIND:` prefix, it will be bind-mounted as a file at the target.
 
 5. **Special Mount Sources**
     - **tmpfs**  
@@ -107,6 +107,7 @@ This mounts `/dev/sdb1` at `/mnt/disk` as read-only and with the `noexec` flag e
 | SILENT      | Suppress mount errors in logs (if supported)|
 | POSIXACL    | Enable POSIX ACLs                           |
 | LAZYTIME    | Delay access/modify time updates            |
+| BIND        | Bind mount the source to the target         |
 
 **Notes:**
 - Prefixes are order-insensitive but must be placed before the source path.

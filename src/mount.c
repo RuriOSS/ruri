@@ -93,11 +93,12 @@ static char *cut_mount_flags(const char *_Nonnull source)
 	 *   "SILENT:"      -> MS_SILENT
 	 *   "POSIXACL:"    -> MS_POSIXACL
 	 *   "LAZYTIME:"    -> MS_LAZYTIME
+	 *   "BIND:"        -> MS_BIND
 	 *
 	 * Fs types:
 	 *
 	 */
-	char *flags[] = { "RDONLY:", "NOSUID:", "NODEV:", "NOEXEC:", "NODIRATIME:", "NOATIME:", "SYNCHRONOUS:", "DIRSYNC:", "MANDLOCK:", "RELATIME:", "SLAVE:", "SHARED:", "PRIVATE:", "UNBINDABLE:", "SILENT:", "POSIXACL:", "LAZYTIME:" };
+	char *flags[] = { "RDONLY:", "NOSUID:", "NODEV:", "NOEXEC:", "NODIRATIME:", "NOATIME:", "SYNCHRONOUS:", "DIRSYNC:", "MANDLOCK:", "RELATIME:", "SLAVE:", "SHARED:", "PRIVATE:", "UNBINDABLE:", "SILENT:", "POSIXACL:", "LAZYTIME:", "BIND:" };
 	char *ret = NULL;
 	while (true) {
 		for (size_t i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
@@ -680,6 +681,7 @@ static const char *parse_mount_flags(const char *source, unsigned int *mountflag
 	 *   "SILENT:"      -> MS_SILENT
 	 *   "POSIXACL:"    -> MS_POSIXACL
 	 *   "LAZYTIME:"    -> MS_LAZYTIME
+	 *   "BIND"         -> MS_BIND
 	 *
 	 * The function stops processing when no recognized prefix is found at the start of 'source'.
 	 *
@@ -736,6 +738,9 @@ static const char *parse_mount_flags(const char *source, unsigned int *mountflag
 		} else if (strncmp(source, "LAZYTIME:", strlen("LAZYTIME:")) == 0) {
 			*mountflag |= MS_LAZYTIME;
 			source += strlen("LAZYTIME:");
+		} else if (strncmp(source, "BIND:", strlen("BIND:")) == 0) {
+			*mountflag |= MS_BIND;
+			source += strlen("BIND:");
 		} else {
 			break;
 		}
@@ -794,6 +799,18 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 	// So we try to mount it as an image file first.
 	// If it fails, we bind-mount it as a common file.
 	else if (S_ISREG(dev_stat.st_mode)) {
+		// If the source is a bind mount, we need to handle it differently.
+		if (mountflags_new & MS_BIND) {
+			if (touch_mountpoint_file(target) != 0) {
+				return -1;
+			}
+			ruri_log("{base}Bind-mounting as common file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
+			ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
+			if (ret == 0 && mountflags_new != 0) {
+				ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
+			}
+			return ret;
+		}
 		// Image file.
 		if (mk_mountpoint_dir(target) != 0) {
 			return -1;
