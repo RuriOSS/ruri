@@ -110,6 +110,8 @@ void ruri_show_helps(void)
 	cprintf("{base}  -U, --umount [container_dir/config] .........: Unmount a container\n");
 	cprintf("{base}  -P, --ps [container_dir/config] .............: Show process status of the container (*1)\n");
 	cprintf("{base}      --stat [pid_file] .......................: Show the stat of a container\n");
+	cprintf("{base}      --freeze [container_dir/config] ........: Freeze (pause) a container via cgroup (*1)\n");
+	cprintf("{base}      --thaw [container_dir/config] ..........: Thaw (resume) a frozen container (*1)\n");
 	cprintf("{base}  -C, --correct-config [config]................: Correct a container config\n");
 	cprintf("\n");
 	cprintf("{base}ARGS:\n");

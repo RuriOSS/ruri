@@ -343,6 +343,8 @@ int ruri_cap_from_name(const char *str, cap_value_t *cap);
 #endif
 void ruri_clear_env(char *const *_Nonnull argv);
 bool ruri_pid_in_cgroup(pid_t pid, int container_id);
+int ruri_freeze_container(int container_id);
+int ruri_thaw_container(int container_id);
 long long ruri_diff_time(void);
 enum RURI_PROC_TYPE ruri_proc_mark(enum RURI_PROC_TYPE mark);
 void ruri_stat(const char *pid_file);
