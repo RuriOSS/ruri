@@ -395,6 +395,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		// Freeze (pause) a container via cgroup freezer.
 		if (strcmp(argv[index], "--freeze") == 0) {
 			index += 1;
+			// Freezer is disabled by default; opt-in here.
+			ruri_set_flag("no_freezer_cgroup=false");
 			struct stat st;
 			if (stat(argv[index], &st) != 0) {
 				ruri_error("{red}Container directory or config does not exist QwQ\n");
@@ -421,6 +423,8 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 		// Thaw (resume) a container via cgroup freezer.
 		if (strcmp(argv[index], "--thaw") == 0) {
 			index += 1;
+			// Freezer is disabled by default; opt-in here.
+			ruri_set_flag("no_freezer_cgroup=false");
 			struct stat st;
 			if (stat(argv[index], &st) != 0) {
 				ruri_error("{red}Container directory or config does not exist QwQ\n");
@@ -1569,6 +1573,7 @@ int ruri(int argc, char **argv)
 	// Default flags.
 	ruri_set_flag("no_pids_cgroup");
 	ruri_set_flag("no_io_cgroup");
+	ruri_set_flag("no_freezer_cgroup");
 	// init profiling time.
 	ruri_diff_time();
 	// Detect SUID or capability.
