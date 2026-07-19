@@ -25,8 +25,6 @@ ruri /path/to/container echo "hello world"
 | `-H`, `--show-examples` | Show command-line examples |
 | `-P`, `--ps [container_dir/config]` | Show process status of the container |
 | `--stat [pid_file]` | Show statistics of a running container |
-| `--freeze [container_dir/config]` | Freeze (pause) a container via cgroup freezer (**NOTE**: needs cgroup freezer support) |
-| `--thaw [container_dir/config]` | Thaw (resume) a frozen container via cgroup freezer (**NOTE**: needs cgroup freezer support) |
 
 These options will display information.
 
@@ -53,6 +51,16 @@ Always run `ruri -U /path/to/container` before deleting the container directory 
 | `-C`, `--correct-config` | Correct config. |
 
 Try to correct an incomplete config file.
+
+---
+
+| Option | Description |
+|--------|-------------|
+| `--freeze [container_dir/config]` | Freeze (pause) a container via cgroup freezer|
+|--------|-------------|
+| `--thaw [container_dir/config]` | Thaw (resume) a frozen container via cgroup freezer|
+
+*NOTE:* Needs freezer cgroup support.
 
 ## Arguments
 

@@ -741,6 +741,42 @@ static void ruri_set_io(const struct RURI_CONTAINER *_Nonnull container, const s
 		return;
 	}
 }
+void ruri_set_freezer(const struct RURI_CONTAINER *_Nonnull container, const struct RURI_CGROUP_ENV *cg_env)
+{
+	// Set freezer for the container.
+	if (ruri_flag(no_cgroup) || ruri_flag(no_freezer_cgroup)) {
+		return;
+	}
+	// We just need to join the cgroup, no need to set freezer state.
+	if (cg_env->freezer.type == RURI_CGROUP_V2) {
+		char cgroup_freezer_path[PATH_MAX] = "";
+		sprintf(cgroup_freezer_path, "%s%d/", cg_env->freezer.prefix, container->container_id);
+		mkdir(cgroup_freezer_path, S_IRUSR | S_IWUSR);
+		char cgroup_procs_path[PATH_MAX] = "";
+		sprintf(cgroup_procs_path, "%scgroup.procs", cgroup_freezer_path);
+		char buf[256] = "";
+		sprintf(buf, "%d", getpid());
+		if (open_and_write(cgroup_procs_path, buf)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v2 for %s\n", cgroup_procs_path);
+			return;
+		}
+	} else if (cg_env->freezer.type == RURI_CGROUP_V1) {
+		char cgroup_freezer_path[PATH_MAX] = "";
+		sprintf(cgroup_freezer_path, "%s%d/", cg_env->freezer.prefix, container->container_id);
+		mkdir(cgroup_freezer_path, S_IRUSR | S_IWUSR);
+		char cgroup_procs_path[PATH_MAX] = "";
+		sprintf(cgroup_procs_path, "%scgroup.procs", cgroup_freezer_path);
+		char buf[256] = "";
+		sprintf(buf, "%d\n", getpid());
+		if (open_and_write(cgroup_procs_path, buf)) {
+			ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{red}Failed to attach cgroup for cgroup v1 for %s\n", cgroup_procs_path);
+			return;
+		}
+	} else {
+		// No warning is needed, because freezer is not a must-have feature.
+		return;
+	}
+}
 void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
@@ -767,6 +803,9 @@ void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 	}
 	if (!ruri_flag(no_io_cgroup)) {
 		ruri_set_io(container, &cg_env);
+	}
+	if(!ruri_flag(no_freezer_cgroup)) {
+		ruri_set_freezer(container, &cg_env);
 	}
 }
 static bool is_cgroup_v2_mounted()
