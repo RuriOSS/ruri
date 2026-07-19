@@ -804,7 +804,7 @@ void ruri_set_limit(const struct RURI_CONTAINER *_Nonnull container)
 	if (!ruri_flag(no_io_cgroup)) {
 		ruri_set_io(container, &cg_env);
 	}
-	if(!ruri_flag(no_freezer_cgroup)) {
+	if (!ruri_flag(no_freezer_cgroup)) {
 		ruri_set_freezer(container, &cg_env);
 	}
 }

@@ -331,6 +331,28 @@ static int mount_device(const char *_Nonnull source, const char *_Nonnull target
 	errno = saved_errno;
 	return ret;
 }
+static int get_loop_nr(int devnr)
+{
+	// Read /sys/block/loop{devnr}/dev for minor.
+	// Format: major:minor
+	char sysfs_path[PATH_MAX];
+	sprintf(sysfs_path, "/sys/block/loop%d/dev", devnr);
+	int fd = open(sysfs_path, O_RDONLY | O_CLOEXEC);
+	if (fd < 0) {
+		return -1;
+	}
+	char buf[32];
+	ssize_t n = read(fd, buf, sizeof(buf) - 1);
+	close(fd);
+	if (n < 0) {
+		return -1;
+	}
+	buf[n] = '\0';
+	if (strchr(buf, ':') == NULL) {
+		return -1;
+	}
+	return atoi(strchr(buf, ':') + 1);
+}
 // Same as `losetup` command.
 static char *losetup(const char *_Nonnull img)
 {
@@ -339,6 +361,7 @@ static char *losetup(const char *_Nonnull img)
 	 * so that we can use the return value to mount the image.
 	 */
 	// Get a new loopfile for losetup.
+	bool is_android = false;
 	int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
 	if (loopctlfd < 0) {
 		loopctlfd = open("/dev/block/loop-control", O_RDWR | O_CLOEXEC);
@@ -346,29 +369,42 @@ static char *losetup(const char *_Nonnull img)
 			ruri_log("{red}Error: {base}Cannot open /dev/loop-control or /dev/block/loop-control.\n");
 			return NULL;
 		}
+		is_android = true;
 	}
 	// It takes the same effect as `losetup -f`.
 	int devnr = ioctl(loopctlfd, LOOP_CTL_GET_FREE);
+	if (devnr < 0) {
+		close(loopctlfd);
+		return NULL;
+	}
+	// Sleep 0.2s to wait udev.
+	usleep(200000);
 	close(loopctlfd);
 	char *loopfile = ruri_malloc(PATH_MAX);
 	memset(loopfile, 0, PATH_MAX);
-	sprintf(loopfile, "/dev/loop%d", devnr);
+	if (is_android) {
+		sprintf(loopfile, "/dev/block/loop%d", devnr);
+	} else {
+		sprintf(loopfile, "/dev/loop%d", devnr);
+	}
 	int loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 	if (loopfd < 0) {
-		// On Android, loopfile is in /dev/block.
-		memset(loopfile, 0, PATH_MAX);
-		sprintf(loopfile, "/dev/block/loop%d", devnr);
+		int nr_to_mknod = get_loop_nr(devnr);
+		if (nr_to_mknod < 0) {
+			if (is_android) {
+				nr_to_mknod = devnr * 8;
+			} else {
+				nr_to_mknod = devnr;
+			}
+		}
+		// Just mknod it.
+		mknod(loopfile, S_IFBLK | 0660, makedev(7, nr_to_mknod));
+		// Sleep 0.1s.
+		usleep(100000);
 		loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 		if (loopfd < 0) {
-			// Just create one.
-			memset(loopfile, 0, PATH_MAX);
-			sprintf(loopfile, "/dev/loop%d", devnr);
-			mknod(loopfile, S_IFBLK | 0660, makedev(7, devnr));
-			loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
-			if (loopfd < 0) {
-				free(loopfile);
-				return NULL;
-			}
+			free(loopfile);
+			return NULL;
 		}
 	}
 	// It takes the same efferct as `losetup` command.
