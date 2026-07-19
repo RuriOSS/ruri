@@ -361,7 +361,6 @@ static char *losetup(const char *_Nonnull img)
 	 * so that we can use the return value to mount the image.
 	 */
 	// Get a new loopfile for losetup.
-	bool is_android = false;
 	int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
 	if (loopctlfd < 0) {
 		loopctlfd = open("/dev/block/loop-control", O_RDWR | O_CLOEXEC);
@@ -369,7 +368,6 @@ static char *losetup(const char *_Nonnull img)
 			ruri_log("{red}Error: {base}Cannot open /dev/loop-control or /dev/block/loop-control.\n");
 			return NULL;
 		}
-		is_android = true;
 	}
 	// It takes the same effect as `losetup -f`.
 	int devnr = ioctl(loopctlfd, LOOP_CTL_GET_FREE);
@@ -382,16 +380,21 @@ static char *losetup(const char *_Nonnull img)
 	close(loopctlfd);
 	char *loopfile = ruri_malloc(PATH_MAX);
 	memset(loopfile, 0, PATH_MAX);
-	if (is_android) {
-		sprintf(loopfile, "/dev/block/loop%d", devnr);
-	} else {
-		sprintf(loopfile, "/dev/loop%d", devnr);
-	}
+	sprintf(loopfile, "/dev/loop%d", devnr);
 	int loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 	if (loopfd < 0) {
+		memset(loopfile, 0, PATH_MAX);
+		sprintf(loopfile, "/dev/block/loop%d", devnr);
+		loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
+	}
+	if (loopfd < 0) {
+		if (access("/dev/binder", F_OK) != 0) {
+			memset(loopfile, 0, PATH_MAX);
+			sprintf(loopfile, "/dev/loop%d", devnr);
+		}
 		int nr_to_mknod = get_loop_nr(devnr);
 		if (nr_to_mknod < 0) {
-			if (is_android) {
+			if (access("/dev/binder", F_OK) == 0) {
 				nr_to_mknod = devnr * 8;
 			} else {
 				nr_to_mknod = devnr;
