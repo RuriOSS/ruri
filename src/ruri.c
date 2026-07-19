@@ -392,6 +392,62 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			ruri_stat(pid_file);
 			exit(EXIT_FAILURE);
 		}
+		// Freeze (pause) a container via cgroup freezer.
+		if (strcmp(argv[index], "--freeze") == 0) {
+			index += 1;
+			// Freezer is disabled by default; opt-in here.
+			ruri_set_flag("no_freezer_cgroup=false");
+			struct stat st;
+			if (stat(argv[index], &st) != 0) {
+				ruri_error("{red}Container directory or config does not exist QwQ\n");
+			}
+			int ret;
+			if (S_ISDIR(st.st_mode)) {
+				struct RURI_CONTAINER *tmp = ruri_read_info(NULL, argv[index]);
+				ret = ruri_freeze_container(tmp->container_id);
+				free(tmp);
+			} else if (S_ISREG(st.st_mode)) {
+				struct RURI_CONTAINER tmp;
+				ruri_init_config(&tmp);
+				ruri_read_config(&tmp, argv[index]);
+				ret = ruri_freeze_container(tmp.container_id);
+			} else {
+				ruri_error("{red}Error: unknown file type QwQ\n");
+			}
+			if (ret != 0) {
+				ruri_warning("{yellow}Failed to freeze container, cgroup freezer not available\n");
+				exit(114);
+			}
+			exit(EXIT_SUCCESS);
+		}
+		// Thaw (resume) a container via cgroup freezer.
+		if (strcmp(argv[index], "--thaw") == 0) {
+			index += 1;
+			// Freezer is disabled by default; opt-in here.
+			ruri_set_flag("no_freezer_cgroup=false");
+			struct stat st;
+			if (stat(argv[index], &st) != 0) {
+				ruri_error("{red}Container directory or config does not exist QwQ\n");
+			}
+			int ret;
+			if (S_ISDIR(st.st_mode)) {
+				struct RURI_CONTAINER *tmp = ruri_read_info(NULL, argv[index]);
+				ret = ruri_thaw_container(tmp->container_id);
+				free(tmp);
+			} else if (S_ISREG(st.st_mode)) {
+				struct RURI_CONTAINER tmp;
+				ruri_init_config(&tmp);
+				ruri_read_config(&tmp, argv[index]);
+				ret = ruri_thaw_container(tmp.container_id);
+			} else {
+				ruri_error("{red}Error: unknown file type QwQ\n");
+			}
+			if (ret != 0) {
+				ruri_warning("{yellow}Failed to thaw container, cgroup freezer not available\n");
+				exit(114);
+			}
+			exit(EXIT_SUCCESS);
+		}
 		// Correct a container config.
 		if (strcmp(argv[index], "-C") == 0 || strcmp(argv[index], "--correct-config") == 0) {
 			index += 1;

@@ -1,4 +1,5 @@
 # v3.9.5:
+  * Add `--freeze`/`--thaw` subcommands to pause and resume a container via cgroup freezer (**NOTE**: needs cgroup freezer support, both cgroup v2 built-in freezer and v1 `/sys/fs/cgroup/freezer` or Android `/dev/freezer` are detected).
   * Add `--set-flag` for developers to enable feature flags.
   * Add a `.ruri_umounted` file to indicate that the container has been unmounted.
   * Fix a race condition when udev didn't create /dev/loopx device before ruri tries to mount it.

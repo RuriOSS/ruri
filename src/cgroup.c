@@ -196,6 +196,11 @@ static void detect_cgroup_v1_fallback(struct RURI_CGROUP_ENV *cg_env)
 		cg_env->cpupercent.prefix = "/dev/cpuctl/ruri/";
 		cg_env->cpupercent.type = RURI_CGROUP_V1;
 	}
+	if (!ruri_flag(no_freezer_cgroup) && access("/dev/freezer/freezer.state", F_OK) == 0 && cg_env->freezer.type == RURI_CGROUP_ENOSYS) {
+		mkdir("/dev/freezer/ruri", S_IRUSR | S_IWUSR);
+		cg_env->freezer.prefix = "/dev/freezer/ruri/";
+		cg_env->freezer.type = RURI_CGROUP_V1;
+	}
 }
 static void detect_cgroup_v2(struct RURI_CGROUP_ENV *cg_env)
 {
@@ -868,6 +873,9 @@ int ruri_freeze_container(int container_id)
 	 * Freeze (pause) all processes in the container.
 	 * Returns 0 on success, 1 on failure.
 	 */
+	if (container_id < 0) {
+		ruri_error("{red}Invalid container_id %d for freeze\n", container_id);
+	}
 	if (ruri_flag(no_cgroup) || ruri_flag(no_freezer_cgroup)) {
 		return 1;
 	}
@@ -897,6 +905,9 @@ int ruri_thaw_container(int container_id)
 	 * Thaw (resume) all processes in the container.
 	 * Returns 0 on success, 1 on failure.
 	 */
+	if (container_id < 0) {
+		ruri_error("{red}Invalid container_id %d for thaw\n", container_id);
+	}
 	if (ruri_flag(no_cgroup) || ruri_flag(no_freezer_cgroup)) {
 		return 1;
 	}
