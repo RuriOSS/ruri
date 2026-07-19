@@ -388,13 +388,13 @@ static char *losetup(const char *_Nonnull img)
 		loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 	}
 	if (loopfd < 0) {
-		if (access("/dev/binder", F_OK) != 0) {
+		if (access("/system/bin/getprop", F_OK) != 0) {
 			memset(loopfile, 0, PATH_MAX);
 			sprintf(loopfile, "/dev/loop%d", devnr);
 		}
 		int nr_to_mknod = get_loop_nr(devnr);
 		if (nr_to_mknod < 0) {
-			if (access("/dev/binder", F_OK) == 0) {
+			if (access("/system/bin/getprop", F_OK) == 0) {
 				nr_to_mknod = devnr * 8;
 			} else {
 				nr_to_mknod = devnr;
@@ -797,6 +797,11 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		// Image file.
 		if (mk_mountpoint_dir(target) != 0) {
 			return -1;
+		}
+		// For android, set selinux label to "u:object_r:media_rw_data_file:s0" for image file.
+		if (access("/system/bin/getprop", F_OK) == 0) {
+			char *selinux_label = "u:object_r:media_rw_data_file:s0";
+			setxattr(target, "security.selinux", selinux_label, strlen(selinux_label), 0);
 		}
 		ruri_log("{base}Mounting as image file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 		char *loopfile = losetup(source);

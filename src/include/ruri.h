@@ -87,6 +87,7 @@
 #include <linux/io_uring.h>
 #include <linux/netlink.h>
 #include <linux/net.h>
+#include <sys/xattr.h>
 #ifndef DISABLE_LIBSECCOMP
 // This program need to be linked with `-lseccomp`.
 #include <seccomp.h>
