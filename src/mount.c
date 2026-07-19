@@ -801,7 +801,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		// For android, set selinux label to "u:object_r:media_rw_data_file:s0" for image file.
 		if (access("/system/bin/getprop", F_OK) == 0) {
 			char *selinux_label = "u:object_r:media_rw_data_file:s0";
-			setxattr(target, "security.selinux", selinux_label, strlen(selinux_label), 0);
+			setxattr(source, "security.selinux", selinux_label, strlen(selinux_label), 0);
 		}
 		ruri_log("{base}Mounting as image file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 		char *loopfile = losetup(source);
