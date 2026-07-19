@@ -233,6 +233,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.outside_rurienv = NULL,
 		.rw_rurienv = NULL,
 		.ruri_perf = NULL,
+		.is_termux=NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -529,6 +530,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		free(flags.ruri_perf);
 		flags.ruri_perf = true_or_null(flag + strlen("ruri_perf"), flag);
 		return flags.ruri_perf;
+	}
+	if (!strncmp(flag, "is_termux", strlen("is_termux"))) {
+		free(flags.is_termux);
+		flags.is_termux = true_or_null(flag + strlen("is_termux"), flag);
+		return flags.is_termux;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

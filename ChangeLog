@@ -54,6 +54,7 @@
     - `outside_rurienv`: Use outside .rurienv file instead of the one in the container. For example, `outside_rurienv=/tmp/rurienv` means use `/tmp/rurienv` instead of `/.rurienv` in the container.
     - `rw_rurienv`: make .rurienv rw, will not set immutable flag and ro bind-mount on it.
     - `ruri_perf`: enable profiling log, only for debugging.
+    - `is_termux`: if we are running in termux.
 
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.
