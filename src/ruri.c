@@ -52,7 +52,7 @@ long long ruri_diff_time(void)
 }
 static void ruri_meow(void)
 {
-	char *meows[] = { "(=￣ω￣=)", "(=^‥^=)", "≽^•⩊•^≼", "^•ω•^=", "₍^ >ヮ<^₎", "~(=^‥^)", "/ᐠ｡ꞈ｡ᐟ\\", "/ᐠ .ᆺ. ᐟ\\ﾉ", "₍^. .^₎⟆", "ᓚ₍⑅^..^₎♡", "/ᐠ - ˕ -マ", "^. .^₎Ⳋ", "/ᐠ ¬`‸´¬ マ", "⚞ • ⚟", "/ᐠ ˵> ˕ <˵マ", "ᗜ⩊ᗜ", "(˵◝ ⩊  ◜˵マ", "(•˕ •マ.ᐟ", NULL };
+	char *meows[] = { "(=￣ω￣=)", "(=^‥^=)", "≽^•⩊•^≼", "^•ω•^=", "₍^ >ヮ<^₎", "~(=^‥^)", "/ᐠ｡ꞈ｡ᐟ\\", "/ᐠ .ᆺ. ᐟ\\ﾉ", "₍^. .^₎⟆", "ᓚ₍⑅^..^₎♡", "/ᐠ - ˕ -マ", "^. .^₎Ⳋ", "/ᐠ ¬`‸´¬ マ", "⚞ • ⚟", "/ᐠ ˵> ˕ <˵マ", "ᗜ⩊ᗜ", "(˵◝ ⩊  ◜˵マ", "(•˕ •マ.ᐟ", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 	// NOLINTBEGIN
 	// Get a random meow
 	srand(time(NULL));
@@ -62,7 +62,27 @@ static void ruri_meow(void)
 		cprintf("\n{base}  %s{clear}\n", meows[random_index]);
 		cprintf("{base}How do you meow?{clear}\n");
 	} else {
-		ruri_hoppou_art();
+		switch (rand() % 5) {
+		case 0:
+			ruri_hoppou_art();
+			break;
+		case 1:
+			cprintf("{248;52;13}  /ᐠ ˵> ˕ <˵マ{clear}\n");
+			cprintf("{base}How do you meow?{clear}\n");
+			break;
+		case 2:
+			cprintf("{13;107;248}  ^. .^₎Ⳋ{clear}\n");
+			cprintf("{base}How do you meow?{clear}\n");
+			break;
+		case 3:
+			cprintf("{249;185;235}  ^>_<^=₎~{clear}\n");
+			cprintf("{base}How do you meow?{clear}\n");
+			break;
+		case 4:
+			cprintf("{250;222;101}  (˵◝ ⩊  ◜˵マ{clear}\n");
+			cprintf("{base}How do you meow?{clear}\n");
+			break;
+		}
 	}
 	exit(EXIT_SUCCESS);
 }
