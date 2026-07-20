@@ -372,7 +372,6 @@ struct RURI_CONTAINER *ruri_read_info(struct RURI_CONTAINER *_Nullable container
 			buf[st.st_size] = '\0';
 		}
 	} else {
-		char file[PATH_MAX] = { '\0' };
 		if (snprintf(file, sizeof(file), "%s/.rurienv", container_dir) >= (int)sizeof(file)) {
 			ruri_error("{red}QwQ? Why we are here?\n");
 		}
