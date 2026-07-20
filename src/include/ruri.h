@@ -88,6 +88,8 @@
 #include <linux/netlink.h>
 #include <linux/net.h>
 #include <sys/xattr.h>
+#include <sys/epoll.h>
+#include <termios.h>
 #ifndef DISABLE_LIBSECCOMP
 // This program need to be linked with `-lseccomp`.
 #include <seccomp.h>
@@ -361,6 +363,9 @@ void ruri_pid_file_wait_lock(int pidfile_fd);
 bool ruri_dev_nodes(int req, const char *_Nonnull dev, size_t offset);
 char **ruri_flags_buf(int req, const char *_Nonnull flag);
 int ruri_env_fd(int fd);
+void ruri_setup_tty_daemon(void);
+int ruri_tty_sock_fd(int req);
+void ruri_setup_tty(void);
 static inline void *ruri_malloc(size_t size)
 {
 	void *ruri_ptr__ = malloc(size);

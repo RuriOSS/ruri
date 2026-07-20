@@ -585,3 +585,278 @@ void ruri_fork_as_init(void)
 		}
 	}
 }
+// For handling terminal resize events.
+static volatile sig_atomic_t g_resize = 0;
+static void sigwinch_handler(int signo)
+{
+	(void)signo;
+	g_resize = 1;
+}
+int ruri_openpty(int *master, int *slave)
+{
+	/*
+	 * Libc does not provide a portable openpty() function, so we just implement one.
+	 */
+	char *name;
+	*master = posix_openpt(O_RDWR | O_NOCTTY);
+	if (*master < 0)
+		return -1;
+	if (grantpt(*master) < 0)
+		goto err;
+	if (unlockpt(*master) < 0)
+		goto err;
+	name = ptsname(*master);
+	if (!name)
+		goto err;
+	*slave = open(name, O_RDWR | O_NOCTTY);
+	if (*slave < 0)
+		goto err;
+	return 0;
+err:
+	close(*master);
+	return -1;
+}
+int ruri_tty_sock_fd(int req)
+{
+	/*
+	 * Store fd for tty daemon.
+	 * If req >= 0, set the tty sock fd to req and return it.
+	 * If req < 0, return the stored tty sock fd.
+	 */
+	static thread_local int ret = -1;
+	if (req < 0) {
+		return ret;
+	}
+	ret = req;
+	return ret;
+}
+void ruri_setup_tty(void)
+{
+	// Create the pty.
+	int master, slave;
+	if (ruri_openpty(&master, &slave)) {
+		ruri_error("{red}Failed to open pty QwQ\n");
+	}
+	fcntl(master, F_SETFL, fcntl(master, F_GETFL) | O_NONBLOCK);
+	fcntl(STDOUT_FILENO, F_SETFL, fcntl(STDOUT_FILENO, F_GETFL) | O_NONBLOCK);
+	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+	// Get winsize.
+	struct winsize ws;
+	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) < 0) {
+		ruri_error("{red}Failed to get terminal size QwQ\n");
+	}
+	// Set winsize to slave pty.
+	if (ioctl(slave, TIOCSWINSZ, &ws) < 0) {
+		ruri_error("{red}Failed to set terminal size QwQ\n");
+	}
+	// Send a PTY_OK_CHD to parent process to indicate that we are ready to handle input/output.
+	if (write(ruri_tty_sock_fd(-1), "PTY_OK_CHD", 10) < 0) {
+		ruri_error("{red}Failed to send PTY_OK to parent process QwQ\n");
+	}
+	// Send master fd to daemon process.
+	// Use SCM_RIGHTS to send the fd.
+	int sock_fd = ruri_tty_sock_fd(-1);
+	struct msghdr msg = { 0 };
+	char buf[CMSG_SPACE(sizeof(int))];
+	memset(buf, 0, sizeof(buf));
+	struct iovec io;
+	char dummy = 'F';
+	io.iov_base = &dummy;
+	io.iov_len = 1;
+	msg.msg_iov = &io;
+	msg.msg_iovlen = 1;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+	// Socket need a memcpy instead of a direct assignment.
+	memcpy(CMSG_DATA(cmsg), &master, sizeof(int));
+	if (sendmsg(sock_fd, &msg, 0) < 0) {
+		ruri_error("{red}Failed to send master fd to tty daemon QwQ\n");
+	}
+	// Set the controlling terminal to the slave pty.
+	close(master);
+	setsid();
+	ioctl(slave, TIOCSCTTY, 0);
+	dup2(slave, STDIN_FILENO);
+	dup2(slave, STDOUT_FILENO);
+	dup2(slave, STDERR_FILENO);
+	if (slave > 2) {
+		close(slave);
+	}
+	close(ruri_tty_sock_fd(-1));
+	pid_t pid = getpid();
+	setpgid(0, pid);
+	tcsetpgrp(STDIN_FILENO, pid);
+	close(sock_fd);
+}
+void ruri_setup_tty_daemon(void)
+{
+	/*
+	 * Setup a pty, fork(), child return and parent wait.
+	 */
+	// Create sockpair.
+	int sock[2] = { -1, -1 };
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, sock) < 0) {
+		ruri_error("{red}Failed to create socket pair for tty daemon QwQ\n");
+	}
+	// Store the sock fd for child process to use.
+	ruri_tty_sock_fd(sock[1]);
+	// Signal handler for SIGWINCH to handle terminal resize events
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = sigwinch_handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+	sigaction(SIGWINCH, &sa, NULL);
+	// Set rawmode for the terminal to handle input/output correctly
+	struct termios raw, orig;
+	tcgetattr(STDIN_FILENO, &orig);
+	tcgetattr(STDIN_FILENO, &raw);
+	cfmakeraw(&raw);
+	tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+	// Fork a child process, only child process will return from this function.
+	// So futher code will be executed in the child process.
+	pid_t pid = fork();
+	if (pid == 0) {
+		close(sock[0]);
+		signal(SIGINT, SIG_DFL);
+		signal(SIGTSTP, SIG_DFL);
+		return;
+	}
+	// Ignore CTRL-C and CTRL-Z in the parent process, so that the child process can handle them.
+	signal(SIGINT, SIG_IGN);
+	signal(SIGTSTP, SIG_IGN);
+	close(sock[1]);
+	// Read PTY_OK_CHD from child process.
+	char ok_buf[16] = { 0 };
+	ssize_t ok_buf_got = read(sock[0], ok_buf, sizeof(ok_buf) - 1);
+	if (ok_buf_got <= 0) {
+		ruri_error("\n{red}Failed to read PTY_OK from child process QwQ\n");
+	}
+	ok_buf[ok_buf_got] = '\0';
+	if (strcmp(ok_buf, "PTY_OK_CHD") != 0) {
+		ruri_error("{red}Failed to get PTY_OK from child process, fd: %d QwQ\n", sock[0]);
+	}
+	// Get master fd from sock[0].
+	struct msghdr msg = { 0 };
+	char m_buffer[1];
+	struct iovec io;
+	io.iov_base = m_buffer;
+	io.iov_len = 1;
+	char c_buffer[CMSG_SPACE(sizeof(int))];
+	msg.msg_iov = &io;
+	msg.msg_iovlen = 1;
+	msg.msg_control = c_buffer;
+	msg.msg_controllen = sizeof(c_buffer);
+	if (recvmsg(sock[0], &msg, 0) < 0) {
+		ruri_error("{red}Failed to receive master fd from tty daemon QwQ\n");
+	}
+	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+	int master = 0;
+	// Socket need a memcpy instead of a direct assignment.
+	memcpy(&master, CMSG_DATA(cmsg), sizeof(int));
+	// epoll() to handle input/output between the terminal and the child process.
+	int epfd = epoll_create1(0);
+	struct epoll_event ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = STDIN_FILENO;
+	epoll_ctl(epfd, EPOLL_CTL_ADD, STDIN_FILENO, &ev);
+	ev.events = EPOLLIN | EPOLLHUP | EPOLLERR | EPOLLET;
+	ev.data.fd = master;
+	epoll_ctl(epfd, EPOLL_CTL_ADD, master, &ev);
+	// Main loop to handle input/output between the terminal and the child process.
+	char buf[4096];
+	g_resize = 1;
+	fcntl(master, F_SETFL, fcntl(master, F_GETFL) | O_NONBLOCK);
+	fcntl(STDOUT_FILENO, F_SETFL, fcntl(STDOUT_FILENO, F_GETFL) | O_NONBLOCK);
+	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+	while (true) {
+		// Handle terminal resize events
+		if (g_resize) {
+			g_resize = 0;
+			struct winsize ws;
+			if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) == 0) {
+				ioctl(master, TIOCSWINSZ, &ws);
+			}
+		}
+		struct epoll_event events[8];
+		int n = epoll_wait(epfd, events, 8, -1);
+		if (n < 0) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		for (int i = 0; i < n; i++) {
+			int fd = events[i].data.fd;
+			// Input.
+			if (fd == STDIN_FILENO) {
+				// Read all data until EOF or error, and write to master fd.
+				while (true) {
+					ssize_t r = read(STDIN_FILENO, buf, sizeof(buf));
+					if (r <= 0 && errno == EAGAIN) {
+						break;
+					}
+					if (r > 0) {
+						ssize_t off = 0;
+						while (off < r) {
+							ssize_t w = write(master, buf + off, r - off);
+							if (w < 0) {
+								if (errno == EINTR) {
+									continue;
+								}
+								goto out;
+							}
+							off += w;
+						}
+						continue;
+					}
+					goto out;
+				}
+			}
+			// Output.
+			if (fd == master) {
+				// Read all data until EOF or error, and write to stdout.
+				while (true) {
+					ssize_t r = read(master, buf, sizeof(buf));
+					if (r > 0) {
+						ssize_t off = 0;
+						while (off < r) {
+							ssize_t w = write(STDOUT_FILENO, buf + off, r - off);
+							if (w < 0) {
+								if (errno == EINTR || errno == EAGAIN)
+									continue;
+								goto out;
+							}
+							off += w;
+						}
+					} else if (r == 0) {
+						goto out;
+					} else {
+						if (errno == EIO)
+							goto out;
+						if (errno == EINTR)
+							continue;
+						if (errno == EAGAIN)
+							break;
+						goto out;
+					}
+				}
+			}
+		}
+	}
+out:
+	tcsetattr(STDIN_FILENO, TCSANOW, &orig);
+	// Check pid status and exit with the same status.
+	int status = 0;
+	waitpid(pid, &status, 0);
+	if (WIFEXITED(status)) {
+		exit(WEXITSTATUS(status));
+	} else if (WIFSIGNALED(status)) {
+		exit(128 + WTERMSIG(status));
+	} else {
+		ruri_error("{red}Error: child process exited with unknown status QwQ\n");
+	}
+}

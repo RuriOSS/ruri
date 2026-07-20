@@ -235,6 +235,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.ruri_perf = NULL,
 		.is_termux=NULL,
 		.img_sectx=NULL,
+		.new_tty=NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -545,6 +546,15 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		}
 		flags.img_sectx = strdup(flag + strlen("img_sectx="));
 		return flags.img_sectx;
+	}
+	if (!strncmp(flag, "new_tty", strlen("new_tty"))) {
+		free(flags.dev_nodes);
+		flags.dev_nodes = strdup("+tty,+devpts");
+		// Update dev_nodes struct.
+		ruri_dev_nodes(RURI_SET_FLAG, NULL, 0);
+		free(flags.new_tty);
+		flags.new_tty = true_or_null(flag + strlen("new_tty"), flag);
+		return flags.new_tty;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

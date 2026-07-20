@@ -1145,7 +1145,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// So we close the other fds to avoid security issues.
 	// NOTE: this might cause unknown issues.
 	for (int i = 3; i <= 10; i++) {
-		if (i == ruri_pid_file_fd(-1)) {
+		if (i == ruri_pid_file_fd(-1) || i == ruri_tty_sock_fd(-1)) {
 			continue;
 		}
 		close(i);
@@ -1246,7 +1246,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	// So we close the other fds to avoid security issues.
 	// NOTE: this might cause unknown issues.
 	for (int i = 3; i <= 10; i++) {
-		if (i == ruri_pid_file_fd(-1)) {
+		if (i == ruri_pid_file_fd(-1) || i == ruri_tty_sock_fd(-1)) {
 			continue;
 		}
 		close(i);
@@ -1257,6 +1257,10 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	ruri_profile_log("{green}run_container() to exec(): %lld ns\n", ruri_diff_time());
+	// Setup tty.
+	if (ruri_flag(new_tty)) {
+		ruri_setup_tty();
+	}
 	if (ruri_flag(wait_before_exec)) {
 		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);
 		// Wait for SIGUSR1 signal before execvp().
@@ -1344,7 +1348,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	// So we close the other fds to avoid security issues.
 	// NOTE: this might cause unknown issues.
 	for (int i = 3; i <= 10; i++) {
-		if (i == ruri_pid_file_fd(-1)) {
+		if (i == ruri_pid_file_fd(-1) || i == ruri_tty_sock_fd(-1)) {
 			continue;
 		}
 		close(i);
@@ -1406,10 +1410,14 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	// We only need 0(stdin), 1(stdout), 2(stderr),
 	// So we close the other fds to avoid security issues.
 	for (int i = 3; i <= 10; i++) {
-		if (i == ruri_pid_file_fd(-1)) {
+		if (i == ruri_pid_file_fd(-1) || i == ruri_tty_sock_fd(-1)) {
 			continue;
 		}
 		close(i);
+	}
+	// Setup tty.
+	if (ruri_flag(new_tty)) {
+		ruri_setup_tty();
 	}
 	if (ruri_flag(wait_before_exec)) {
 		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);

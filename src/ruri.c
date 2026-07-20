@@ -1639,6 +1639,10 @@ int ruri(int argc, char **argv)
 	if (container->timeout > 0) {
 		ruri_setup_timeout_watchdog(container);
 	}
+	// Setup tty.
+	if (ruri_flag(new_tty)) {
+		ruri_setup_tty_daemon();
+	}
 	// Run container.
 	if ((container->enable_unshare) && !(container->rootless)) {
 		// Unshare container.
