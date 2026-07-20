@@ -793,28 +793,31 @@ void ruri_setup_tty_daemon(void)
 			int fd = events[i].data.fd;
 			// Input.
 			if (fd == STDIN_FILENO) {
-				// Read all data until EOF or error, and write to master fd.
-				while (true) {
-					ssize_t r = read(STDIN_FILENO, buf, sizeof(buf));
-					if (r <= 0 && errno == EAGAIN) {
-						break;
-					}
-					if (r > 0) {
-						ssize_t off = 0;
-						while (off < r) {
-							ssize_t w = write(master, buf + off, r - off);
-							if (w < 0) {
-								if (errno == EINTR) {
-									continue;
-								}
-								goto out;
-							}
-							off += w;
-						}
-						continue;
-					}
-					goto out;
+				// Read data and write to master fd.
+				ssize_t r = read(STDIN_FILENO, buf, sizeof(buf));
+				if (r <= 0 && errno == EAGAIN) {
+					continue;
 				}
+				if (r > 0) {
+					ssize_t off = 0;
+					while (off < r) {
+						ssize_t w = write(master, buf + off, r - off);
+						if (w < 0) {
+							if (errno == EINTR) {
+								continue;
+							}
+							if (errno == EAGAIN) {
+								// TODO: Handle this.
+								ruri_warning("{yellow}Warning: %s did not write to master fd.", buf + off);
+								break;
+							}
+							goto out;
+						}
+						off += w;
+					}
+					continue;
+				}
+				continue;
 			}
 			// Output.
 			if (fd == master) {
