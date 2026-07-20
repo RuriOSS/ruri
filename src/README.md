@@ -23,6 +23,8 @@ read .rurienv for ns_pid, so --unshare is auto synced
  v
  +--> --timeout? => timeout watchdog (double fork()ed) => get RURI_PID_XXXX and watch => timeout? kill container : just exit
  v
+ +--> new_tty? fork(), parent wait master fd then I/O loop and waitpid(), child just continue container setup.
+ v
  +--> container setup
         |
         |
