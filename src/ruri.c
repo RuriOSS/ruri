@@ -56,10 +56,14 @@ static void ruri_meow(void)
 	// NOLINTBEGIN
 	// Get a random meow
 	srand(time(NULL));
-	int random_index = rand() % (int)(sizeof(meows) / sizeof(meows[0]) - 1);
+	int random_index = rand() % (int)(sizeof(meows) / sizeof(meows[0]));
 	// NOLINTEND
-	cprintf("\n{base}  %s{clear}\n", meows[random_index]);
-	cprintf("{base}How do you meow?{clear}\n");
+	if (meows[random_index]) {
+		cprintf("\n{base}  %s{clear}\n", meows[random_index]);
+		cprintf("{base}How do you meow?{clear}\n");
+	} else {
+		ruri_hoppou_art();
+	}
 	exit(EXIT_SUCCESS);
 }
 // Clear environment variables.

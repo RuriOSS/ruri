@@ -366,6 +366,7 @@ int ruri_env_fd(int fd);
 void ruri_setup_tty_daemon(void);
 int ruri_tty_sock_fd(int req);
 void ruri_setup_tty(void);
+void ruri_hoppou_art(void);
 static inline void *ruri_malloc(size_t size)
 {
 	void *ruri_ptr__ = malloc(size);
