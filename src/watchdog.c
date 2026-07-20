@@ -773,6 +773,8 @@ void ruri_setup_tty_daemon(void)
 	fcntl(master, F_SETFL, fcntl(master, F_GETFL) | O_NONBLOCK);
 	fcntl(STDOUT_FILENO, F_SETFL, fcntl(STDOUT_FILENO, F_GETFL) | O_NONBLOCK);
 	fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+	size_t last_data_len = 0;
+	char last_data_buf[4096];
 	while (true) {
 		// Handle terminal resize events
 		if (g_resize) {
@@ -793,6 +795,25 @@ void ruri_setup_tty_daemon(void)
 			int fd = events[i].data.fd;
 			// Input.
 			if (fd == STDIN_FILENO) {
+				// If last_data_len >0, write last data first.
+				size_t l_off = 0;
+				while (last_data_len > 0) {
+					ssize_t w = write(master, last_data_buf + l_off, last_data_len - l_off);
+					if (w < 0) {
+						if (errno == EINTR) {
+							continue;
+						}
+						if (errno == EAGAIN) {
+							break;
+						}
+						goto out;
+					}
+					l_off += w;
+					if (l_off >= last_data_len) {
+						last_data_len = 0;
+						break;
+					}
+				}
 				// Read data and write to master fd.
 				ssize_t r = read(STDIN_FILENO, buf, sizeof(buf));
 				if (r <= 0 && errno == EAGAIN) {
@@ -807,8 +828,9 @@ void ruri_setup_tty_daemon(void)
 								continue;
 							}
 							if (errno == EAGAIN) {
-								// TODO: Handle this.
-								ruri_warning("{yellow}Warning: %s did not write to master fd.", buf + off);
+								// Store the remaining data to last_data_buf.
+								last_data_len = r - off;
+								memcpy(last_data_buf, buf + off, last_data_len);
 								break;
 							}
 							goto out;
@@ -845,6 +867,25 @@ void ruri_setup_tty_daemon(void)
 						if (errno == EAGAIN)
 							break;
 						goto out;
+					}
+				}
+				// If last_data_len >0, write last data.
+				size_t l_off = 0;
+				while (last_data_len > 0) {
+					ssize_t w = write(master, last_data_buf + l_off, last_data_len - l_off);
+					if (w < 0) {
+						if (errno == EINTR) {
+							continue;
+						}
+						if (errno == EAGAIN) {
+							break;
+						}
+						goto out;
+					}
+					l_off += w;
+					if (l_off >= last_data_len) {
+						last_data_len = 0;
+						break;
 					}
 				}
 			}
