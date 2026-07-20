@@ -618,6 +618,7 @@ Current supported kv flags:
 - `dev_nodes`: A comma-separated list to override default device nodes in the container. For example, `dev_nodes=+kvm,-full` means create /dev/kvm but disable /dev/full in the container.    
 - `rlimits`: A comma-separated list to set rlimits in the container. For example, `rlimits=nproc:16:32,core:1` means set RLIMIT_NPROC to 16 (soft) and 32 (hard), and set RLIMIT_CORE to 1 (soft) and 1 (hard).
 - `outside_rurienv`: Use outside .rurienv file instead of the one in the container. For example, `outside_rurienv=/tmp/rurienv` means use `/tmp/rurienv` instead of `/.rurienv` in the container.
+- `img_sectx`: SELinux context for image file, to fix loop-mount on android.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    
 

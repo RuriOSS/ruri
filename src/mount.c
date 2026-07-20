@@ -818,6 +818,9 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		// For android, set selinux label to "u:object_r:media_rw_data_file:s0" for image file.
 		if (ruri_is_android()) {
 			char *selinux_label = "u:object_r:media_rw_data_file:s0";
+			if (ruri_flag(img_sectx)) {
+				selinux_label = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, img_sectx));
+			}
 			setxattr(source, "security.selinux", selinux_label, strlen(selinux_label), 0);
 		}
 		ruri_log("{base}Mounting as image file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
