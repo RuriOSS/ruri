@@ -593,6 +593,10 @@ static void set_envs(const struct RURI_CONTAINER *_Nonnull container)
 	setenv("SHELL", "sh", 1);
 	// Set $container to ruri.
 	setenv("container", "ruri", 1);
+	// Set TERM to xterm-256color.
+	setenv("TERM", "xterm-256color", 1);
+	// Set LANG to EN_US.UTF-8.
+	setenv("LANG", "en_US.UTF-8", 0);
 	// Set other envs.
 	for (int i = 0; true; i += 2) {
 		if (container->env[i] == NULL || container->env[i + 1] == NULL) {

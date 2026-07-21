@@ -481,11 +481,15 @@ This option allows you to skip the setgroups() call when changing the user in th
 
 This option allows you to run systemd as init in the container. It will set up some necessary things for systemd to run properly.
 
+**Warning:** On some phones, even with kernel support for lxc, systemd will make the device immediately soft reboot. So take your own risk.    
+
 **Behavior note:* This option will automatically enable unshare and some seccomp rules for better compatibility with systemd, cgroup limit will be ignored, and some behavior will be changed to better support systemd. For example, ruri will automatically mount /run and /tmp as tmpfs.
 
-**Note:** This option is experimental and may not work as expected. You should enable `--even-unstable` option to use this feature, and report issues if you find any bugs.
+**Note:** This option is experimental and may not work as expected. You should enable `--even-unstable` option to use this feature.
 
 **Note:** Some services like `getty` and `systemd-resolved` might not work in containers, you should mask them. Also, services like `systemd-firstboot` should be disabled.      
+
+**Note:** ruri will not automatically inject args like `systemd.unified_cgroup_hierarchy=1` or `systemd.unified_cgroup_hierarchy=0` `systemd.legacy_systemd_cgroup_controller=1` to init, you should do it yourself if you need.    
 
 ---
 | Option | Description |

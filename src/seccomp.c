@@ -1834,6 +1834,7 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	ruri_check_seccomp_ret(res);
 #endif
 	if (ruri_flag(systemd_init)) {
+		// Kanged from Droidspaces.
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(kexec_load), 0);
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(open_by_handle_at), 0);
@@ -1855,6 +1856,16 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0);
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(settimeofday), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(adjtimex), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clock_settime), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(clock_adjtime), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), seccomp_syscall_resolve_name("clock_settime64"), 0);
 		ruri_check_seccomp_ret(res);
 	}
 	if (ruri_flag(ban_futex_pi)) {
