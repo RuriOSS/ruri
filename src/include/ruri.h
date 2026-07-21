@@ -377,7 +377,7 @@ static inline void *ruri_malloc(size_t size)
 }
 static inline bool ruri_is_android(void)
 {
-	return (ruri_flag(is_termux) || access("/system/bin/getprop", F_OK) == 0);
+	return (ruri_flag(is_termux) || access("/system/build.prop", F_OK) == 0 || access("/system/bin/app_process", F_OK) == 0);
 }
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝

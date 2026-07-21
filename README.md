@@ -261,7 +261,7 @@ License of clang-format config file
 # Also Thanks to:
 - [moby](https://github.com/moby), especially [moby/profiles](https://github.com/moby/profiles) for the seccomp profile.
 - [docker](https://github.com/docker), for default container configuration and many other inspirations.
-
+- [Droidspaces](https://github.com/ravindu644/Droidspaces-OSS), for some environment/target-specific setups.
 
 ---
 
