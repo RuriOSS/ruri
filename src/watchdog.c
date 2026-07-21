@@ -678,8 +678,12 @@ void ruri_setup_tty(void)
 	}
 	// Set the controlling terminal to the slave pty.
 	close(master);
-	setsid();
-	ioctl(slave, TIOCSCTTY, 0);
+	if (setsid() < 0) {
+		ruri_warning("{yellow}setsid() failed QwQ\n");
+	}
+	if (ioctl(slave, TIOCSCTTY, 0) != 0) {
+		ruri_warning("{yellow}TIOCSTTY failed QwQ\n");
+	}
 	dup2(slave, STDIN_FILENO);
 	dup2(slave, STDOUT_FILENO);
 	dup2(slave, STDERR_FILENO);

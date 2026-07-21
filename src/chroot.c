@@ -251,6 +251,20 @@ static void setup_systemd_runtime(struct RURI_CONTAINER *_Nonnull container)
 	}
 	// Setup /etc/machine-id
 	generate_machine_id(container->container_id);
+	mount("/dev/null", "/proc/cmdline", NULL, MS_BIND, NULL);
+	mount(NULL, "/proc/cmdline", NULL, MS_REMOUNT | MS_RDONLY, NULL);
+	// Setup getty.
+	/*
+	int fd = open("/etc/systemd/system/container-console-getty.service", O_RDWR | O_CLOEXEC | O_CREAT, 0644);
+	if (fd > 0) {
+		ftruncate(fd, 0);
+		char *content = "[Unit]\nDescription=Container Console Getty\nAfter=systemd-user-sessions.service\n[Service]\nExecStart=-/sbin/agetty --noclear --noissue /dev/pts/0 38400 vt100\nType=idle\nRestart=always\nRestartSec=0\n\nTTYPath=/dev/console\n\nStandardInput=null\nStandardOutput=null\nStandardError=null\n[Install]\nWantedBy=getty.target\n";
+		write(fd, content, strlen(content));
+		close(fd);
+		mkdir("/etc/systemd/system/getty.target.wants", S_IRWXU | S_IRWXG | S_IRWXO);
+		symlink("/etc/systemd/system/container-console-getty.service", "/etc/systemd/system/getty.target.wants/container-console-getty.service");
+	}
+	*/
 }
 // Run after chroot(2), called by ruri_run_chroot_container().
 static void init_container(struct RURI_CONTAINER *_Nonnull container)
@@ -1224,6 +1238,19 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (container->oom_score_adj != 0) {
 		set_oom_score(container->oom_score_adj);
 	}
+	// Setup tty.
+	if (ruri_flag(new_tty)) {
+		ruri_setup_tty();
+		if (ruri_flag(systemd_init)) {
+			remove("/dev/console");
+			close(open("/dev/console", O_RDWR | O_CLOEXEC | O_CREAT, 0644));
+			mount("/dev/pts/0", "/dev/console", NULL, MS_BIND, NULL);
+			remove("/dev/tty1");
+			close(open("/dev/tty1", O_RDWR | O_CLOEXEC | O_CREAT, 0644));
+			mount("/dev/pts/0", "/dev/tty1", NULL, MS_BIND, NULL);
+			chmod("/dev/pts/0", 0777);
+		}
+	}
 	// Set up Seccomp BPF.
 	if (!ruri_flag(no_seccomp)) {
 		ruri_setup_seccomp(container);
@@ -1261,10 +1288,6 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 	}
 	ruri_profile_log("{green}run_container() to exec(): %lld ns\n", ruri_diff_time());
-	// Setup tty.
-	if (ruri_flag(new_tty)) {
-		ruri_setup_tty();
-	}
 	if (ruri_flag(wait_before_exec)) {
 		ruri_pid_file_write(RURI_PID_FILE_WAIT_EXEC, container->pid_out);
 		// Wait for SIGUSR1 signal before execvp().
