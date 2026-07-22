@@ -814,7 +814,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
 		// Bind mounts apply their extra flags in a remount. A plain
 		// read-write bind mount does not need a second syscall.
-		if (ret == 0 && mountflags_new != 0) {
+		if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 		}
 	}
@@ -838,7 +838,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 			}
 			ruri_log("{base}Bind-mounting as common file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-			if (ret == 0 && mountflags_new != 0) {
+			if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
 				ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 			}
 			return ret;
@@ -869,7 +869,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 			}
 			ruri_log("{base}Bind-mounting as common file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-			if (ret == 0 && mountflags_new != 0) {
+			if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
 				ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 			}
 		}
@@ -881,7 +881,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		}
 		ruri_log("{base}Bind-mounting {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 		ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-		if (ret == 0 && mountflags_new != 0) {
+		if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 		}
 	}
