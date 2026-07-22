@@ -137,11 +137,26 @@ static char *cut_mount_fs_type(const char *_Nonnull source)
 	 *   - "F2FS:"    : Mounts an F2FS filesystem at the target.
 	 *   - "EROFS:"   : Mounts an EROFS filesystem at the target.
 	 */
-	char *fstypes[] = { "OVERLAY:", "TMPFS:", "EXT4:", "FAT32:", "NTFS:", "XFS:", "BTRFS:", "EXFAT:", "F2FS:", "EROFS:" };
+	char *fstypes[] = { "OVERLAY:", "TMPFS:", "EXT4:", "FAT32:", "NTFS:", "XFS:", "EXFAT:", "F2FS:", "EROFS:" };
 	for (int i = 0; i < sizeof(fstypes) / sizeof(fstypes[0]); i++) {
 		if (strncmp(source, fstypes[i], strlen(fstypes[i])) == 0) {
 			return strdup(fstypes[i]);
 		}
+	}
+	if (strncmp(source, "BTRFS::", strlen("BTRFS::")) == 0) {
+		// Find `::`.
+		const char *end = strstr(source + strlen("BTRFS::"), "::");
+		if (end == NULL) {
+			ruri_error("{red}Error: {base}Invalid BTRFS mount source: %s\n", source);
+		}
+		size_t len = end - source + 2; // Include the `::`
+		char *fstype = ruri_malloc(len + 1);
+		strncpy(fstype, source, len);
+		fstype[len] = '\0';
+		return fstype;
+	}
+	if (strncmp(source, "BTRFS:", strlen("BTRFS:")) == 0) {
+		return strdup("BTRFS:");
 	}
 	return NULL;
 }
@@ -470,7 +485,7 @@ static int touch_mountpoint_file(const char *_Nonnull target)
 	}
 	return 0;
 }
-static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull target, const char *_Nonnull fstype, unsigned int mountflags)
+static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull target, const char *_Nonnull fstype, unsigned int mountflags, const char *_Nullable data)
 {
 	/*
 	 * Mounts a filesystem at target with the given source and fstype.
@@ -500,16 +515,16 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 		if (loopfile == NULL) {
 			return -1;
 		}
-		ret = mount(loopfile, target, fstype, mountflags, NULL);
+		ret = mount(loopfile, target, fstype, mountflags, data);
 		if (ret == 0 && (mountflags & MS_RDONLY) != 0) {
-			ret = mount(loopfile, target, fstype, mountflags | MS_REMOUNT, NULL);
+			ret = mount(loopfile, target, fstype, mountflags | MS_REMOUNT, data);
 		}
 		free(loopfile);
 		return ret;
 	}
-	ret = mount(source, target, fstype, mountflags, NULL);
+	ret = mount(source, target, fstype, mountflags, data);
 	if (ret == 0 && (mountflags & MS_RDONLY) != 0) {
-		ret = mount(source, target, fstype, mountflags | MS_REMOUNT, NULL);
+		ret = mount(source, target, fstype, mountflags | MS_REMOUNT, data);
 	}
 	return ret;
 }
@@ -571,7 +586,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 			return -1;
 		}
 		char *ext4_source = strdup(source + strlen("EXT4:"));
-		int ret = mount_as_filesystem(ext4_source, target, "ext4", mountflags);
+		int ret = mount_as_filesystem(ext4_source, target, "ext4", mountflags, NULL);
 		free(ext4_source);
 		return ret;
 	}
@@ -582,7 +597,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 			return -1;
 		}
 		char *fat32_source = strdup(source + strlen("FAT32:"));
-		int ret = mount_as_filesystem(fat32_source, target, "vfat", mountflags);
+		int ret = mount_as_filesystem(fat32_source, target, "vfat", mountflags, NULL);
 		free(fat32_source);
 		return ret;
 	}
@@ -593,7 +608,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 			return -1;
 		}
 		char *ntfs_source = strdup(source + strlen("NTFS:"));
-		int ret = mount_as_filesystem(ntfs_source, target, "ntfs", mountflags);
+		int ret = mount_as_filesystem(ntfs_source, target, "ntfs", mountflags, NULL);
 		free(ntfs_source);
 		return ret;
 	}
@@ -604,7 +619,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 			return -1;
 		}
 		char *xfs_source = strdup(source + strlen("XFS:"));
-		int ret = mount_as_filesystem(xfs_source, target, "xfs", mountflags);
+		int ret = mount_as_filesystem(xfs_source, target, "xfs", mountflags, NULL);
 		free(xfs_source);
 		return ret;
 	}
@@ -614,9 +629,27 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 		if (mk_mountpoint_dir(target) != 0) {
 			return -1;
 		}
-		char *btrfs_source = strdup(source + strlen("BTRFS:"));
-		int ret = mount_as_filesystem(btrfs_source, target, "btrfs", mountflags);
+		char *btrfs_source = NULL;
+		char *btrfs_data = NULL;
+		if (strncmp(source, "BTRFS::", strlen("BTRFS::")) == 0) {
+			// Copy the data after "BTRFS::" to btrfs_data.
+			btrfs_data = strdup(source + strlen("BTRFS::"));
+			// Find the next "::" in btrfs_data.
+			char *next_colon = strstr(btrfs_data, "::");
+			if (next_colon != NULL) {
+				*next_colon = '\0'; // Terminate btrfs_data at the first "::"
+				btrfs_source = strdup(next_colon + 2); // The source is after the first "::"
+			} else {
+				ruri_error("{red}Error: {base}Invalid BTRFS mount source: %s\n", source);
+				free(btrfs_data);
+				return -1;
+			}
+		} else {
+			btrfs_source = strdup(source + strlen("BTRFS:"));
+		}
+		int ret = mount_as_filesystem(btrfs_source, target, "btrfs", mountflags, btrfs_data);
 		free(btrfs_source);
+		free(btrfs_data);
 		return ret;
 	}
 	if (strncmp(source, "EXFAT:", strlen("EXFAT:")) == 0) {
@@ -626,7 +659,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 			return -1;
 		}
 		char *exfat_source = strdup(source + strlen("EXFAT:"));
-		int ret = mount_as_filesystem(exfat_source, target, "exfat", mountflags);
+		int ret = mount_as_filesystem(exfat_source, target, "exfat", mountflags, NULL);
 		free(exfat_source);
 		return ret;
 	}
@@ -637,7 +670,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 			return -1;
 		}
 		char *f2fs_source = strdup(source + strlen("F2FS:"));
-		int ret = mount_as_filesystem(f2fs_source, target, "f2fs", mountflags);
+		int ret = mount_as_filesystem(f2fs_source, target, "f2fs", mountflags, NULL);
 		free(f2fs_source);
 		return ret;
 	}
@@ -648,7 +681,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 			return -1;
 		}
 		char *erofs_source = strdup(source + strlen("EROFS:"));
-		int ret = mount_as_filesystem(erofs_source, target, "erofs", mountflags);
+		int ret = mount_as_filesystem(erofs_source, target, "erofs", mountflags, NULL);
 		free(erofs_source);
 		return ret;
 	}

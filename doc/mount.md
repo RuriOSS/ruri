@@ -43,7 +43,7 @@ Depending on the type of source, different mount strategies are applied:
       ```
       -m NOSUID:NODEV:NOEXEC:TMPFS:size=100M /tmp
       ```
-      *NOTE:* If you mount TMPFS as rootfs, ruri will create a .ruri_wait file in it, you should extract the rootfs to container_dir and then remove the .ruri_wait file, so ruri will continue to run the container. 
+      **NOTE:** If you mount TMPFS as rootfs, ruri will create a .ruri_wait file in it, you should extract the rootfs to container_dir and then remove the .ruri_wait file, so ruri will continue to run the container. 
 
     - **overlayfs**  
       Specify with format:  
@@ -75,6 +75,20 @@ Depending on the type of source, different mount strategies are applied:
         -m EXT4:/dev/sdb1 /mnt/data
         ```
         This mounts `/dev/sdb1` as an ext4 filesystem at `/mnt/data`.
+
+      **NOTE:**
+        For btrfs, you can use two colons to specify additional arguments: `BTRFS::args::[SOURCE]` to specify additional mount options. For example:
+        ```
+        -m BTRFS::subvol=/my_subvolume::/dev/sdb1 /
+        ```
+        A real example is:
+        ```
+        [moe-hacker@fedora ruri]$ sudo ./ruri -m NOATIME:BTRFS::nodatasum,nodatacow,ssd,discard,space_cache=v2,subvolid=261,subvol=/scon/containers/01KS7GR8N0JHVFEXEDVDJCFDAT::/dev/vdb1 /mnt ../ubuntu/
+        root@fedora:~# ls /mnt/rootfs/
+        Applications  Users    afs  boot  etc   lib    media  opt      proc  run   srv  tmp  var
+        Library       Volumes  bin  dev   home  lib64  mnt    private  root  sbin  sys  usr
+        root@fedora:~# 
+        ```
 ## Behavior:
 For image files and block devices, if the filesystem type is not specified in prefix, ruri will attempt to auto-detect the filesystem type by trying all `nodev` filesystems in your `/proc/filesystems`.  
 ## Mount Flags
