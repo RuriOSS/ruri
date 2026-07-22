@@ -71,7 +71,7 @@ int ruri_mkdirs(const char *_Nonnull dir, mode_t mode)
 	}
 	return ret;
 }
-static char *cut_mount_flags(const char *_Nonnull source)
+char *ruri_cut_mount_flags(const char *_Nonnull source)
 {
 	/*
 	 * Cut all mount flags from source, and return the flag.
@@ -95,7 +95,6 @@ static char *cut_mount_flags(const char *_Nonnull source)
 	 *   "LAZYTIME:"    -> MS_LAZYTIME
 	 *   "BIND:"        -> MS_BIND
 	 *
-	 * Fs types:
 	 *
 	 */
 	char *flags[] = { "RDONLY:", "NOSUID:", "NODEV:", "NOEXEC:", "NODIRATIME:", "NOATIME:", "SYNCHRONOUS:", "DIRSYNC:", "MANDLOCK:", "RELATIME:", "SLAVE:", "SHARED:", "PRIVATE:", "UNBINDABLE:", "SILENT:", "POSIXACL:", "LAZYTIME:", "BIND:" };
@@ -154,7 +153,7 @@ void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
 	 */
 	for (int i = 0; container->extra_mountpoint[i] != NULL; i += 2) {
 		char *source = container->extra_mountpoint[i];
-		char *flags = cut_mount_flags(container->extra_mountpoint[i]);
+		char *flags = ruri_cut_mount_flags(container->extra_mountpoint[i]);
 		if (flags) {
 			if (strncmp(source, flags, strlen(flags)) != 0) {
 				ruri_error("{red}Error: Internal error: cut_mount_flags() returned wrong flags for source %s\n", source);
@@ -190,7 +189,7 @@ void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
 	}
 	for (int i = 0; container->extra_ro_mountpoint[i] != NULL; i += 2) {
 		char *source = container->extra_ro_mountpoint[i];
-		char *flags = cut_mount_flags(container->extra_ro_mountpoint[i]);
+		char *flags = ruri_cut_mount_flags(container->extra_ro_mountpoint[i]);
 		if (flags) {
 			if (strncmp(source, flags, strlen(flags)) != 0) {
 				ruri_error("{red}Error: Internal error: cut_mount_flags() returned wrong flags for source %s\n", source);
@@ -233,7 +232,7 @@ void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container)
 	 */
 	if (container->rootfs_source) {
 		char *source = container->rootfs_source;
-		char *flags = cut_mount_flags(container->rootfs_source);
+		char *flags = ruri_cut_mount_flags(container->rootfs_source);
 		if (flags) {
 			if (strncmp(source, flags, strlen(flags)) != 0) {
 				ruri_error("{red}Error: Internal error: cut_mount_flags() returned wrong flags for source %s\n", source);

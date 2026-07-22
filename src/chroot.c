@@ -776,6 +776,31 @@ static void mount_rootfs(const struct RURI_CONTAINER *_Nonnull container)
 		if (ruri_trymount(container->rootfs_source, container->container_dir, 0) != 0) {
 			ruri_error("{red}Error: failed to mount rootfs QwQ\n");
 		}
+		char *mountflag = ruri_cut_mount_flags(container->rootfs_source);
+		char *source = container->rootfs_source;
+		if (mountflag) {
+			source = source + strlen(mountflag);
+			free(mountflag);
+		}
+		if (!strncmp(source, "TMPFS:", strlen("TMPFS:"))) {
+			// Create a .ruri_wait lock file in rootfs.
+			char lock_file[PATH_MAX] = { '\0' };
+			sprintf(lock_file, "%s/.ruri_wait", container->container_dir);
+			int lock_fd = open(lock_file, O_CREAT | O_RDWR | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+			if (lock_fd < 0) {
+				ruri_error("{red}Error: failed to create lock file in rootfs QwQ\n");
+			}
+			// Write pid_out to the lock file.
+			char pid_out[32] = { '\0' };
+			sprintf(pid_out, "%d", container->pid_out);
+			write(lock_fd, pid_out, strlen(pid_out));
+			close(lock_fd);
+			// Loop access() the lock file until it is removed by the container.
+			while (access(lock_file, F_OK) == 0) {
+				// Sleep 0.1s
+				usleep(100000);
+			}
+		}
 	}
 }
 static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)

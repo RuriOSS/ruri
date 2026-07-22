@@ -43,6 +43,7 @@ Depending on the type of source, different mount strategies are applied:
       ```
       -m NOSUID:NODEV:NOEXEC:TMPFS:size=100M /tmp
       ```
+      *NOTE:* If you mount TMPFS as rootfs, ruri will create a .ruri_wait file in it, you should extract the rootfs to container_dir and then remove the .ruri_wait file, so ruri will continue to run the container. 
 
     - **overlayfs**  
       Specify with format:  

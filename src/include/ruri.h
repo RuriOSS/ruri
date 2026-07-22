@@ -379,6 +379,7 @@ static inline bool ruri_is_android(void)
 {
 	return (ruri_flag(is_termux) || access("/system/build.prop", F_OK) == 0 || access("/system/bin/app_process", F_OK) == 0);
 }
+char *ruri_cut_mount_flags(const char *_Nonnull source);
 //   ██╗ ██╗  ███████╗   ████╗   ███████╗
 //  ████████╗ ██╔════╝ ██╔═══██╗ ██╔════╝
 //  ╚██╔═██╔╝ █████╗   ██║   ██║ █████╗
