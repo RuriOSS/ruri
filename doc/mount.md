@@ -22,7 +22,8 @@ Depending on the type of source, different mount strategies are applied:
     If the source is a directory on the host, it will be bind-mounted into the container at the target.
 
 2. **Image File**  
-    If the source is a regular file recognized as a disk image, it will be mounted via a loop device at the target.
+    If the source is a regular file recognized as a disk image, it will be mounted via a loop device at the target.        
+    **NOTE:** You can use `BIND:` prefix to force bind-mounting a regular file instead of trying to mount it as an image.
 
 3. **Block Device**  
     If the source is a block device (e.g., `/dev/sdb1`), it will be mounted directly at the target.
@@ -44,6 +45,20 @@ Depending on the type of source, different mount strategies are applied:
       -m NOSUID:NODEV:NOEXEC:TMPFS:size=100M /tmp
       ```
       **NOTE:** If you mount TMPFS as rootfs, ruri will create a .ruri_wait file in it, you should extract the rootfs to container_dir and then remove the .ruri_wait file, so ruri will continue to run the container. 
+
+      A real example is:
+      ```
+      [moe-hacker@fedora ruri]$ sudo ./ruri -M TMPFS: / --set-flag new_tty ../root
+      // Container is now frozen, and tmpfs is ready in ../root.
+
+      // Then, in another terminal:
+      [moe-hacker@fedora ruri]$ sudo tar -xf ../rootfs.tar.xz -C ../root
+      [moe-hacker@fedora ruri]$ sudo rm ../root/.ruri_wait 
+      
+      // Now, the container will continue to run.
+      [moe-hacker@fedora ruri]$ sudo ./ruri -M TMPFS: / --set-flag new_tty ../root
+      / # 
+      ```
 
     - **overlayfs**  
       Specify with format:  
