@@ -49,6 +49,7 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev, size_t offset)
 		.has_devpts = true,
 		.has_devshm = true,
 		.has_net_tun = true,
+		.has_ntsync=false,
 		// clang-format on
 	};
 	if (req == RURI_QUERY_FLAG) {
@@ -111,6 +112,8 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev, size_t offset)
 			dev_nodes.has_devshm = true;
 		} else if (!strcmp(token, "+net_tun")) {
 			dev_nodes.has_net_tun = true;
+		} else if (!strcmp(token, "+ntsync")) {
+			dev_nodes.has_ntsync = true;
 		}
 		// -dev logic.
 		else if (!strcmp(token, "-console")) {
@@ -139,6 +142,8 @@ bool ruri_dev_nodes(int req, const char *_Nonnull dev, size_t offset)
 			dev_nodes.has_devshm = false;
 		} else if (!strcmp(token, "-net_tun")) {
 			dev_nodes.has_net_tun = false;
+		} else if (!strcmp(token, "-ntsync")) {
+			dev_nodes.has_ntsync = false;
 		}
 		// Unknown device logic.
 		else {
@@ -555,6 +560,17 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		free(flags.new_tty);
 		flags.new_tty = true_or_null(flag + strlen("new_tty"), flag);
 		return flags.new_tty;
+	}
+	if (!strncmp(flag, "create_ntsync_node", strlen("create_ntsync_node"))) {
+		// Update dev_nodes string to include +ntsync or -ntsync.
+		char *enable_ntsync = true_or_null(flag + strlen("create_ntsync_node"), flag);
+		if (enable_ntsync) {
+			ruri_dev_nodes(RURI_SET_FLAG, "+ntsync", 0);
+		} else {
+			ruri_dev_nodes(RURI_SET_FLAG, "-ntsync", 0);
+		}
+		free(enable_ntsync);
+		return NULL;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

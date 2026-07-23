@@ -402,6 +402,30 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		} else {
 			symlink("/dev/null", "/dev/tty");
 		}
+		// ntsync node.
+		if (ruri_has_dev(ntsync)) {
+			int ntsync_maj = 10;
+			int ntsync_min = 241;
+			// Read /sys/class/misc/ntsync/dev for major and minor number.
+			FILE *ntsync_dev_file = fopen("/sys/class/misc/ntsync/dev", "r");
+			if (ntsync_dev_file != NULL) {
+				char dev_str[32];
+				if (fgets(dev_str, sizeof(dev_str), ntsync_dev_file) != NULL) {
+					// Parse major and minor numbers from the string.
+					if (sscanf(dev_str, "%d:%d", &ntsync_maj, &ntsync_min) != 2) {
+						ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to parse /sys/class/misc/ntsync/dev, using default major:minor 10:241.\n");
+					}
+				} else {
+					ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to read /sys/class/misc/ntsync/dev, using default major:minor 10:241.\n");
+				}
+				fclose(ntsync_dev_file);
+			} else {
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to open /sys/class/misc/ntsync/dev, using default major:minor 10:241.\n");
+			}
+			res = mknod("/dev/ntsync", S_IFCHR, makedev(ntsync_maj, ntsync_min));
+			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/ntsync, will continue.\n");
+			chmod("/dev/ntsync", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
+		}
 		// Setup systemd runtime environment
 		if (ruri_flag(systemd_init)) {
 			setup_systemd_runtime(container);

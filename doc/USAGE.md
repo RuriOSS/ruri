@@ -616,6 +616,7 @@ Current supported boolean flags:
 - `ruri_perf`: enable profiling log, only for debugging.
 - `is_termux`: if we are running in termux.
 - `new_tty`: create a new pty in container.
+- `create_ntsync_node`: Will be converted to `dev_nodes=+ntsync`.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.

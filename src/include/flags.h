@@ -101,6 +101,7 @@ struct __attribute__((packed, aligned(1))) RURI_DEV_NODES {
 	bool has_devpts;
 	bool has_devshm;
 	bool has_net_tun;
+	bool has_ntsync;
 };
 // For ruri_feature_flag().
 #define RURI_SET_FLAG (114)
