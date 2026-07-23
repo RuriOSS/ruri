@@ -371,12 +371,48 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 		}
 		// Gunyah and GenieZone nodes.
 		if (ruri_has_dev(gunyah)) {
-			res = mknod("/dev/gunyah", S_IFCHR, makedev(10, 124));
+			int gunyah_maj = 10;
+			int gunyah_min = 124;
+			// Read /sys/class/misc/gunyah/dev for major and minor number.
+			FILE *gunyah_dev_file = fopen("/sys/class/misc/gunyah/dev", "r");
+			if (gunyah_dev_file != NULL) {
+				char dev_str[32];
+				if (fgets(dev_str, sizeof(dev_str), gunyah_dev_file) != NULL) {
+					// Parse major and minor numbers from the string.
+					if (sscanf(dev_str, "%d:%d", &gunyah_maj, &gunyah_min) != 2) {
+						ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to parse /sys/class/misc/gunyah/dev, using default major:minor 10:124.\n");
+					}
+				} else {
+					ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to read /sys/class/misc/gunyah/dev, using default major:minor 10:124.\n");
+				}
+				fclose(gunyah_dev_file);
+			} else {
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to open /sys/class/misc/gunyah/dev, using default major:minor 10:124.\n");
+			}
+			res = mknod("/dev/gunyah", S_IFCHR, makedev(gunyah_maj, gunyah_min));
 			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/gunyah, will continue.\n");
 			chmod("/dev/gunyah", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
 		if (ruri_has_dev(gzvm)) {
-			res = mknod("/dev/gzvm", S_IFCHR, makedev(10, 107));
+			int gzvm_maj = 10;
+			int gzvm_min = 107;
+			// Read /sys/class/misc/gzvm/dev for major and minor number.
+			FILE *gzvm_dev_file = fopen("/sys/class/misc/gzvm/dev", "r");
+			if (gzvm_dev_file != NULL) {
+				char dev_str[32];
+				if (fgets(dev_str, sizeof(dev_str), gzvm_dev_file) != NULL) {
+					// Parse major and minor numbers from the string.
+					if (sscanf(dev_str, "%d:%d", &gzvm_maj, &gzvm_min) != 2) {
+						ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to parse /sys/class/misc/gzvm/dev, using default major:minor 10:107.\n");
+					}
+				} else {
+					ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to read /sys/class/misc/gzvm/dev, using default major:minor 10:107.\n");
+				}
+				fclose(gzvm_dev_file);
+			} else {
+				ruri_warn_on_error(1, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to open /sys/class/misc/gzvm/dev, using default major:minor 10:107.\n");
+			}
+			res = mknod("/dev/gzvm", S_IFCHR, makedev(gzvm_maj, gzvm_min));
 			ruri_warn_on_error(res, 0, !ruri_flag(disable_warnings), "{yellow}Warning: Failed to create /dev/gzvm, will continue.\n");
 			chmod("/dev/gzvm", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		}
