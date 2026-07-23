@@ -155,6 +155,10 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		close(open("./dev/gzvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/gzvm", "./dev/gzvm", NULL, MS_BIND, NULL);
 	}
+	if (ruri_has_dev(ntsync)) {
+		close(open("./dev/ntsync", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
+		mount("/dev/ntsync", "./dev/ntsync", NULL, MS_BIND, NULL);
+	}
 	if (ruri_has_dev(devpts)) {
 		mkdir("./dev/pts", S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP);
 		mount("devpts", "./dev/pts", "devpts", MS_NOSUID | MS_NOEXEC, "newinstance,gid=5,mode=620,ptmxmode=666,max=1024");
