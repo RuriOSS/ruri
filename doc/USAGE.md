@@ -621,8 +621,8 @@ Current supported boolean flags:
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.
 Current supported kv flags:
-- `dev_nodes`: A comma-separated list to override default device nodes in the container. For example, `dev_nodes=+kvm,-full` means create /dev/kvm but disable /dev/full in the container.    
-- `rlimits`: A comma-separated list to set rlimits in the container. For example, `rlimits=nproc:16:32,core:1` means set RLIMIT_NPROC to 16 (soft) and 32 (hard), and set RLIMIT_CORE to 1 (soft) and 1 (hard).
+- `dev_nodes`: A comma-separated list to override default device nodes in the container. For example, `dev_nodes=+kvm,-full` means create /dev/kvm but disable /dev/full in the container. Supported device nodes: `console`, `full`, `null`, `random`, `tty`, `urandom`, `zero`, `devpts`, `devshm`, `net_tun`, `kvm`, `gunyah`, `gzvm`, `ntsync`.
+- `rlimits`: A comma-separated list to set rlimits in the container. For example, `rlimits=nproc:16:32,core:1` means set RLIMIT_NPROC to 16 (soft) and 32 (hard), and set RLIMIT_CORE to 1 (soft) and 1 (hard). Supported rlimits: `as`, `core`, `cpu`, `data`, `fsize`, `locks`, `memlock`, `msgqueue`, `nice`, `nofile`, `nproc`, `rss`, `rtprio`, `rttime`, `sigpending`, `stack`.
 - `outside_rurienv`: Use outside .rurienv file instead of the one in the container. For example, `outside_rurienv=/tmp/rurienv` means use `/tmp/rurienv` instead of `/.rurienv` in the container.
 - `img_sectx`: SELinux context for image file, to fix loop-mount on android.
 

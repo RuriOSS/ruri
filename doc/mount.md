@@ -12,6 +12,24 @@ Ruri supports mounting various types of resources into the container, with advan
 - `-m`: Mount a resource at the specified target path.
 - `-M`: Same as `-m`, but enforces read-only. In the new version, you can also use the `RDONLY:` prefix instead.
 
+For example:
+```
+# Mount the block device /dev/sdb1 at /mnt/disk in the container.
+-m /dev/sdb1 /mnt/disk
+
+# Mount the image file /path/to/image.img at /mnt/image in the container.
+-m /path/to/image.img /mnt/image
+
+# Mount the host directory /path/to/directory at /mnt/dir in the container.
+-m /path/to/directory /mnt/dir
+
+# Mount a tmpfs of size 100M at /tmp in the container.
+-m TMPFS:size=100M /tmp
+
+# Mount an overlay filesystem at /mnt/overlay in the container.
+-m OVERLAY:lowerdir=/path/to/lower,upperdir=/path/to/upper,workdir=/path/to/work /mnt/overlay
+```
+
 The target path is always interpreted relative to the container's filesystem (not the host). If the target does not exist in the container, it will be created automatically.
 
 ## Source Types
