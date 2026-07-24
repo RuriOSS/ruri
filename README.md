@@ -126,6 +126,8 @@ See [USAGE](doc/USAGE.md) to explore all features of ruri.
 See [USAGE](doc/USAGE.md) to explore all features of ruri.         
 # FULL USAGE:
 See [USAGE](doc/USAGE.md) to explore all features of ruri.         
+# NOTE:
+The full usage is too long, so maybe you need to throw it to LLMs and let them explain it to you. See [Asking LLM](doc/askllm.md) for how to ask LLM about ruri.                  
 # FAQ
 [FAQ](doc/FAQ.md)        
 # Container Security
