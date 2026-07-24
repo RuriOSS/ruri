@@ -70,7 +70,7 @@ Here's my honest and blunt bottom line ~~(我给你最直白最不绕弯子的�
   - Your device is not supported by Droidspaces, or you don't want to flash a custom kernel.
   - You just want to run some headless containers like some docker-images.
   - You are GNU/Linux user and just need a better chroot.
-  - You are writing some custom CI/CD scripts *(Maybe you need to lock the source code).
+  - You are writing some custom CI/CD scripts *(Maybe you need to lock the source to a specific commit).
   - ~~(Maybe) You are learning Linux container implementation and want to see how it works.~~
 - Use Droidspaces when:
   - Your kernel supports it.
