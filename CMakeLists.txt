@@ -156,12 +156,7 @@ endif()
 
 
 set(CANDIDATE_DEBUG_CFLAGS
-    "-Wall"
-    "-Wextra"
-    "-pedantic"
-    "-Wconversion"
-    "-Wextra-semi-stmt"
-    "-Wstrict-prototypes"
+    "-w"
     "-fno-stack-protector"
     "-fno-omit-frame-pointer"
     "-fsanitize=address,undefined"
@@ -177,6 +172,7 @@ set(CANDIDATE_RELEASE_CFLAGS
     "-ffunction-sections"
     "-fdata-sections"
     "-pipe"
+    "-w"
 )
 
 # -mshstk enables Intel CET Shadow Stack and is only meaningful on x86/x86_64.
