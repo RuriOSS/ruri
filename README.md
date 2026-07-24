@@ -26,18 +26,6 @@
 * This program has no Super Cow Powers.
 ```
 
->[!NOTE]
->Some people are saying, "Oh, they canceled v3.9.4. They weren't ready for such a huge release." Wrong. Totally wrong.
->
->Yes, a few unstable commits made their way into the branch. It happens. But our developers and CI caught the issues immediately. Nobody catches bugs faster than we do. We found them, fixed them, and fixed them fast.
->
->Ability means nothing without stability. We ship quality. That's what we do.
->
->So instead of rushing out v3.9.4, we're bringing you something even better: a stronger, more stable v3.9.5 with better extensibility.
->
->v3.9.5 is coming. We're going to WIN AGAIN! [#MakeRuriGreatAgain](https://m.youtube.com/watch?v=dQw4w9WgXcQ)
-
-
 # About:
 &emsp;Not "Why not docker", but "When cannot docker".    
 &emsp;ruri is pronounced as `lyoli`, or you can call it `[瑠璃/琉璃]` ~~(るり)~~ in Chinese or Japanese as well.    
@@ -57,6 +45,70 @@
 - Lifecycle tracking, `--pid-file` will record the whole lifecycle of container.
 - Statically linked binaries for many architectures.
 - Very small binary size (even <200k with upx), yet over 40 options.
+
+# ruri vs the alternatives:
+Here's my honest and blunt bottom line ~~(我给你最直白最不绕弯子的结论):~~
+- Use chroot when:
+  - You are a developer and need a very stable implementation.
+  - You just need a simple full-privilege environment ~~(we often don't think chroot is container).~~
+  - ~~You are old-school and like to write the script yourself.~~
+- Use PRoot when:
+  - You don't have root privileges.
+  - ~~You think that proot is more secure(even I can't agree that).~~
+  - ~~Maybe you don't care about performance.~~
+- Use bubblewrap when:
+  - You're GNU/Linux user.
+  - Your kernel supports it.
+  - You need a stable and secure sandbox.
+- Use Docker/LXC when:
+  - Your kernel supports it.
+  - You need a industry-grade container solution.
+  - You are geek, just like to do some cool things on android (yes, me too).
+  - ~~To be honest, they are not very stable on android.~~
+- Use ruri when:
+  - You have only root privileges, without other kernel features.
+  - Your device is not supported by Droidspaces, or you don't want to flash a custom kernel.
+  - You just want to run some headless containers like some docker-images.
+  - You are GNU/Linux user and just need a better chroot.
+  - You are writing some custom CI/CD scripts *(Maybe you need to lock the source code).
+  - ~~(Maybe) You are learning Linux container implementation and want to see how it works.~~
+- Use Droidspaces when:
+  - Your kernel supports it.
+  - Your device supports GKI and building/flashing a custom kernel is easy.
+  - You need better init support, especially systemd.
+  - You need better GUI support and Android-specific optimizations.
+  - You need network isolation.
+  - You need hardware access for containers.
+  - You need better support for cgroups.
+  - ~~You don't want to be ruri's tester TwT~~
+
+Here's the thing ~~(我直接给你结论):~~
+```
+Android
+├── No root
+│   └── PRoot
+│
+└── Root
+    │
+    ├── Limited kernel features
+    │   └── ruri
+    │
+    └── Namespaces + cgroups support
+        │
+        ├── Standard Linux container
+        │   └── Docker/LXC
+        │
+        └── Android-optimized container
+            │
+            ├── CLI/headless
+            │   └── ruri
+            │
+            └── GUI/systemd/hardware
+                └── Droidspaces
+```
+
+As ruri is still in development, and we don't have many users yet, when you have any issues, please report, and we'll be happy to get your feedback :>    
+So, let's [#MakeRuriGreatAgain](https://m.youtube.com/watch?v=dQw4w9WgXcQ)
 
 # AVF, when?
 ruri is not a vm tool, but you can just use it as super chroot to enter your target rootfs image, this is very useful when building/repairing your rootfs images.      
