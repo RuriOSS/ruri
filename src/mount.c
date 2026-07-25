@@ -419,6 +419,60 @@ static char *losetup(const char *_Nonnull img, const char *_Nullable part)
 	 * We return the loopfile we get for losetup,
 	 * so that we can use the return value to mount the image.
 	 */
+	static thread_local char *img_cache[128] = { NULL };
+	static thread_local int loopfile_cache[128] = { -1 };
+	// Search cached loopfile for img.
+	if (part) {
+		for (int i = 0; i < 128; i++) {
+			if (img_cache[i] == NULL) {
+				break;
+			}
+			if (strcmp(img_cache[i], img) == 0) {
+				// Now we have a X in loopfile_cache[i],
+				// Try 3 times to access /dev/loopX{part} or /dev/block/loopX{part}.
+				for (int j = 0; j < 3; j++) {
+					char partfile[PATH_MAX];
+					memset(partfile, 0, PATH_MAX);
+					sprintf(partfile, "/dev/loop%d%s", loopfile_cache[i], part);
+					if (access(partfile, F_OK) == 0) {
+						char *loopfile = ruri_malloc(PATH_MAX);
+						memset(loopfile, 0, PATH_MAX);
+						sprintf(loopfile, "/dev/loop%d%s", loopfile_cache[i], part);
+						return loopfile;
+					}
+					memset(partfile, 0, PATH_MAX);
+					sprintf(partfile, "/dev/block/loop%d%s", loopfile_cache[i], part);
+					if (access(partfile, F_OK) == 0) {
+						char *loopfile = ruri_malloc(PATH_MAX);
+						memset(loopfile, 0, PATH_MAX);
+						sprintf(loopfile, "/dev/block/loop%d%s", loopfile_cache[i], part);
+						return loopfile;
+					}
+					usleep(100000);
+				}
+				// If we still can't find the partfile, create one.
+				char sysfs_dev_path[PATH_MAX];
+				sprintf(sysfs_dev_path, "/sys/class/block/loop%d%s/dev", loopfile_cache[i], part);
+				// Read major:minor from sysfs.
+				int maj, min;
+				FILE *fp = fopen(sysfs_dev_path, "r");
+				if (!fp) {
+					ruri_error("{red}Failed to open %s QwQ\n", sysfs_dev_path);
+				}
+				if (fscanf(fp, "%d:%d", &maj, &min) != 2) {
+					fclose(fp);
+					return NULL;
+				}
+				fclose(fp);
+				// mknod the partfile.
+				char *partfile = ruri_malloc(PATH_MAX);
+				sprintf(partfile, "/dev/loop%d%s", loopfile_cache[i], part);
+				mknod(partfile, S_IFBLK | 0660, makedev(maj, min));
+				return partfile;
+			}
+		}
+	}
+	//
 	// Get a new loopfile for losetup.
 	int loopctlfd = open("/dev/loop-control", O_RDWR | O_CLOEXEC);
 	if (loopctlfd < 0) {
@@ -493,6 +547,8 @@ static char *losetup(const char *_Nonnull img, const char *_Nullable part)
 		}
 		// sleep 0.03s.
 		usleep(30000);
+		free(loopfile);
+		loopfile = NULL;
 		// Wait 3 times for /dev/loop{devnr}{part} or /dev/block/loop{devnr}{part} to appear.
 		for (int i = 0; i < 3; i++) {
 			char partfile[PATH_MAX];
@@ -516,28 +572,40 @@ static char *losetup(const char *_Nonnull img, const char *_Nullable part)
 			}
 			usleep(100000);
 		}
-		// If we still can't find the partfile, create one.
-		char sysfs_dev_path[PATH_MAX];
-		sprintf(sysfs_dev_path, "/sys/class/block/loop%d%s/dev", devnr, part);
-		// Read major:minor from sysfs.
-		int maj, min;
-		FILE *fp = fopen(sysfs_dev_path, "r");
-		if (!fp) {
-			ruri_error("{red}Failed to open %s QwQ\n", sysfs_dev_path);
-		}
-		if (fscanf(fp, "%d:%d", &maj, &min) != 2) {
-			fclose(fp);
+		if (!loopfile) {
+			// If we still can't find the partfile, create one.
+			char sysfs_dev_path[PATH_MAX];
+			sprintf(sysfs_dev_path, "/sys/class/block/loop%d%s/dev", devnr, part);
+			// Read major:minor from sysfs.
+			int maj, min;
+			FILE *fp = fopen(sysfs_dev_path, "r");
+			if (!fp) {
+				ruri_error("{red}Failed to open %s QwQ\n", sysfs_dev_path);
+			}
+			if (fscanf(fp, "%d:%d", &maj, &min) != 2) {
+				fclose(fp);
+				free(loopfile);
+				close(loopfd);
+				close(imgfd);
+				return NULL;
+			}
+			// mknod the partfile.
+			char *partfile = ruri_malloc(PATH_MAX);
+			sprintf(partfile, "/dev/loop%d%s", devnr, part);
+			mknod(partfile, S_IFBLK | 0660, makedev(maj, min));
 			free(loopfile);
-			close(loopfd);
-			close(imgfd);
-			return NULL;
+			loopfile = partfile;
 		}
-		// mknod the partfile.
-		char *partfile = ruri_malloc(PATH_MAX);
-		sprintf(partfile, "/dev/loop%d%s", devnr, part);
-		mknod(partfile, S_IFBLK | 0660, makedev(maj, min));
-		free(loopfile);
-		loopfile = partfile;
+		// Record the img and loopfile in cache.
+		for (int i = 0; i < 128; i++) {
+			if (img_cache[i] == NULL) {
+				img_cache[i] = strdup(img);
+				img_cache[i + 1] = NULL;
+				loopfile_cache[i] = devnr;
+				loopfile_cache[i + 1] = -1;
+				break;
+			}
+		}
 	}
 	close(loopfd);
 	close(imgfd);

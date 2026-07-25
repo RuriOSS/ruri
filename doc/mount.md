@@ -135,6 +135,15 @@ Depending on the type of source, different mount strategies are applied:
       ```
       -m EXT4:LOOP::p1::/path/to/image.img /mnt/image
       ```
+      A real example is:
+      ```
+      [moe-hacker@fedora ruri]$ sudo ./ruri -m LOOP::p2::../test.img / -m LOOP::p1::../test.img /mnt --set-flag new_tty ../root
+      / # mount|grep loop
+      /dev/loop4p2 on / type ext4 (rw,relatime)
+      /dev/loop4p1 on /mnt type ext4 (rw,relatime)
+      /dev/loop4p2 on /.rurienv type ext4 (ro,relatime)
+      / #
+      ``` 
 
 ## Behavior:
 For image files and block devices, if the filesystem type is not specified in prefix, ruri will attempt to auto-detect the filesystem type by trying all `nodev` filesystems in your `/proc/filesystems`.  
