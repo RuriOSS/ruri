@@ -806,7 +806,7 @@ char *k2v3_open_file(const char *_Nonnull path, off_t limit)
 		close(fd);
 		return k2v3_open_file_fallback(path, limit);
 	}
-	((char *)buf)[read_size] = '\0';
+	((char *)buf)[ret] = '\0';
 	if (strlen(buf) != (size_t)read_size) {
 		k2v3_warning("File size changed during read. This file will be ignored.");
 		free(buf);
