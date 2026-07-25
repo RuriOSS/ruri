@@ -122,6 +122,20 @@ Depending on the type of source, different mount strategies are applied:
         Library       Volumes  bin  dev   home  lib64  mnt    private  root  sbin  sys  usr
         root@fedora:~# 
         ```
+    - **LOOP image**
+      You can mount a loop image with specified partition by using the format:  
+      ```
+      LOOP::[partition]::[source]
+      ```
+      for example:
+      ```
+      -m LOOP::p1::/path/to/image.img /mnt/image
+      ```
+      And, LOOP:: prefix can also be used after the filesystem type prefix, for example:
+      ```
+      -m EXT4:LOOP::p1::/path/to/image.img /mnt/image
+      ```
+
 ## Behavior:
 For image files and block devices, if the filesystem type is not specified in prefix, ruri will attempt to auto-detect the filesystem type by trying all `nodev` filesystems in your `/proc/filesystems`.  
 ## Mount Flags

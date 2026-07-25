@@ -160,6 +160,23 @@ static char *cut_mount_fs_type(const char *_Nonnull source)
 	}
 	return NULL;
 }
+static char *cut_loop_prefix(const char *_Nonnull source)
+{
+	// Cut LOOP::pX:: prefix, and return the prefix.
+	// If not found, return NULL.
+	char *ret = NULL;
+	if (strncmp(source, "LOOP::", strlen("LOOP::")) == 0) {
+		const char *end = strstr(source + strlen("LOOP::"), "::");
+		if (end == NULL) {
+			ruri_error("{red}Error: {base}Invalid LOOP mount source: %s\n", source);
+		}
+		size_t len = end - source + 2; // Include the `::`
+		ret = ruri_malloc(len + 1);
+		strncpy(ret, source, len);
+		ret[len] = '\0';
+	}
+	return ret;
+}
 void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
 {
 	/*
@@ -188,19 +205,28 @@ void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
 				continue;
 			}
 		}
+		char *loop_prefix = cut_loop_prefix(source);
+		if (loop_prefix) {
+			if (strncmp(source, loop_prefix, strlen(loop_prefix)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_loop_prefix() returned wrong prefix for source %s\n", source);
+			}
+			source += strlen(loop_prefix);
+		}
 		char *abs_source = realpath(source, NULL);
 		if (!abs_source) {
 			ruri_error("{red}Error: realpath() failed for source %s\n", source);
 		}
-		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(loop_prefix ? loop_prefix : "") + strlen(abs_source) + 1);
 		strcpy(new_source, flags ? flags : "");
 		strcat(new_source, fstype ? fstype : "");
+		strcat(new_source, loop_prefix ? loop_prefix : "");
 		strcat(new_source, abs_source);
 		free(abs_source);
 		free(container->extra_mountpoint[i]);
 		container->extra_mountpoint[i] = new_source;
 		free(fstype);
 		free(flags);
+		free(loop_prefix);
 	}
 	for (int i = 0; container->extra_ro_mountpoint[i] != NULL; i += 2) {
 		char *source = container->extra_ro_mountpoint[i];
@@ -224,19 +250,28 @@ void ruri_convert_mountpoints_to_absolute(struct RURI_CONTAINER *container)
 				continue;
 			}
 		}
+		char *loop_prefix = cut_loop_prefix(source);
+		if (loop_prefix) {
+			if (strncmp(source, loop_prefix, strlen(loop_prefix)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_loop_prefix() returned wrong prefix for source %s\n", source);
+			}
+			source += strlen(loop_prefix);
+		}
 		char *abs_source = realpath(source, NULL);
 		if (!abs_source) {
 			ruri_error("{red}Error: realpath() failed for source %s\n", source);
 		}
-		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(loop_prefix ? loop_prefix : "") + strlen(abs_source) + 1);
 		strcpy(new_source, flags ? flags : "");
 		strcat(new_source, fstype ? fstype : "");
+		strcat(new_source, loop_prefix ? loop_prefix : "");
 		strcat(new_source, abs_source);
 		free(abs_source);
 		free(container->extra_ro_mountpoint[i]);
 		container->extra_ro_mountpoint[i] = new_source;
 		free(fstype);
 		free(flags);
+		free(loop_prefix);
 	}
 }
 void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container)
@@ -267,19 +302,28 @@ void ruri_convert_rootfs_source_to_absolute(struct RURI_CONTAINER *container)
 				return;
 			}
 		}
+		char *loop_prefix = cut_loop_prefix(source);
+		if (loop_prefix) {
+			if (strncmp(source, loop_prefix, strlen(loop_prefix)) != 0) {
+				ruri_error("{red}Error: Internal error: cut_loop_prefix() returned wrong prefix for source %s\n", source);
+			}
+			source += strlen(loop_prefix);
+		}
 		char *abs_source = realpath(source, NULL);
 		if (!abs_source) {
 			ruri_error("{red}Error: realpath() failed for source %s\n", source);
 		}
-		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(abs_source) + 1);
+		char *new_source = ruri_malloc(strlen(flags ? flags : "") + strlen(fstype ? fstype : "") + strlen(loop_prefix ? loop_prefix : "") + strlen(abs_source) + 1);
 		strcpy(new_source, flags ? flags : "");
 		strcat(new_source, fstype ? fstype : "");
+		strcat(new_source, loop_prefix ? loop_prefix : "");
 		strcat(new_source, abs_source);
 		free(abs_source);
 		free(container->rootfs_source);
 		container->rootfs_source = new_source;
 		free(fstype);
 		free(flags);
+		free(loop_prefix);
 	}
 }
 // Mount disk device.
@@ -369,7 +413,7 @@ static int get_loop_nr(int devnr)
 	return atoi(strchr(buf, ':') + 1);
 }
 // Same as `losetup` command.
-static char *losetup(const char *_Nonnull img)
+static char *losetup(const char *_Nonnull img, const char *_Nullable part)
 {
 	/*
 	 * We return the loopfile we get for losetup,
@@ -390,8 +434,8 @@ static char *losetup(const char *_Nonnull img)
 		close(loopctlfd);
 		return NULL;
 	}
-	// Sleep 0.2s to wait udev.
-	usleep(200000);
+	// Sleep 0.05s to wait udev.
+	usleep(50000);
 	close(loopctlfd);
 	char *loopfile = ruri_malloc(PATH_MAX);
 	memset(loopfile, 0, PATH_MAX);
@@ -417,8 +461,8 @@ static char *losetup(const char *_Nonnull img)
 		}
 		// Just mknod it.
 		mknod(loopfile, S_IFBLK | 0660, makedev(7, nr_to_mknod));
-		// Sleep 0.1s.
-		usleep(100000);
+		// Sleep 0.03s.
+		usleep(30000);
 		loopfd = open(loopfile, O_RDWR | O_CLOEXEC);
 		if (loopfd < 0) {
 			free(loopfile);
@@ -436,6 +480,64 @@ static char *losetup(const char *_Nonnull img)
 		close(loopfd);
 		close(imgfd);
 		return NULL;
+	}
+	if (part) {
+		struct loop_info64 info;
+		memset(&info, 0, sizeof(info));
+		info.lo_flags = LO_FLAGS_PARTSCAN;
+		if (ioctl(loopfd, LOOP_SET_STATUS64, &info) == -1) {
+			free(loopfile);
+			close(loopfd);
+			close(imgfd);
+			return NULL;
+		}
+		// sleep 0.03s.
+		usleep(30000);
+		// Wait 3 times for /dev/loop{devnr}{part} or /dev/block/loop{devnr}{part} to appear.
+		for (int i = 0; i < 3; i++) {
+			char partfile[PATH_MAX];
+			memset(partfile, 0, PATH_MAX);
+			sprintf(partfile, "/dev/loop%d%s", devnr, part);
+			if (access(partfile, F_OK) == 0) {
+				free(loopfile);
+				loopfile = ruri_malloc(PATH_MAX);
+				memset(loopfile, 0, PATH_MAX);
+				sprintf(loopfile, "/dev/loop%d%s", devnr, part);
+				break;
+			}
+			memset(partfile, 0, PATH_MAX);
+			sprintf(partfile, "/dev/block/loop%d%s", devnr, part);
+			if (access(partfile, F_OK) == 0) {
+				free(loopfile);
+				loopfile = ruri_malloc(PATH_MAX);
+				memset(loopfile, 0, PATH_MAX);
+				sprintf(loopfile, "/dev/block/loop%d%s", devnr, part);
+				break;
+			}
+			usleep(100000);
+		}
+		// If we still can't find the partfile, create one.
+		char sysfs_dev_path[PATH_MAX];
+		sprintf(sysfs_dev_path, "/sys/class/block/loop%d%s/dev", devnr, part);
+		// Read major:minor from sysfs.
+		int maj, min;
+		FILE *fp = fopen(sysfs_dev_path, "r");
+		if (!fp) {
+			ruri_error("{red}Failed to open %s QwQ\n", sysfs_dev_path);
+		}
+		if (fscanf(fp, "%d:%d", &maj, &min) != 2) {
+			fclose(fp);
+			free(loopfile);
+			close(loopfd);
+			close(imgfd);
+			return NULL;
+		}
+		// mknod the partfile.
+		char *partfile = ruri_malloc(PATH_MAX);
+		sprintf(partfile, "/dev/loop%d%s", devnr, part);
+		mknod(partfile, S_IFBLK | 0660, makedev(maj, min));
+		free(loopfile);
+		loopfile = partfile;
 	}
 	close(loopfd);
 	close(imgfd);
@@ -501,17 +603,49 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 	 *   - 0 on success.
 	 *   - -1 on failure.
 	 */
+	char *loop_part = NULL;
+	char *real_source = strdup(source);
+	if (strncmp(source, "LOOP::", strlen("LOOP::")) == 0) {
+		// Format:
+		// LOOP::part::source.
+		// So we cut part and source from the string.
+		char *part = NULL;
+		char *loop_source = NULL;
+		char *source_copy = strdup(source + strlen("LOOP::"));
+		char *first_colon = strstr(source_copy, "::");
+		if (first_colon) {
+			*first_colon = '\0';
+			part = strdup(source_copy);
+			free(real_source);
+			real_source = strdup(first_colon + 2);
+			loop_part = part;
+		} else {
+			ruri_error("{red}Error: {base}Invalid LOOP mount source: %s\n", source);
+			free(source_copy);
+			return -1;
+		}
+		free(source_copy);
+		if (ruri_is_android()) {
+			char *selinux_label = "u:object_r:media_rw_data_file:s0";
+			if (ruri_flag(img_sectx)) {
+				selinux_label = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, img_sectx));
+			}
+			setxattr(real_source, "security.selinux", selinux_label, strlen(selinux_label), 0);
+		}
+	}
 	struct stat dev_stat;
 	// Check if source exists.
-	if (lstat(source, &dev_stat) != 0) {
-		ruri_warn_on_error(1, 0, true, "{red}Error: {base}Source {cyan}%s{base} does not exist.\n", source);
+	if (lstat(real_source, &dev_stat) != 0) {
+		ruri_warn_on_error(1, 0, true, "{red}Error: {base}Source {cyan}%s{base} does not exist.\n", real_source);
+		free(real_source);
 		return -1;
 	}
 	ruri_log("{base}Mounting {cyan}%s{base} to {cyan}%s{base} with fstype {cyan}%s{base} and flags {cyan}%d{base}\n", source, target, fstype, mountflags);
 	int ret = 0;
 	// If source is not a block device, losetup it.
 	if (!S_ISBLK(dev_stat.st_mode)) {
-		char *loopfile = losetup(source);
+		// losetup the source and mount it.
+		char *loopfile = losetup(real_source, loop_part);
 		if (loopfile == NULL) {
 			return -1;
 		}
@@ -520,12 +654,14 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 			ret = mount(loopfile, target, fstype, mountflags | MS_REMOUNT, data);
 		}
 		free(loopfile);
+		free(real_source);
 		return ret;
 	}
-	ret = mount(source, target, fstype, mountflags, data);
+	ret = mount(real_source, target, fstype, mountflags, data);
 	if (ret == 0 && (mountflags & MS_RDONLY) != 0) {
-		ret = mount(source, target, fstype, mountflags | MS_REMOUNT, data);
+		ret = mount(real_source, target, fstype, mountflags | MS_REMOUNT, data);
 	}
+	free(real_source);
 	return ret;
 }
 static int mount_other_type(const char *_Nonnull source, const char *_Nonnull target, unsigned int mountflags)
@@ -544,6 +680,7 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 	 *   - "EXFAT:"   : Mounts an exFAT filesystem at the target.
 	 *   - "F2FS:"    : Mounts an F2FS filesystem at the target.
 	 *   - "EROFS:"   : Mounts an EROFS filesystem at the target.
+	 *   - "LOOP:"    : losetup() and mount an image.
 	 *
 	 * Parameters:
 	 *   - source:     The source string with a filesystem type prefix (e.g., "EXT4:/dev/sda1").
@@ -684,6 +821,39 @@ static int mount_other_type(const char *_Nonnull source, const char *_Nonnull ta
 		int ret = mount_as_filesystem(erofs_source, target, "erofs", mountflags, NULL);
 		free(erofs_source);
 		return ret;
+	}
+	if (strncmp(source, "LOOP::", strlen("LOOP::")) == 0) {
+		// Format:
+		// LOOP::part::source.
+		// So we cut part and source from the string.
+		char *part = NULL;
+		char *loop_source = NULL;
+		char *source_copy = strdup(source + strlen("LOOP::"));
+		char *first_colon = strstr(source_copy, "::");
+		if (first_colon) {
+			*first_colon = '\0';
+			part = strdup(source_copy);
+			loop_source = strdup(first_colon + 2);
+		} else {
+			ruri_error("{red}Error: {base}Invalid LOOP mount source: %s\n", source);
+			free(source_copy);
+			return -1;
+		}
+		free(source_copy);
+		if (ruri_is_android()) {
+			char *selinux_label = "u:object_r:media_rw_data_file:s0";
+			if (ruri_flag(img_sectx)) {
+				selinux_label = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, img_sectx));
+			}
+			setxattr(loop_source, "security.selinux", selinux_label, strlen(selinux_label), 0);
+		}
+		char *loopfile = losetup(loop_source, part);
+		free(loop_source);
+		free(part);
+		if (!loopfile) {
+			return -1;
+		}
+		return mount_device(loopfile, target, mountflags);
 	}
 	// For source that cannot be mounted.
 	return -1;
@@ -856,7 +1026,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 			setxattr(source, "security.selinux", selinux_label, strlen(selinux_label), 0);
 		}
 		ruri_log("{base}Mounting as image file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
-		char *loopfile = losetup(source);
+		char *loopfile = losetup(source, NULL);
 		if (!loopfile) {
 			return -1;
 		}
