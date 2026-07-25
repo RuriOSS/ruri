@@ -823,7 +823,7 @@ static void setup_binfmt_misc(const struct RURI_CONTAINER *_Nonnull container)
 	// Umount the apifs, as we don't need it anymore and it can cause security issues.
 	umount2("/proc/sys/fs/binfmt_misc", MNT_DETACH | MNT_FORCE);
 }
-static void mount_rootfs(const struct RURI_CONTAINER *_Nonnull container)
+static void mount_rootfs(struct RURI_CONTAINER *_Nonnull container)
 {
 	/*
 	 * Mount rootfs of container.
@@ -861,6 +861,8 @@ static void mount_rootfs(const struct RURI_CONTAINER *_Nonnull container)
 				usleep(100000);
 			}
 		}
+		container->ns_pid = container->pid_out;
+		ruri_store_info(container);
 	}
 }
 static void mount_mountpoints(const struct RURI_CONTAINER *_Nonnull container)

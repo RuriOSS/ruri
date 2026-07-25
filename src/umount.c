@@ -122,9 +122,6 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 		if (snprintf(infofile, sizeof(infofile), "%s/.rurienv", container_dir) >= (int)sizeof(infofile)) {
 			ruri_error("{red}Error: container directory path is too long QwQ\n");
 		}
-		// Umount container_dir.
-		umount2(container_dir, MNT_DETACH | MNT_FORCE);
-		umount2(container_dir, MNT_DETACH | MNT_FORCE);
 		// Umount .rurienv file.
 		umount2(infofile, MNT_DETACH | MNT_FORCE);
 		umount2(infofile, MNT_DETACH | MNT_FORCE);
@@ -146,6 +143,10 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 		ftruncate(ruri_env_fd(-1), 0);
 		lseek(ruri_env_fd(-1), 0, SEEK_SET);
 	}
+	// Umount container_dir.
+	umount2(container_dir, MNT_DETACH | MNT_FORCE);
+	umount2(container_dir, MNT_DETACH | MNT_FORCE);
+	umount2(container_dir, MNT_DETACH | MNT_FORCE);
 	// Create a `.ruri_umounted` file.
 	char umounted_file[PATH_MAX] = { '\0' };
 	if (snprintf(umounted_file, sizeof(umounted_file), "%s/.ruri_umounted", container_dir) >= (int)sizeof(umounted_file)) {
