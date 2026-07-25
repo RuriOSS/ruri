@@ -113,13 +113,14 @@ So, let's [#MakeRuriGreatAgain](https://m.youtube.com/watch?v=dQw4w9WgXcQ)
 # AVF, when?
 ruri is not a vm tool, but you can just use it as super chroot to enter your target rootfs image, this is very useful when building/repairing your rootfs images.      
 ```
-~ $ sudo ./ruri/ruri --no-rurienv --set-flag new_tty -m ./alpine.img / ./vm
+# ./ruri -m LOOP::p2::/data/local/tmp/test.img / --set-flag new_tty ../vm
 / # ls
-bin      home     media    proc     sbin     tmp
-dev      init.sh  mnt      root     srv      usr
-etc      lib      opt      run      sys      var
+bin         home        media       proc        sbin        tmp
+dev         lib         mnt         root        srv         usr
+etc         lost+found  opt         run         sys         var
 / #
 ```
+(LOOP::p2:: means the second partition of the loop image).     
 # FULL USAGE:
 See [USAGE](doc/USAGE.md) to explore all features of ruri.         
 # FULL USAGE:
