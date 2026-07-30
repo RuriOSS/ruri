@@ -96,7 +96,7 @@ jobs:
 
           case "$ARCHITECTURE" in
             x86_64|x86)
-              sudo ../ruri --set-flag no_seccomp ./$ARCHITECTURE /bin/sh /build.sh
+              sudo ../ruri ./$ARCHITECTURE /bin/sh /build.sh
               ;;
             aarch64|armhf|ppc64le|armv7|riscv64|s390x|loongarch64)
               if [ "$ARCHITECTURE" = "armv7" ]; then

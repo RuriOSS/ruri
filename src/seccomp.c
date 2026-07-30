@@ -230,6 +230,51 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	// Fix priority issue of seccomp filter.
 	// On Termux, without this, ban_setuid will not work.
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2);
+	// Add architectures.
+	switch (seccomp_arch_native()) {
+	case SCMP_ARCH_X86_64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_X86);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_X32);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_AARCH64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_ARM);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPS64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS64N32);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPS64N32:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS64);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPSEL64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64N32);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPSEL64N32:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_S390X:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_S390);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_PPC64LE:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_PPC);
+		ruri_check_seccomp_ret(res);
+		break;
+	}
 	// Deny user-defined syscalls.
 	for (int i = 0; container->seccomp_denied_syscall[i] != NULL; i++) {
 		int syscall_nr = seccomp_syscall_resolve_name(container->seccomp_denied_syscall[i]);
@@ -1302,6 +1347,51 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// Fix priority issue of seccomp filter.
 	// On Termux, without this, ban_setuid will not work.
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2);
+	// Add architectures.
+	switch (seccomp_arch_native()) {
+	case SCMP_ARCH_X86_64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_X86);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_X32);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_AARCH64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_ARM);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPS64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS64N32);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPS64N32:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPS64);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPSEL64:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64N32);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_MIPSEL64N32:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_S390X:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_S390);
+		ruri_check_seccomp_ret(res);
+		break;
+	case SCMP_ARCH_PPC64LE:
+		res = seccomp_arch_add(ctx, SCMP_ARCH_PPC);
+		ruri_check_seccomp_ret(res);
+		break;
+	}
 	// Deny user-defined syscalls.
 	for (int i = 0; container->seccomp_denied_syscall[i] != NULL; i++) {
 		int syscall_nr = seccomp_syscall_resolve_name(container->seccomp_denied_syscall[i]);
