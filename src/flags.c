@@ -241,6 +241,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		.is_termux=NULL,
 		.img_sectx=NULL,
 		.new_tty=NULL,
+		.ban_setuid=NULL,
 	};
 	// clang-format on
 	if (req == RURI_QUERY_FLAG) {
@@ -571,6 +572,15 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		}
 		free(enable_ntsync);
 		return NULL;
+	}
+	if (!strncmp(flag, "ban_setuid=", strlen("ban_setuid="))) {
+		free(flags.ban_setuid);
+		if (strlen(flag) == strlen("ban_setuid=")) {
+			flags.ban_setuid = NULL;
+			return flags.ban_setuid;
+		}
+		flags.ban_setuid = strdup(flag + strlen("ban_setuid="));
+		return flags.ban_setuid;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";

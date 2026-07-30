@@ -625,6 +625,7 @@ Current supported kv flags:
 - `rlimits`: A comma-separated list to set rlimits in the container. For example, `rlimits=nproc:16:32,core:1` means set RLIMIT_NPROC to 16 (soft) and 32 (hard), and set RLIMIT_CORE to 1 (soft) and 1 (hard). Supported rlimits: `as`, `core`, `cpu`, `data`, `fsize`, `locks`, `memlock`, `msgqueue`, `nice`, `nofile`, `nproc`, `rss`, `rtprio`, `rttime`, `sigpending`, `stack`.
 - `outside_rurienv`: Use outside .rurienv file instead of the one in the container. For example, `outside_rurienv=/tmp/rurienv` means use `/tmp/rurienv` instead of `/.rurienv` in the container.
 - `img_sectx`: SELinux context for image file, to fix loop-mount on android.
+- `ban_setuid`: A comma-separated list to disallow setuid() to specified uid, for example `ban_setuid=5,2,1` will diasllow setuid to uid 5 or 2 or 1.
 
 You can also refer to [this commit](https://github.com/RuriOSS/ruri/commit/85bc7d10654c8684bb1afa83be0776555f9ff561) to write your own hooks.    
 

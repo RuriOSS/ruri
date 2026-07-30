@@ -86,6 +86,7 @@ struct __attribute__((packed, aligned(1))) RURI_FLAGS {
 	char *is_termux;
 	char *img_sectx;
 	char *new_tty;
+	char *ban_setuid;
 };
 struct __attribute__((packed, aligned(1))) RURI_DEV_NODES {
 	bool has_console;

@@ -246,6 +246,59 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_WAIT_REQUEUE_PI)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_CMP_REQUEUE_PI)) :<;
 	}
+	char *banned_setuid = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, ban_setuid));
+	if (banned_setuid) {
+		int banned_uid[128];
+		int banned_uid_count = 0;
+		char *token = strtok(banned_setuid, ",");
+		while (token != NULL) {
+			banned_uid[banned_uid_count] = atoi(token);
+			if (banned_uid[banned_uid_count] <= 0) {
+				ruri_error("Invalid banned uid: %s\n", token);
+			}
+			banned_uid_count++;
+			token = strtok(NULL, ",");
+		}
+		// sort banned_uid array.
+		for (int i = 0; i < banned_uid_count - 1; i++) {
+			for (int j = 0; j < banned_uid_count - i - 1; j++) {
+				if (banned_uid[j] > banned_uid[j + 1]) {
+					int temp = banned_uid[j];
+					banned_uid[j] = banned_uid[j + 1];
+					banned_uid[j + 1] = temp;
+				}
+			}
+		}
+		// LT banned_uid[0].
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 1, SCMP_CMP(1, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_LT, banned_uid[0])) :<;
+		// From banned_uid[0] to banned_uid[n-1], allow all except banned_uid[i].
+		int last_uid = banned_uid[0];
+		for (int i = 0; i < banned_uid_count; i++) {
+			for (int j = last_uid + 1; j < banned_uid[i]; j++) {
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 1, SCMP_CMP(1, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_EQ, j)) :<;
+			}
+			last_uid = banned_uid[i];
+		}
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+	}
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept4), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(access), 0) :<;
@@ -519,8 +572,10 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid32), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid32), 0) :<;
+	if (!banned_setuid) {
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid32), 0) :<;
+	}
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid32), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgroups), 0) :<;
@@ -532,18 +587,22 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid32), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid32), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid32), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid32), 0) :<;
+	if (!banned_setuid) {
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid32), 0) :<;
+	}
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setrlimit), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_robust_list), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setsid), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setsockopt), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_thread_area), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_tid_address), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid32), 0) :<;
+	if (!banned_setuid) {
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setuid32), 0) :<;
+	}
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setxattr), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, seccomp_syscall_resolve_name("setxattrat"), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(shmat), 0) :<;
@@ -1211,6 +1270,33 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_UNLOCK_PI)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_WAIT_REQUEUE_PI)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_CMP_REQUEUE_PI)) :<;
+	}
+	char *banned_setuid = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, ban_setuid));
+	if (banned_setuid) {
+		// Fully ban 32bit setuid(2) and friends.
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setuid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setfsuid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setreuid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid32), 0) :<;
+		int banned_uid = -1;
+		char *token = strtok(banned_setuid, ",");
+		while (token != NULL) {
+			banned_uid = atoi(token);
+			if (banned_uid > 0) {
+				// ban setuid, setfsuid, setresuid, setreuid to target uid.
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setfsuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setreuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setreuid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_EQ, banned_uid)) :<;
+
+			} else {
+				ruri_error("Invalid banned uid: %s\n", token);
+			}
+			token = strtok(NULL, ",");
+		}
 	}
 	// Disable no_new_privs bit by default.
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
