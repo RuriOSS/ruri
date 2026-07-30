@@ -227,6 +227,9 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 #ifndef DISABLE_LIBSECCOMP
 	int res = 0;
 	scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ERRNO(EPERM));
+	// Fix priority issue of seccomp filter.
+	// On Termux, without this, ban_setuid will not work.
+	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2);
 	// Deny user-defined syscalls.
 	for (int i = 0; container->seccomp_denied_syscall[i] != NULL; i++) {
 		int syscall_nr = seccomp_syscall_resolve_name(container->seccomp_denied_syscall[i]);
@@ -825,6 +828,9 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	 */
 	int res = 0;
 	scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ALLOW);
+	// Fix priority issue of seccomp filter.
+	// On Termux, without this, ban_setuid will not work.
+	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2);
 	// Deny user-defined syscalls.
 	for (int i = 0; container->seccomp_denied_syscall[i] != NULL; i++) {
 		int syscall_nr = seccomp_syscall_resolve_name(container->seccomp_denied_syscall[i]);
