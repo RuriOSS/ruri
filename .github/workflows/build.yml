@@ -66,9 +66,9 @@ jobs:
           mkdir -p build && cd build
           git clone --depth 1 https://github.com/rurioss/ruri.git
           cd ruri
-          cc -w -Wl,--gc-sections -static src/*.c src/easteregg/*.c -o ruri -lcap -lseccomp -lpthread
+          cc -w src/*.c src/easteregg/*.c -o ruri -lcap -lseccomp -lpthread
           cp ./ruri ../../
-          ./ruri -v
+          ./ruri -v||exit 1
 
       - name: Download alpine rootfs for ${{ matrix.arch }}
         env:
