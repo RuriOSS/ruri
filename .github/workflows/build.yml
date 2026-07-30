@@ -88,6 +88,7 @@ jobs:
       - name: Build for ${{ matrix.arch }}
         shell: bash
         run: |
+          set -x
           cd build
           cp ruri/.github/build.sh "$ARCHITECTURE/build.sh"
           sudo chmod +x ../ruri
