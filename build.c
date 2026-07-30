@@ -744,6 +744,7 @@ void check_and_add_lib(char *lib, bool panic)
 // Default cflags
 void default_cflags(void)
 {
+	check_and_add_cflag("-w", false);
 	check_and_add_cflag("-ftrivial-auto-var-init=pattern", false);
 	check_and_add_cflag("-fcf-protection=full", false);
 	check_and_add_cflag("-flto=auto", false);
@@ -768,6 +769,7 @@ void default_cflags(void)
 // Dev cflags
 void dev_cflags(void)
 {
+	check_and_add_cflag("-w", false);
 	check_and_add_cflag("-g", true);
 	check_and_add_cflag("-O0", false);
 	check_and_add_cflag("-fno-omit-frame-pointer", false);
