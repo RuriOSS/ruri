@@ -312,6 +312,13 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_LT, banned_uid[0])) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_LT, banned_uid[0])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_LT, banned_uid[0])) :<;
 		// From banned_uid[0] to banned_uid[n-1], allow all except banned_uid[i].
 		int last_uid = banned_uid[0];
 		for (int i = 0; i < banned_uid_count; i++) {
@@ -323,6 +330,13 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_EQ, j)) :<;
 				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_EQ, j)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_EQ, j)) :<;
 			}
 			last_uid = banned_uid[i];
 		}
@@ -333,6 +347,13 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
 	}
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept4), 0) :<;
@@ -605,24 +626,24 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendmmsg), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendmsg), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid32), 0) :<;
 	if (!banned_setuid) {
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid32), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid32), 0) :<;
 	}
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid32), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgroups), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgroups32), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setitimer), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setpgid), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setpriority), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid32), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 0) :<;
-	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid32), 0) :<;
 	if (!banned_setuid) {
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid32), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid32), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setreuid), 0) :<;
@@ -1348,6 +1369,10 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setfsuid32), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setreuid32), 0) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setgid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setfsgid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setregid32), 0) :<;
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid32), 0) :<;
 		int banned_uid = -1;
 		char *token = strtok(banned_setuid, ",");
 		while (token != NULL) {
@@ -1361,6 +1386,13 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
 				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid)) :<;
 				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid)) :<;
+				seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_EQ, banned_uid)) :<;
 
 			} else {
 				ruri_error("Invalid banned uid: %s\n", token);

@@ -339,6 +339,20 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_LT, banned_uid[0]));
 		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_LT, banned_uid[0]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_LT, banned_uid[0]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_LT, banned_uid[0]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_LT, banned_uid[0]));
+		ruri_check_seccomp_ret(res);
 		// From banned_uid[0] to banned_uid[n-1], allow all except banned_uid[i].
 		int last_uid = banned_uid[0];
 		for (int i = 0; i < banned_uid_count; i++) {
@@ -357,6 +371,20 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 				ruri_check_seccomp_ret(res);
 				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_EQ, j));
 				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_EQ, j));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, j));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_EQ, j));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_EQ, j));
+				ruri_check_seccomp_ret(res);
 			}
 			last_uid = banned_uid[i];
 		}
@@ -373,6 +401,20 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
 		ruri_check_seccomp_ret(res);
 	}
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept), 0);
@@ -917,20 +959,20 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	ruri_check_seccomp_ret(res);
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sendto), 0);
 	ruri_check_seccomp_ret(res);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 0);
-	ruri_check_seccomp_ret(res);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid32), 0);
-	ruri_check_seccomp_ret(res);
 	if (!banned_setuid) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsgid32), 0);
+		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid), 0);
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setfsuid32), 0);
 		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid32), 0);
+		ruri_check_seccomp_ret(res);
 	}
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid), 0);
-	ruri_check_seccomp_ret(res);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgid32), 0);
-	ruri_check_seccomp_ret(res);
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgroups), 0);
 	ruri_check_seccomp_ret(res);
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setgroups32), 0);
@@ -941,15 +983,15 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	ruri_check_seccomp_ret(res);
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setpriority), 0);
 	ruri_check_seccomp_ret(res);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 0);
-	ruri_check_seccomp_ret(res);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid32), 0);
-	ruri_check_seccomp_ret(res);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 0);
-	ruri_check_seccomp_ret(res);
-	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid32), 0);
-	ruri_check_seccomp_ret(res);
 	if (!banned_setuid) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setregid32), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid32), 0);
+		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid), 0);
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresuid32), 0);
@@ -2059,6 +2101,14 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 		ruri_check_seccomp_ret(res);
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid32), 0);
 		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setgid32), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setfsgid32), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setregid32), 0);
+		ruri_check_seccomp_ret(res);
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid32), 0);
+		ruri_check_seccomp_ret(res);
 		int banned_uid = -1;
 		char *token = strtok(banned_setuid, ",");
 		while (token != NULL) {
@@ -2078,6 +2128,20 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid));
 				ruri_check_seccomp_ret(res);
 				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresuid), 1, SCMP_CMP(2, SCMP_CMP_EQ, banned_uid));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setfsgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setregid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setregid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid), 1, SCMP_CMP(0, SCMP_CMP_EQ, banned_uid));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_EQ, banned_uid));
+				ruri_check_seccomp_ret(res);
+				res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_EQ, banned_uid));
 				ruri_check_seccomp_ret(res);
 
 			} else {
