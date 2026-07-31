@@ -2,10 +2,15 @@
   * Add `--freeze`/`--thaw` subcommands to pause and resume a container via cgroup freezer (**NOTE**: needs cgroup freezer support, both cgroup v2 built-in freezer and v1 `/sys/fs/cgroup/freezer` or Android `/dev/freezer` are detected).
   * Add `--set-flag` for developers to enable feature flags.
   * Add a `.ruri_umounted` file to indicate that the container has been unmounted.
-  * Fix a race condition when udev didn't create /dev/loopx device before ruri tries to mount it.
   * Fix re-enter unshare container failed in v3.9.4.
   * Fix pipe-sync issue in unshare container.
+  * Fix losetup failed when udev didn't create /dev/loopx device before ruri tries to mount it.
+  * Fix losetup failed on Android due to SELinux issue.
   * Always convert mount source to absolute path.
+  * Add loop partition and btrfs mount support.
+  * Support tmpfs as rootfs.
+  * Support `BIND:` prefix to force bind-mounting a regular file instead of trying to mount it as an image.
+  * Fix subarch for seccomp profile.
   * Support new feature flags:
     - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
     - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
