@@ -64,6 +64,7 @@
     - `new_tty`: create a new pty in container.
     - `create_ntsync_node`: Will be converted to `dev_nodes=+ntsync`.
     - `ban_setuid`: A comma-separated list to disallow setuid() to specified uid, for example `ban_setuid=5,2,1` will diasllow setuid to uid 5 or 2 or 1.
+    - `no_subarch`: Do not add subarch to seccomp profile.
 
 # v3.9.4 (no release due to unstable and recent kernel vulnerabilities):
   * Skip setgroups() when user is root and cannot parse /etc/group and /etc/passwd.

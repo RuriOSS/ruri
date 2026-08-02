@@ -617,6 +617,7 @@ Current supported boolean flags:
 - `is_termux`: if we are running in termux.
 - `new_tty`: create a new pty in container.
 - `create_ntsync_node`: Will be converted to `dev_nodes=+ntsync`.
+- `no_subarch`: Do not add subarch to seccomp profile.
 - `meow`: An easter egg. It will print "meow" and exit.
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.

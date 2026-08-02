@@ -231,36 +231,38 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	// On Termux, without this, ban_setuid will not work.
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2);
 	// Add architectures.
-	switch (seccomp_arch_native()) {
-	case SCMP_ARCH_X86_64:
-		seccomp_arch_add(ctx, SCMP_ARCH_X86) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_X32) :<;
-		break;
-	case SCMP_ARCH_AARCH64:
-		seccomp_arch_add(ctx, SCMP_ARCH_ARM) :<;
-		break;
-	case SCMP_ARCH_MIPS64:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS64N32) :<;
-		break;
-	case SCMP_ARCH_MIPS64N32:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS64) :<;
-		break;
-	case SCMP_ARCH_MIPSEL64:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64N32) :<;
-		break;
-	case SCMP_ARCH_MIPSEL64N32:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64) :<;
-		break;
-	case SCMP_ARCH_S390X:
-		seccomp_arch_add(ctx, SCMP_ARCH_S390) :<;
-		break;
-	case SCMP_ARCH_PPC64LE:
-		seccomp_arch_add(ctx, SCMP_ARCH_PPC) :<;
-		break;
+	if (!ruri_flag(no_subarch)) {
+		switch (seccomp_arch_native()) {
+		case SCMP_ARCH_X86_64:
+			seccomp_arch_add(ctx, SCMP_ARCH_X86) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_X32) :<;
+			break;
+		case SCMP_ARCH_AARCH64:
+			seccomp_arch_add(ctx, SCMP_ARCH_ARM) :<;
+			break;
+		case SCMP_ARCH_MIPS64:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS64N32) :<;
+			break;
+		case SCMP_ARCH_MIPS64N32:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS64) :<;
+			break;
+		case SCMP_ARCH_MIPSEL64:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64N32) :<;
+			break;
+		case SCMP_ARCH_MIPSEL64N32:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64) :<;
+			break;
+		case SCMP_ARCH_S390X:
+			seccomp_arch_add(ctx, SCMP_ARCH_S390) :<;
+			break;
+		case SCMP_ARCH_PPC64LE:
+			seccomp_arch_add(ctx, SCMP_ARCH_PPC) :<;
+			break;
+		}
 	}
 	// Deny user-defined syscalls.
 	for (int i = 0; container->seccomp_denied_syscall[i] != NULL; i++) {
@@ -885,36 +887,38 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 	// On Termux, without this, ban_setuid will not work.
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_OPTIMIZE, 2);
 	// Add architectures.
-	switch (seccomp_arch_native()) {
-	case SCMP_ARCH_X86_64:
-		seccomp_arch_add(ctx, SCMP_ARCH_X86) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_X32) :<;
-		break;
-	case SCMP_ARCH_AARCH64:
-		seccomp_arch_add(ctx, SCMP_ARCH_ARM) :<;
-		break;
-	case SCMP_ARCH_MIPS64:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS64N32) :<;
-		break;
-	case SCMP_ARCH_MIPS64N32:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPS64) :<;
-		break;
-	case SCMP_ARCH_MIPSEL64:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64N32) :<;
-		break;
-	case SCMP_ARCH_MIPSEL64N32:
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
-		seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64) :<;
-		break;
-	case SCMP_ARCH_S390X:
-		seccomp_arch_add(ctx, SCMP_ARCH_S390) :<;
-		break;
-	case SCMP_ARCH_PPC64LE:
-		seccomp_arch_add(ctx, SCMP_ARCH_PPC) :<;
-		break;
+	if (!ruri_flag(no_subarch)) {
+		switch (seccomp_arch_native()) {
+		case SCMP_ARCH_X86_64:
+			seccomp_arch_add(ctx, SCMP_ARCH_X86) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_X32) :<;
+			break;
+		case SCMP_ARCH_AARCH64:
+			seccomp_arch_add(ctx, SCMP_ARCH_ARM) :<;
+			break;
+		case SCMP_ARCH_MIPS64:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS64N32) :<;
+			break;
+		case SCMP_ARCH_MIPS64N32:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPS64) :<;
+			break;
+		case SCMP_ARCH_MIPSEL64:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64N32) :<;
+			break;
+		case SCMP_ARCH_MIPSEL64N32:
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL) :<;
+			seccomp_arch_add(ctx, SCMP_ARCH_MIPSEL64) :<;
+			break;
+		case SCMP_ARCH_S390X:
+			seccomp_arch_add(ctx, SCMP_ARCH_S390) :<;
+			break;
+		case SCMP_ARCH_PPC64LE:
+			seccomp_arch_add(ctx, SCMP_ARCH_PPC) :<;
+			break;
+		}
 	}
 	// Deny user-defined syscalls.
 	for (int i = 0; container->seccomp_denied_syscall[i] != NULL; i++) {

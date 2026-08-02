@@ -191,59 +191,7 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 	 * because we will have someting like flag_foo="bar" in the future.
 	 * -1 for query, other value for set.
 	 */
-	static struct RURI_FLAGS flags = {
-		// clang-format off
-		.ban_futex_pi = NULL,
-		.wait_before_exec = NULL,
-		.allow_personality = NULL,
-		.force_panic = NULL,
-		.no_time_ns = NULL,
-		.no_uts_ns = NULL,
-		.no_ipc_ns = NULL,
-		.no_pid_ns = NULL,
-		.no_cgroup_ns = NULL,
-		.meow = NULL,
-		.fork_as_init = NULL,
-		.disable_warnings = NULL,
-		.auto_umount = NULL,
-		.auto_umount_on_panic = NULL,
-		.systemd_init = NULL,
-		.is_health_check = NULL,
-		.enable_tty_signals = NULL,
-		.skip_setgroups = NULL,
-		.empty_net_ns = NULL,
-		.no_reset_pidfile = NULL,
-		.no_logs = NULL,
-		.wait_pidfile_lock = NULL,
-		.no_seccomp = NULL,
-		.no_rurienv = NULL,
-		.no_cgroup = NULL,
-		.no_pidfile_daemon = NULL,
-		.no_drop_caps = NULL,
-		.no_memory_cgroup = NULL,
-		.no_cpuset_cgroup = NULL,
-		.no_cpupercent_cgroup = NULL,
-		.no_pids_cgroup = NULL,
-		.no_io_cgroup = NULL,
-		.no_freezer_cgroup = NULL,
-		.no_pidfd = NULL,
-		.dev_nodes = NULL,
-		.just_chroot = NULL,
-		.ruri_dbg = NULL,
-		.use_host_runtime = NULL,
-		.no_mask_paths = NULL,
-		.read_only_rootfs = NULL,
-		.no_new_privs = NULL,
-		.rlimits = NULL,
-		.outside_rurienv = NULL,
-		.rw_rurienv = NULL,
-		.ruri_perf = NULL,
-		.is_termux=NULL,
-		.img_sectx=NULL,
-		.new_tty=NULL,
-		.ban_setuid=NULL,
-	};
-	// clang-format on
+	static struct RURI_FLAGS flags = { 0 };
 	if (req == RURI_QUERY_FLAG) {
 		if (offset >= sizeof(struct RURI_FLAGS)) {
 			ruri_error("{red}Unknown offset: %zu\nThis must be an internal error QwQ", offset);
@@ -581,6 +529,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		}
 		flags.ban_setuid = strdup(flag + strlen("ban_setuid="));
 		return flags.ban_setuid;
+	}
+	if (!strcmp(flag, "no_subarch")) {
+		free(flags.no_subarch);
+		flags.no_subarch = true_or_null(flag + strlen("no_subarch"), flag);
+		return flags.no_subarch;
 	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
