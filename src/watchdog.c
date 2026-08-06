@@ -755,7 +755,7 @@ void ruri_setup_tty_daemon(void)
 	msg.msg_iovlen = 1;
 	msg.msg_control = c_buffer;
 	msg.msg_controllen = sizeof(c_buffer);
-	if (recvmsg(sock[0], &msg, 0) < 0) {
+	if (ruri_recvmsg(sock[0], &msg, 0) < 0) {
 		ruri_error("{red}Failed to receive master fd from tty daemon QwQ\n");
 	}
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
