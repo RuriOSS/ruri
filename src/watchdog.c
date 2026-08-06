@@ -673,7 +673,7 @@ void ruri_setup_tty(void)
 	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
 	// Socket need a memcpy instead of a direct assignment.
 	memcpy(CMSG_DATA(cmsg), &master, sizeof(int));
-	if (sendmsg(sock_fd, &msg, 0) < 0) {
+	if (ruri_sendmsg(sock_fd, &msg, 0) < 0) {
 		ruri_error("{red}Failed to send master fd to tty daemon QwQ\n");
 	}
 	// Set the controlling terminal to the slave pty.

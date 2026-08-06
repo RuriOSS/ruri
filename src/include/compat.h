@@ -97,16 +97,24 @@ static inline int pidfd_send_signal(int pidfd, int sig, siginfo_t *info, unsigne
 	return (int)res;
 }
 #endif // pidfd_send_signal
-// Direct call recvmsg() for android bionic.
+// Direct call sendmsg() and recvmsg() for android bionic.
 // Otherwise, we will get a stupid `libc: Access denied finding property "net.redirect_socket_calls.hooked"` log in chroot environment.
 #if defined(__ANDROID__)
 static inline ssize_t ruri_recvmsg(int sockfd, struct msghdr *msg, int flags)
 {
 	return syscall(__NR_recvmsg, sockfd, msg, flags);
 }
+static inline ssize_t ruri_sendmsg(int sockfd, const struct msghdr *msg, int flags)
+{
+	return syscall(__NR_sendmsg, sockfd, msg, flags);
+}
 #else
 static inline ssize_t ruri_recvmsg(int sockfd, struct msghdr *msg, int flags)
 {
 	return recvmsg(sockfd, msg, flags);
+}
+static inline ssize_t ruri_sendmsg(int sockfd, const struct msghdr *msg, int flags)
+{
+	return sendmsg(sockfd, msg, flags);
 }
 #endif
