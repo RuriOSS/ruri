@@ -535,6 +535,11 @@ char *ruri_feature_flag(int req, const char *_Nonnull flag, size_t offset)
 		flags.no_subarch = true_or_null(flag + strlen("no_subarch"), flag);
 		return flags.no_subarch;
 	}
+	if (!strcmp(flag, "ban_sctp")) {
+		free(flags.ban_sctp);
+		flags.ban_sctp = true_or_null(flag + strlen("ban_sctp"), flag);
+		return flags.ban_sctp;
+	}
 	ruri_error("{red}Unknown flag: %s\n", flag);
 	return "unknown";
 }

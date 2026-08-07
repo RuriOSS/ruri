@@ -88,6 +88,7 @@ struct __attribute__((packed, aligned(1))) RURI_FLAGS {
 	char *new_tty;
 	char *ban_setuid;
 	char *no_subarch;
+	char *ban_sctp;
 };
 struct __attribute__((packed, aligned(1))) RURI_DEV_NODES {
 	bool has_console;

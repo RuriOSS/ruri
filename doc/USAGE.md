@@ -618,6 +618,7 @@ Current supported boolean flags:
 - `new_tty`: create a new pty in container.
 - `create_ntsync_node`: Will be converted to `dev_nodes=+ntsync`.
 - `no_subarch`: Do not add subarch to seccomp profile.
+- `ban_sctp`: Ban IPPROTO_SCTP for socket().
 - `meow`: An easter egg. It will print "meow" and exit.
 
 A kv flag can be set with `flag_name=value`, and the value will be a string.

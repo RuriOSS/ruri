@@ -90,6 +90,7 @@
 #include <sys/xattr.h>
 #include <sys/epoll.h>
 #include <termios.h>
+#include <linux/in.h>
 #ifndef DISABLE_LIBSECCOMP
 // This program need to be linked with `-lseccomp`.
 #include <seccomp.h>

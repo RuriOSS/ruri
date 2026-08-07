@@ -289,6 +289,12 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 			ruri_check_seccomp_ret(res);
 		}
 	}
+	// Ban IPPROTO_SCTP.
+	if (ruri_flag(ban_sctp)) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(2, SCMP_CMP_EQ, IPPROTO_SCTP));
+		ruri_check_seccomp_ret(res);
+	}
+	// Ban futex PI syscalls.
 	if (ruri_flag(ban_futex_pi)) {
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI));
 		ruri_check_seccomp_ret(res);
@@ -303,6 +309,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_CMP_REQUEUE_PI));
 		ruri_check_seccomp_ret(res);
 	}
+	// Ban setuid() to specified uid.
 	char *banned_setuid = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, ban_setuid));
 	if (banned_setuid) {
 		int banned_uid[128];
@@ -419,6 +426,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_GT, banned_uid[banned_uid_count - 1]));
 		ruri_check_seccomp_ret(res);
 	}
+	// From moby.
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept), 0);
 	ruri_check_seccomp_ret(res);
 	res = seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept4), 0);
@@ -2153,6 +2161,11 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			}
 			token = strtok(NULL, ",");
 		}
+	}
+	// Ban IPPROTO_SCTP.
+	if (ruri_flag(ban_sctp)) {
+		res = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(2, SCMP_CMP_EQ, IPPROTO_SCTP));
+		ruri_check_seccomp_ret(res);
 	}
 	// Disable no_new_privs bit by default.
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);

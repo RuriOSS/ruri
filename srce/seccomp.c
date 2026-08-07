@@ -275,6 +275,11 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 			seccomp_rule_add(ctx, SCMP_ACT_KILL, syscall_nr, 0) :<;
 		}
 	}
+	// Ban IPPROTO_SCTP.
+	if (ruri_flag(ban_sctp)) {
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(2, SCMP_CMP_EQ, IPPROTO_SCTP)) :<;
+	}
+	// Ban futex PI syscalls.
 	if (ruri_flag(ban_futex_pi)) {
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_LOCK_PI2)) :<;
@@ -283,6 +288,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_WAIT_REQUEUE_PI)) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EACCES), SCMP_SYS(futex), 1, SCMP_CMP(1, SCMP_CMP_EQ, FUTEX_CMP_REQUEUE_PI)) :<;
 	}
+	// Ban setuid() to specified uid.
 	char *banned_setuid = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, ban_setuid));
 	if (banned_setuid) {
 		int banned_uid[128];
@@ -357,6 +363,7 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(1, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
 		seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(setresgid), 1, SCMP_CMP(2, SCMP_CMP_GT, banned_uid[banned_uid_count - 1])) :<;
 	}
+	// From moby.
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept4), 0) :<;
 	seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(access), 0) :<;
@@ -1403,6 +1410,10 @@ static void ruri_setup_seccomp_blacklist(const struct RURI_CONTAINER *_Nonnull c
 			}
 			token = strtok(NULL, ",");
 		}
+	}
+	// Ban IPPROTO_SCTP.
+	if (ruri_flag(ban_sctp)) {
+		seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1, SCMP_CMP(2, SCMP_CMP_EQ, IPPROTO_SCTP)) :<;
 	}
 	// Disable no_new_privs bit by default.
 	seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0);
