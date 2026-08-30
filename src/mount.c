@@ -114,7 +114,7 @@ char *ruri_cut_mount_flags(const char *_Nonnull source)
 				source += strlen(flags[i]);
 				break;
 			}
-			if (i == sizeof(flags) / sizeof(flags[0]) - 1) {
+			if (i == (sizeof(flags) / sizeof(flags[0])) - 1) {
 				return ret;
 			}
 		}
@@ -455,7 +455,7 @@ static char *losetup(const char *_Nonnull img, const char *_Nullable part)
 				sprintf(sysfs_dev_path, "/sys/class/block/loop%d%s/dev", loopfile_cache[i], part);
 				// Read major:minor from sysfs.
 				int maj, min;
-				FILE *fp = fopen(sysfs_dev_path, "r");
+				FILE *fp = fopen(sysfs_dev_path, "re");
 				if (!fp) {
 					ruri_error("{red}Failed to open %s QwQ\n", sysfs_dev_path);
 				}
@@ -578,7 +578,7 @@ static char *losetup(const char *_Nonnull img, const char *_Nullable part)
 			sprintf(sysfs_dev_path, "/sys/class/block/loop%d%s/dev", devnr, part);
 			// Read major:minor from sysfs.
 			int maj, min;
-			FILE *fp = fopen(sysfs_dev_path, "r");
+			FILE *fp = fopen(sysfs_dev_path, "re");
 			if (!fp) {
 				ruri_error("{red}Failed to open %s QwQ\n", sysfs_dev_path);
 			}
@@ -590,13 +590,16 @@ static char *losetup(const char *_Nonnull img, const char *_Nullable part)
 				return NULL;
 			}
 			// mknod the partfile.
+			// NOLINTBEGIN
 			char *partfile = ruri_malloc(PATH_MAX);
+			// NOLINTEND
 			sprintf(partfile, "/dev/loop%d%s", devnr, part);
 			mknod(partfile, S_IFBLK | 0660, makedev(maj, min));
 			free(loopfile);
 			loopfile = partfile;
 		}
 		// Record the img and loopfile in cache.
+		// Just leak the memory, size too small, we don't care.
 		for (int i = 0; i < 128; i++) {
 			if (img_cache[i] == NULL) {
 				img_cache[i] = strdup(img);
@@ -705,6 +708,7 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 	// Check if source exists.
 	if (lstat(real_source, &dev_stat) != 0) {
 		ruri_warn_on_error(1, 0, true, "{red}Error: {base}Source {cyan}%s{base} does not exist.\n", real_source);
+		free(loop_part);
 		free(real_source);
 		return -1;
 	}
@@ -715,6 +719,8 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 		// losetup the source and mount it.
 		char *loopfile = losetup(real_source, loop_part);
 		if (loopfile == NULL) {
+			free(real_source);
+			free(loop_part);
 			return -1;
 		}
 		ret = mount(loopfile, target, fstype, mountflags, data);
@@ -722,6 +728,7 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 			ret = mount(loopfile, target, fstype, mountflags | MS_REMOUNT, data);
 		}
 		free(loopfile);
+		free(loop_part);
 		free(real_source);
 		return ret;
 	}
@@ -730,6 +737,7 @@ static int mount_as_filesystem(const char *_Nonnull source, const char *_Nonnull
 		ret = mount(real_source, target, fstype, mountflags | MS_REMOUNT, data);
 	}
 	free(real_source);
+	free(loop_part);
 	return ret;
 }
 static int mount_other_type(const char *_Nonnull source, const char *_Nonnull target, unsigned int mountflags)
@@ -1052,7 +1060,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
 		// Bind mounts apply their extra flags in a remount. A plain
 		// read-write bind mount does not need a second syscall.
-		if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
+		if (ret == 0 && ((mountflags_new & MS_RDONLY) != 0)) {
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 		}
 	}
@@ -1076,7 +1084,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 			}
 			ruri_log("{base}Bind-mounting as common file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-			if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
+			if (ret == 0 && ((mountflags_new & MS_RDONLY) != 0)) {
 				ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 			}
 			return ret;
@@ -1107,7 +1115,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 			}
 			ruri_log("{base}Bind-mounting as common file {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-			if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
+			if (ret == 0 && ((mountflags_new & MS_RDONLY) != 0)) {
 				ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 			}
 		}
@@ -1119,7 +1127,7 @@ int ruri_trymount(const char *_Nonnull source, const char *_Nonnull target, unsi
 		}
 		ruri_log("{base}Bind-mounting {cyan}%s{base} to {cyan}%s{base}\n", source, target);
 		ret = mount(source, target, NULL, mountflags_new | MS_BIND, NULL);
-		if (ret == 0 && (mountflags_new & MS_RDONLY != 0)) {
+		if (ret == 0 && ((mountflags_new & MS_RDONLY) != 0)) {
 			ret = mount(source, target, NULL, mountflags_new | MS_BIND | MS_REMOUNT, NULL);
 		}
 	}

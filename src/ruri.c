@@ -45,10 +45,9 @@ long long ruri_diff_time(void)
 		ret = now.tv_nsec - last_nsec;
 		last_nsec = now.tv_nsec;
 		return ret;
-	} else {
-		last_nsec = now.tv_nsec;
-		return 0;
 	}
+	last_nsec = now.tv_nsec;
+	return 0;
 }
 static void ruri_meow(void)
 {
@@ -57,7 +56,6 @@ static void ruri_meow(void)
 	// Get a random meow
 	srand(time(NULL));
 	int random_index = rand() % (int)(sizeof(meows) / sizeof(meows[0]));
-	// NOLINTEND
 	if (meows[random_index]) {
 		cprintf("\n{base}  %s{clear}\n", meows[random_index]);
 		cprintf("{base}How do you meow?{clear}\n");
@@ -85,6 +83,7 @@ static void ruri_meow(void)
 		}
 	}
 	exit(EXIT_SUCCESS);
+	// NOLINTEND
 }
 // Clear environment variables.
 void ruri_clear_env(char *const *_Nonnull argv)
@@ -423,7 +422,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			if (stat(argv[index], &st) != 0) {
 				ruri_error("{red}Container directory or config does not exist QwQ\n");
 			}
-			int ret;
+			int ret = 0;
 			if (S_ISDIR(st.st_mode)) {
 				struct RURI_CONTAINER *tmp = ruri_read_info(NULL, argv[index]);
 				if (tmp->container_id < 0) {
@@ -452,7 +451,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			if (stat(argv[index], &st) != 0) {
 				ruri_error("{red}Container directory or config does not exist QwQ\n");
 			}
-			int ret;
+			int ret = 0;
 			if (S_ISDIR(st.st_mode)) {
 				struct RURI_CONTAINER *tmp = ruri_read_info(NULL, argv[index]);
 				if (tmp->container_id < 0) {

@@ -142,7 +142,7 @@ static void generate_machine_id(int container_id)
 		close(urandom_fd);
 		if (bytes_read == 16) {
 			// Convert binary to hex string
-			for (int i = 0; i < 16; i++) {
+			for (ptrdiff_t i = 0; i < 16; i++) {
 				sprintf(&new_machine_id[i * 2], "%02x", random_bytes[i]);
 			}
 			new_machine_id[32] = '\0';
@@ -374,7 +374,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			int gunyah_maj = 10;
 			int gunyah_min = 124;
 			// Read /sys/class/misc/gunyah/dev for major and minor number.
-			FILE *gunyah_dev_file = fopen("/sys/class/misc/gunyah/dev", "r");
+			FILE *gunyah_dev_file = fopen("/sys/class/misc/gunyah/dev", "re");
 			if (gunyah_dev_file != NULL) {
 				char dev_str[32];
 				if (fgets(dev_str, sizeof(dev_str), gunyah_dev_file) != NULL) {
@@ -397,7 +397,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			int gzvm_maj = 10;
 			int gzvm_min = 107;
 			// Read /sys/class/misc/gzvm/dev for major and minor number.
-			FILE *gzvm_dev_file = fopen("/sys/class/misc/gzvm/dev", "r");
+			FILE *gzvm_dev_file = fopen("/sys/class/misc/gzvm/dev", "re");
 			if (gzvm_dev_file != NULL) {
 				char dev_str[32];
 				if (fgets(dev_str, sizeof(dev_str), gzvm_dev_file) != NULL) {
@@ -443,7 +443,7 @@ static void init_container(struct RURI_CONTAINER *_Nonnull container)
 			int ntsync_maj = 10;
 			int ntsync_min = 241;
 			// Read /sys/class/misc/ntsync/dev for major and minor number.
-			FILE *ntsync_dev_file = fopen("/sys/class/misc/ntsync/dev", "r");
+			FILE *ntsync_dev_file = fopen("/sys/class/misc/ntsync/dev", "re");
 			if (ntsync_dev_file != NULL) {
 				char dev_str[32];
 				if (fgets(dev_str, sizeof(dev_str), ntsync_dev_file) != NULL) {
@@ -789,6 +789,7 @@ static void setup_rlimits(void)
 		}
 		rlimit_conf_token = strtok(NULL, ",");
 	}
+	free(rlimit_conf_copy);
 }
 // Run after init_container().
 static void setup_binfmt_misc(const struct RURI_CONTAINER *_Nonnull container)
@@ -1383,7 +1384,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 		sigemptyset(&sigset);
 		sigaddset(&sigset, SIGUSR1);
 		sigprocmask(SIG_BLOCK, &sigset, NULL);
-		int sig;
+		int sig = 0;
 		sigwait(&sigset, &sig);
 		ruri_pid_file_write(RURI_PID_FILE_PID, container->pid_out);
 	}
@@ -1541,7 +1542,7 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 		sigemptyset(&sigset);
 		sigaddset(&sigset, SIGUSR1);
 		sigprocmask(SIG_BLOCK, &sigset, NULL);
-		int sig;
+		int sig = 0;
 		sigwait(&sigset, &sig);
 		ruri_pid_file_write(RURI_PID_FILE_PID, container->pid_out);
 	}

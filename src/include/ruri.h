@@ -370,11 +370,16 @@ void ruri_setup_tty(void);
 void ruri_hoppou_art(void);
 static inline void *ruri_malloc(size_t size)
 {
+	// NOLINTBEGIN
+	if (size < 0) {
+		ruri_panic(-114);
+	}
 	void *ruri_ptr__ = malloc(size);
 	if (!ruri_ptr__) {
 		ruri_panic(-114);
 	}
 	return ruri_ptr__;
+	// NOLINTEND
 }
 static inline bool ruri_is_android(void)
 {

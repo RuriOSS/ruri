@@ -311,9 +311,9 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 	}
 	// Ban setuid() to specified uid.
 	char *banned_setuid = ruri_feature_flag(RURI_QUERY_FLAG, NULL, offsetof(struct RURI_FLAGS, ban_setuid));
+	int banned_uid[128] = { 0 };
+	int banned_uid_count = 0;
 	if (banned_setuid) {
-		int banned_uid[128];
-		int banned_uid_count = 0;
 		char *token = strtok(banned_setuid, ",");
 		while (token != NULL) {
 			banned_uid[banned_uid_count] = atoi(token);
@@ -322,6 +322,9 @@ static void ruri_setup_seccomp_whitelist(const struct RURI_CONTAINER *_Nonnull c
 			}
 			banned_uid_count++;
 			token = strtok(NULL, ",");
+		}
+		if (banned_uid_count <= 0) {
+			ruri_error("No valid banned uid specified for ban_setuid\n");
 		}
 		// sort banned_uid array.
 		for (int i = 0; i < banned_uid_count - 1; i++) {

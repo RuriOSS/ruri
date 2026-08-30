@@ -520,8 +520,9 @@ static void kill_subprocess_and_die(int __attribute__((unused)) signum)
 	gettimeofday(&start, NULL);
 	int wait_time_ms = 3000;
 	while (true) {
-		while (waitpid(-1 * ruri_tgid_init(-1), NULL, WNOHANG) > 0)
+		while (waitpid(-1 * ruri_tgid_init(-1), NULL, WNOHANG) > 0) {
 			;
+		}
 		for (int i = 0; i < 15; i++) {
 			if (waitpid(-1 * ruri_tgid_init(-1), NULL, WNOHANG) < 0) {
 				exit(EXIT_FAILURE);
@@ -597,20 +598,25 @@ int ruri_openpty(int *master, int *slave)
 	/*
 	 * Libc does not provide a portable openpty() function, so we just implement one.
 	 */
-	char *name;
+	char *name = NULL;
 	*master = posix_openpt(O_RDWR | O_NOCTTY);
-	if (*master < 0)
+	if (*master < 0) {
 		return -1;
-	if (grantpt(*master) < 0)
+	}
+	if (grantpt(*master) < 0) {
 		goto err;
-	if (unlockpt(*master) < 0)
+	}
+	if (unlockpt(*master) < 0) {
 		goto err;
+	}
 	name = ptsname(*master);
-	if (!name)
+	if (!name) {
 		goto err;
-	*slave = open(name, O_RDWR | O_NOCTTY);
-	if (*slave < 0)
+	}
+	*slave = open(name, O_RDWR | O_NOCTTY | O_CLOEXEC);
+	if (*slave < 0) {
 		goto err;
+	}
 	return 0;
 err:
 	close(*master);
@@ -656,6 +662,9 @@ void ruri_setup_tty(void)
 	// Send master fd to daemon process.
 	// Use SCM_RIGHTS to send the fd.
 	int sock_fd = ruri_tty_sock_fd(-1);
+	if (sock_fd < 0) {
+		ruri_error("{red}Failed to get tty sock fd QwQ\n");
+	}
 	struct msghdr msg = { 0 };
 	char buf[CMSG_SPACE(sizeof(int))];
 	memset(buf, 0, sizeof(buf));
@@ -759,11 +768,14 @@ void ruri_setup_tty_daemon(void)
 		ruri_error("{red}Failed to receive master fd from tty daemon QwQ\n");
 	}
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+	if (!cmsg || cmsg->cmsg_len != CMSG_LEN(sizeof(int))) {
+		ruri_error("{red}Failed to receive master fd from tty daemon QwQ\n");
+	}
 	int master = 0;
 	// Socket need a memcpy instead of a direct assignment.
 	memcpy(&master, CMSG_DATA(cmsg), sizeof(int));
 	// epoll() to handle input/output between the terminal and the child process.
-	int epfd = epoll_create1(0);
+	int epfd = epoll_create1(EPOLL_CLOEXEC);
 	struct epoll_event ev;
 	ev.events = EPOLLIN;
 	ev.data.fd = STDIN_FILENO;
@@ -791,8 +803,9 @@ void ruri_setup_tty_daemon(void)
 		struct epoll_event events[8];
 		int n = epoll_wait(epfd, events, 8, -1);
 		if (n < 0) {
-			if (errno == EINTR)
+			if (errno == EINTR) {
 				continue;
+			}
 			break;
 		}
 		for (int i = 0; i < n; i++) {
@@ -855,8 +868,9 @@ void ruri_setup_tty_daemon(void)
 						while (off < r) {
 							ssize_t w = write(STDOUT_FILENO, buf + off, r - off);
 							if (w < 0) {
-								if (errno == EINTR || errno == EAGAIN)
+								if (errno == EINTR || errno == EAGAIN) {
 									continue;
+								}
 								goto out;
 							}
 							off += w;
@@ -864,12 +878,15 @@ void ruri_setup_tty_daemon(void)
 					} else if (r == 0) {
 						goto out;
 					} else {
-						if (errno == EIO)
+						if (errno == EIO) {
 							goto out;
-						if (errno == EINTR)
+						}
+						if (errno == EINTR) {
 							continue;
-						if (errno == EAGAIN)
+						}
+						if (errno == EAGAIN) {
 							break;
+						}
 						goto out;
 					}
 				}

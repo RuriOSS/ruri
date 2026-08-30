@@ -94,10 +94,10 @@ static void sig_write_int(int val)
 	 */
 	char tmp[16];
 	int i = 0;
-	unsigned int uval;
+	unsigned int uval = 0;
 	if (val < 0) {
 		write(STDERR_FILENO, "-", 1);
-		uval = (unsigned int)(-(val + 1)) + 1u;
+		uval = (unsigned int)(-(val + 1)) + 1U;
 	} else {
 		uval = (unsigned int)val;
 	}
