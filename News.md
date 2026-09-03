@@ -1,11 +1,16 @@
-It's another huge release since v3.9.3. So v3.9.5-rc1 is now ready, all caught up :>     
+It's another huge release since v3.9.3. So v3.9.5 is now ready, all caught up :>    
   * Add `--freeze`/`--thaw` subcommands to pause and resume a container via cgroup freezer (**NOTE**: needs cgroup freezer support, both cgroup v2 built-in freezer and v1 `/sys/fs/cgroup/freezer` or Android `/dev/freezer` are detected).
   * Add `--set-flag` for developers to enable feature flags.
   * Add a `.ruri_umounted` file to indicate that the container has been unmounted.
-  * Fix a race condition when udev didn't create /dev/loopx device before ruri tries to mount it.
   * Fix re-enter unshare container failed in v3.9.4.
   * Fix pipe-sync issue in unshare container.
+  * Fix losetup failed when udev didn't create /dev/loopx device before ruri tries to mount it.
+  * Fix losetup failed on Android due to SELinux issue.
   * Always convert mount source to absolute path.
+  * Add loop partition and btrfs mount support.
+  * Support tmpfs as rootfs.
+  * Support `BIND:` prefix to force bind-mounting a regular file instead of trying to mount it as an image.
+  * Fix subarch for seccomp profile.
   * Support new feature flags:
     - `ban_futex_pi`: Ban futex_pi syscalls, for GhostLock mitigation.
     - `wait_before_exec`: Wait for SIGUSR1 signal before exec() in the container.
@@ -58,3 +63,6 @@ It's another huge release since v3.9.3. So v3.9.5-rc1 is now ready, all caught u
     - `img_sectx`: SELinux context for image file, to fix loop-mount on android.
     - `new_tty`: create a new pty in container.
     - `create_ntsync_node`: Will be converted to `dev_nodes=+ntsync`.
+    - `ban_setuid`: A comma-separated list to disallow setuid() to specified uid, for example `ban_setuid=5,2,1` will diasllow setuid to uid 5 or 2 or 1.
+    - `no_subarch`: Do not add subarch to seccomp profile.
+    - `ban_sctp`: Ban IPPROTO_SCTP for socket().
