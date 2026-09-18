@@ -1398,7 +1398,7 @@ void ruri_run_chroot_container(struct RURI_CONTAINER *_Nonnull container)
 	if (execvp(container->command[0], container->command) == -1) {
 		// Catch exceptions.
 		ruri_pid_file_write(RURI_PID_FILE_PANIC_EXEC, 0);
-		ruri_error("\n{red}Failed to execute `%s`\nexecv() returned: %d\nerror reason: %s\nNote: unset $LD_PRELOAD before running ruri might fix this{clear}\n", container->command[0], errno, strerror(errno));
+		ruri_error("\n{red}Failed to execute `%s`\nexecvp() returned: %d\nerror reason: %s\nNote: unset $LD_PRELOAD before running ruri might fix this{clear}\n", container->command[0], errno, strerror(errno));
 	}
 	ruri_error("{red}Error: execvp() returned without error, this should never happen QwQ\n");
 }
@@ -1553,6 +1553,6 @@ void ruri_run_rootless_chroot_container(struct RURI_CONTAINER *_Nonnull containe
 	if (execvp(container->command[0], container->command) == -1) {
 		// Catch exceptions.
 		ruri_pid_file_write(RURI_PID_FILE_PANIC_EXEC, 0);
-		ruri_error("{red}Failed to execute `%s`\nexecv() returned: %d\nerror reason: %s\nNote: unset $LD_PRELOAD before running ruri might fix this{clear}\n", container->command[0], errno, strerror(errno));
+		ruri_error("{red}Failed to execute `%s`\nexecvp() returned: %d\nerror reason: %s\nNote: unset $LD_PRELOAD before running ruri might fix this{clear}\n", container->command[0], errno, strerror(errno));
 	}
 }

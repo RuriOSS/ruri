@@ -796,7 +796,7 @@ void ruri_correct_config(const char *_Nonnull path)
 		}
 	}
 #ifdef DISABLE_RURIENV
-	container.use_rurienv = false;
+	ruri_set_flag("no_rurienv");
 #endif
 	if (!have_key("ro_root", buf)) {
 		ruri_warning("{green}No key ro_root found, set to false\n{clear}");

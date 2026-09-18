@@ -640,7 +640,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 			index++;
 			container->ns_pid = atoi(argv[index]);
 			if (container->ns_pid <= 0) {
-				ruri_error("{red}NS_PID should be in range 0-2\n");
+				ruri_error("{red}NS_PID should be a positive integer\n");
 			}
 		}
 		// cgroup limit.

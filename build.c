@@ -798,6 +798,7 @@ void show_help(void)
 	printf("    -f, --force            force rebuild\n");
 	printf("    -j, --jobs <num>       number of jobs to run simultaneously\n");
 	printf("    -c, --core-only        build core only\n");
+	printf("    -p, --profiling         enable profiling build\n");
 }
 // So good brooooo, the program works with magic here.
 int main(int argc, char **argv)
@@ -851,7 +852,7 @@ int main(int argc, char **argv)
 	} else {
 		check_and_add_cflag("-DRURI_CORE_ONLY", true);
 		check_and_add_cflag("-DDISABLE_LIBCAP", true);
-		check_and_add_cflag("-DDISABLE_SECCOMP", true);
+		check_and_add_cflag("-DDISABLE_LIBSECCOMP", true);
 		check_and_add_cflag("-DDISABLE_RURIENV", true);
 	}
 	if(profiling) {
@@ -1259,7 +1260,7 @@ struct cth_result *cth_exec(char **argv, char *input, bool block, bool get_outpu
 	 * argv: The command and its arguments, NULL-terminated array of strings.
 	 * input: The input to be passed to the command's stdin, can be NULL.
 	 * block: If true, wait for the command to finish and return the result.
-	 *        If false, return immediately (not implemented yet).
+	 *        If false, return immediately without waiting for the command to finish.
 	 * get_output: If true, capture stdout and stderr output.
 	 * Returns a cth_result structure on success, NULL on failure.
 	 * The caller is responsible for freeing the result using cth_free_result().
@@ -1267,7 +1268,6 @@ struct cth_result *cth_exec(char **argv, char *input, bool block, bool get_outpu
 	if (argv == NULL || argv[0] == NULL) {
 		return NULL;
 	}
-	// For now, only blocking mode is implemented.
 	if (block) {
 		return cth_exec_block(argv, input, get_output);
 	}
@@ -1838,7 +1838,7 @@ struct cth_result *cth_exec_with_file_input(char **argv, int fd, bool block, boo
 	 * argv: The command and its arguments, NULL-terminated array of strings.
 	 * fd: The file descriptor to use as stdin, should be valid and open for reading.
 	 * block: If true, wait for the command to finish and return the result.
-	 *        If false, return immediately (not implemented yet).
+	 *        If false, return immediately without waiting for the command to finish.
 	 * get_output: If true, capture stdout and stderr output.
 	 * progress: A callback function to report progress, can be NULL.
 	 *           The function will be called with a float value between 0.0 and 1.0,
@@ -1851,7 +1851,6 @@ struct cth_result *cth_exec_with_file_input(char **argv, int fd, bool block, boo
 	if (argv == NULL || argv[0] == NULL) {
 		return NULL;
 	}
-	// For now, only blocking mode is implemented.
 	if (block) {
 		return cth_exec_block_with_file_input(argv, fd, get_output, progress, progress_line_num);
 	}
