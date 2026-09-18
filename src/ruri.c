@@ -1456,7 +1456,7 @@ static void parse_args(int argc, char **_Nonnull argv, struct RURI_CONTAINER *_N
 						index++;
 						container->ns_pid = atoi(argv[index]);
 						if (container->ns_pid <= 0) {
-							ruri_error("{red}NS_PID should >= 0\n");
+							ruri_error("{red}NS_PID should be a positive integer\n");
 						}
 					} else {
 						ruri_error("Invalid argument %s\n", argv[index]);
