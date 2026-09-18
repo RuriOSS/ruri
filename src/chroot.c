@@ -253,18 +253,6 @@ static void setup_systemd_runtime(struct RURI_CONTAINER *_Nonnull container)
 	generate_machine_id(container->container_id);
 	mount("/dev/null", "/proc/cmdline", NULL, MS_BIND, NULL);
 	mount(NULL, "/proc/cmdline", NULL, MS_REMOUNT | MS_RDONLY, NULL);
-	// Setup getty.
-	/*
-	int fd = open("/etc/systemd/system/container-console-getty.service", O_RDWR | O_CLOEXEC | O_CREAT, 0644);
-	if (fd > 0) {
-		ftruncate(fd, 0);
-		char *content = "[Unit]\nDescription=Container Console Getty\nAfter=systemd-user-sessions.service\n[Service]\nExecStart=-/sbin/agetty --noclear --noissue /dev/pts/0 38400 vt100\nType=idle\nRestart=always\nRestartSec=0\n\nTTYPath=/dev/console\n\nStandardInput=null\nStandardOutput=null\nStandardError=null\n[Install]\nWantedBy=getty.target\n";
-		write(fd, content, strlen(content));
-		close(fd);
-		mkdir("/etc/systemd/system/getty.target.wants", S_IRWXU | S_IRWXG | S_IRWXO);
-		symlink("/etc/systemd/system/container-console-getty.service", "/etc/systemd/system/getty.target.wants/container-console-getty.service");
-	}
-	*/
 }
 // Run after chroot(2), called by ruri_run_chroot_container().
 static void init_container(struct RURI_CONTAINER *_Nonnull container)
