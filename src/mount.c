@@ -959,7 +959,7 @@ static const char *parse_mount_flags(const char *source, unsigned int *mountflag
 	 *   "SILENT:"      -> MS_SILENT
 	 *   "POSIXACL:"    -> MS_POSIXACL
 	 *   "LAZYTIME:"    -> MS_LAZYTIME
-	 *   "BIND"         -> MS_BIND
+	 *   "BIND:"        -> MS_BIND
 	 *
 	 * The function stops processing when no recognized prefix is found at the start of 'source'.
 	 *
