@@ -142,16 +142,10 @@ static void init_rootless_container(struct RURI_CONTAINER *_Nonnull container)
 		mount("/dev/kvm", "./dev/kvm", NULL, MS_BIND, NULL);
 	}
 	if (ruri_has_dev(gunyah)) {
-		if (!ruri_flag(disable_warnings)) {
-			ruri_warning("{green} How you made rootless container work on qcom devices? Crazy!");
-		}
 		close(open("./dev/gunyah", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/gunyah", "./dev/gunyah", NULL, MS_BIND, NULL);
 	}
 	if (ruri_has_dev(gzvm)) {
-		if (!ruri_flag(disable_warnings)) {
-			ruri_warning("{green} How you made rootless container work on mtk devices? Crazy!");
-		}
 		close(open("./dev/gzvm", O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP));
 		mount("/dev/gzvm", "./dev/gzvm", NULL, MS_BIND, NULL);
 	}
