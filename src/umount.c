@@ -137,7 +137,9 @@ void ruri_umount_container(const char *_Nonnull container_dir)
 			remove(infofile);
 			ruri_log("{base}Removed .rurienv file: %s\n", infofile);
 		} else {
+#ifndef DISABLE_RURIENV
 			ruri_warning("{yellow}Warning: .rurienv does not exist\n");
+#endif
 		}
 	} else {
 		ftruncate(ruri_env_fd(-1), 0);
