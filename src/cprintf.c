@@ -337,12 +337,16 @@ static const char *cprintf_add_bg_color(const char *_Nonnull buf, char **_Nonnul
 }
 char *cprintf_regen_format(FILE *_Nonnull stream, const char *_Nonnull format)
 {
+	char *nomem_ret = strdup("CPRINTF: Memory allocation failed.\n");
+	if (!nomem_ret) {
+		return NULL;
+	}
 	bool skip = (cprintf_print_color_only_tty(-1) && !isatty(fileno(stream)));
 	static jmp_buf buf;
 	cprintf_jmp_buf(1, &buf);
 	int stat = setjmp(buf);
 	if (stat) {
-		return strdup("CPRINTF: Memory allocation failed.\n");
+		return nomem_ret;
 	}
 	char *ret = malloc(strlen(format) + 1);
 	ret[0] = '\0';
@@ -368,6 +372,7 @@ char *cprintf_regen_format(FILE *_Nonnull stream, const char *_Nonnull format)
 	if (!skip) {
 		ret = cp_add_str(ret, "\033[0m");
 	}
+	free(nomem_ret);
 	return ret;
 }
 
