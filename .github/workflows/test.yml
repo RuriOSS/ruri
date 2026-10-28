@@ -28,6 +28,9 @@ jobs:
             autoconf automake libtool make gcc \
             libseccomp-dev libcap-dev libc6-dev \
             binutils qemu-user uidmap
+          git clone https://github.com/RuriOSS/qemu-user-static-x86_64
+          chmod 777 qemu-user-static-x86_64/*
+          sudo cp qemu-user-static-x86_64/* /usr/bin/
 
           autoreconf -fi && ./configure
           make test

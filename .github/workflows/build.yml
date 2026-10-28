@@ -60,6 +60,9 @@ jobs:
           sudo apt-get update
           sudo apt-get --no-install-recommends -y install \
             binutils build-essential libcap-dev libseccomp-dev make qemu-user xz-utils
+          git clone https://github.com/RuriOSS/qemu-user-static-x86_64
+          chmod 777 qemu-user-static-x86_64/*
+          sudo cp qemu-user-static-x86_64/* /usr/bin/
 
       - name: Build ruri for containers
         run: |
