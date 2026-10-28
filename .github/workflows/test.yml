@@ -27,7 +27,7 @@ jobs:
           sudo apt install --no-install-recommends -y curl xz-utils \
             autoconf automake libtool make gcc \
             libseccomp-dev libcap-dev libc6-dev \
-            binutils qemu-user-binfmt-hwe uidmap
+            binutils qemu-user uidmap
 
           autoreconf -fi && ./configure
           make test

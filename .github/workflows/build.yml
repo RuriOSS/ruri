@@ -59,7 +59,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get --no-install-recommends -y install \
-            binutils build-essential libcap-dev libseccomp-dev make qemu-user-binfmt-hwe xz-utils
+            binutils build-essential libcap-dev libseccomp-dev make qemu-user xz-utils
 
       - name: Build ruri for containers
         run: |
